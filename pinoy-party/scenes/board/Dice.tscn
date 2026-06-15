@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bwhqvetc7jop"]
+
+[ext_resource type="Script" uid="uid://brnc0bhdbi6js" path="res://scenes/board/dice.gd" id="1_qdqvr"]
+
+[node name="Dice" type="Node2D" unique_id=503594351]
+script = ExtResource("1_qdqvr")

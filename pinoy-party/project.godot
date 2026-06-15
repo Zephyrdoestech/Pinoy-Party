@@ -14,6 +14,14 @@ config/name="PinoyParty"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GameManager="*uid://cijteuj04pdm8"
+EventBus="*uid://pm14v0y40b4g"
+SceneLoader="*uid://cby8svdvll7t"
+Constants="*uid://cgltxikm7foap"
+Enums="*uid://btrgc223d7l4y"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
