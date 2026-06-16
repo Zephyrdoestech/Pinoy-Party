@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="PinoyParty"
+run/main_scene="uid://dg4tvnfiuotde"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -21,6 +22,11 @@ EventBus="*uid://pm14v0y40b4g"
 SceneLoader="*uid://cby8svdvll7t"
 Constants="*uid://cgltxikm7foap"
 Enums="*uid://btrgc223d7l4y"
+Utils="*uid://kq72ldfg6dn8"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/copilot-advanced/plugin.cfg")
 
 [physics]
 
