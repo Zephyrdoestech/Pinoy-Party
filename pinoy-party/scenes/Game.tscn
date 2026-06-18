@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/Game.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://dg4tvnfiuotde" path="res://scenes/board/Board.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://bwhqvetc7jop" path="res://scenes/board/Dice.tscn" id="3"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Board" parent="." instance=ExtResource("2")]
+position = Vector2(80, 80)
+
+[node name="Dice" parent="." instance=ExtResource("3")]
+position = Vector2(700, 500)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="RollButton" type="Button" parent="UI"]
+offset_left = 650.0
+offset_top = 560.0
+offset_right = 770.0
+offset_bottom = 600.0
+text = "Roll Dice"
+
+[node name="TurnLabel" type="Label" parent="UI"]
+offset_left = 650.0
+offset_top = 520.0
+offset_right = 900.0
+offset_bottom = 550.0
+text = "Waiting..."
