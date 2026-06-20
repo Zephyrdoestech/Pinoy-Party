@@ -1,8 +1,13 @@
+# scenes/board/dice.gd
 extends Node2D
 
 @onready var label: Label = $Label
 
 var is_rolling: bool = false
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_accept"):
+		roll()
 
 func roll() -> void:
 	if is_rolling:
@@ -16,7 +21,4 @@ func roll() -> void:
 	var result: int = randi_range(1, Constants.DICE_FACES)
 	label.text = str(result)
 	is_rolling = false
-
 	GameManager.on_dice_rolled(result)
-	# GameManager.on_dice_rolled() emits EventBus.dice_rolled(current_player_index, result),
-	# which PlayerToken listens for to trigger its own movement.
