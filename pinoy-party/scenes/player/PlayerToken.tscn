@@ -1,6 +1,16 @@
 [gd_scene format=3 uid="uid://b3u5o816wh5t3"]
 
-[ext_resource type="Script" uid="uid://bprumbxxeap47" path="res://scenes/player/player_token.gd" id="1_rf7oy"]
+[ext_resource type="Script" uid="uid://ysppl0n0baq1" path="res://scenes/player/player_token.gd" id="1_rf7oy"]
 
 [node name="PlayerToken" type="Node2D" unique_id=1295295330]
 script = ExtResource("1_rf7oy")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1682481046]
+offset_left = -12.0
+offset_top = -12.0
+offset_right = 12.0
+offset_bottom = 12.0
+
+[node name="Label" type="Label" parent="." unique_id=1706046835]
+offset_right = 40.0
+offset_bottom = 23.0

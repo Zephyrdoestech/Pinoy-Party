@@ -1,11 +1,12 @@
-extends Node2D
+# scenes/ui/hud.gd
+extends Control
 
+@onready var turn_label: Label = $TurnLabel
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	EventBus.turn_started.connect(_on_turn_started)
 
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func _on_turn_started(player_index: int) -> void:
+	var player_data: Dictionary = GameManager.players[player_index]
+	turn_label.text = "%s's Turn — Press SPACE or click Roll" % player_data["name"]
+	turn_label.modulate = player_data["color"]

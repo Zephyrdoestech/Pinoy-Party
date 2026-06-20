@@ -54,12 +54,18 @@ func _handle_blank() -> void:
 
 
 func _handle_minigame() -> void:
-	# Pick a random mini-game and load it.
 	var minigame_id: String = Utils.random_minigame()
 	print("[TileEvent] Triggering mini-game: %s" % minigame_id)
 
+	# All 4 players compete simultaneously (per design decision)
+	var all_players: Array[int] = []
+	for i in GameManager.players.size():
+		all_players.append(i)
+
 	EventBus.minigame_started.emit(minigame_id)
-	SceneLoader.go_to_minigame(minigame_id)
+	SceneLoader.go_to_minigame(minigame_id, all_players)
+
+	_wait_for_minigame_result.call_deferred()
 
 	# Wait for the mini-game to finish. The mini-game scene should emit:
 	#   EventBus.minigame_finished.emit(scores: Dictionary)

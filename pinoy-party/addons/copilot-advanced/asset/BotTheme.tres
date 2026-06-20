@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=3 format=3 uid="uid://b8ev0etxsbepm"]
+[gd_resource type="Theme" format=3 uid="uid://b8ev0etxsbepm"]
 
 [ext_resource type="StyleBox" uid="uid://c3t11ow0sl8x4" path="res://addons/copilot-advanced/asset/BotStyleBoxFlat.tres" id="1_cv5qb"]
 

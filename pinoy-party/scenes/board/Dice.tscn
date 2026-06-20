@@ -1,22 +1,23 @@
 [gd_scene format=3 uid="uid://bwhqvetc7jop"]
 
-[ext_resource type="Script" uid="uid://brnc0bhdbi6js" path="res://scenes/board/dice.gd" id="1_qdqvr"]
+[ext_resource type="Script" uid="uid://7erpxhhve0ai" path="res://scenes/board/dice.gd" id="1_qdqvr"]
 
 [node name="Dice" type="Node2D" unique_id=503594351]
+position = Vector2(1100, 100)
 script = ExtResource("1_qdqvr")
 
-[node name="ColorRect" type="ColorRect" parent="."]
-offset_left = -24.0
-offset_top = -24.0
-offset_right = 24.0
-offset_bottom = 24.0
-color = Color(0.2, 0.2, 0.2, 1)
-
-[node name="Label" type="Label" parent="."]
-offset_left = -24.0
-offset_top = -24.0
-offset_right = 24.0
-offset_bottom = 24.0
+[node name="Label" type="Label" parent="." unique_id=894461542]
+offset_left = -55.0
+offset_top = -26.0
+offset_right = -7.0
+offset_bottom = 22.0
+text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "?"
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=88435445]
+offset_left = -3.0
+offset_top = -58.0
+offset_right = 45.0
+offset_bottom = -10.0
+color = Color(0.2, 0.2, 0.2, 1)
