@@ -23,20 +23,20 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 	# on EventBus when the token's own signal fires.
 	EventBus.player_moved.emit(player_idx, new_tile)
 
-	# Use a one-shot connection with a guard instead of an open await loop.
-	# This prevents a stale coroutine from a previous turn stealing the signal
-	# that belongs to a future player's movement.
-	var done := false
+	# Use an Array as the "done" flag so the lambda captures it by reference.
+	# A plain `var done := false` would be captured by VALUE in GDScript,
+	# meaning `done[0] = true` inside the lambda would not affect the outer scope.
+	var done := [false]
 	var _handler := func(finished_idx: int) -> void:
 		if finished_idx == player_idx:
-			done = true
+			done[0] = true
 	EventBus.movement_finished.connect(_handler, CONNECT_ONE_SHOT)
 
-	# Wait until our specific player's token finishes.
-	while not done:
+	# Poll each frame until our specific player's token finishes.
+	while not done[0]:
 		await get_tree().process_frame
 
-	# Disconnect in case the while-loop exited for another reason.
+	# Safety: disconnect if still connected (e.g. signal never fired).
 	if EventBus.movement_finished.is_connected(_handler):
 		EventBus.movement_finished.disconnect(_handler)
 
@@ -44,4 +44,5 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 	gm.players[player_idx]["tile_index"] = new_tile
 	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
 	request_transition(&"State_TileEvent")
+
 
