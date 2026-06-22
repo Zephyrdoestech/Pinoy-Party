@@ -67,11 +67,6 @@ func _handle_minigame() -> void:
 
 	_wait_for_minigame_result.call_deferred()
 
-	# Wait for the mini-game to finish. The mini-game scene should emit:
-	#   EventBus.minigame_finished.emit(scores: Dictionary)
-	# where scores maps  player_index (int) → points_earned (int).
-	_wait_for_minigame_result.call_deferred()
-
 
 func _wait_for_minigame_result() -> void:
 	var scores: Dictionary = await EventBus.minigame_finished

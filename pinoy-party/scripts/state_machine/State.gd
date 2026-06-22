@@ -30,8 +30,8 @@ func exit() -> void:
 
 
 ## Called every physics frame while this state is active.
-## @param delta  Time elapsed since last frame (seconds).
-func tick(delta: float) -> void:
+## @param _delta  Time elapsed since last frame (seconds).
+func tick(_delta: float) -> void:
 	pass
 
 
