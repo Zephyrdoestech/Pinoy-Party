@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cbtc02ku2nv8m"
+path="res://.godot/imported/Dcharac1_walkRight.aseprite-0a050c7a224f579d6096640198ed4155.res"
+
+[deps]
+
+source_file="res://assets/minigame_characters/mg_charac1/Dcharac1_walkRight.aseprite"
+dest_files=["res://.godot/imported/Dcharac1_walkRight.aseprite-0a050c7a224f579d6096640198ed4155.res"]
+
+[params]
+

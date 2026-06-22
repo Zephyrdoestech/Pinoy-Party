@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bhec1ym3iicn2"
+path="res://.godot/imported/charac3_jumpRight.aseprite-784f8646cd730c381de394680740748b.res"
+
+[deps]
+
+source_file="res://assets/board_characters/character3/charac3_jumpRight.aseprite"
+dest_files=["res://.godot/imported/charac3_jumpRight.aseprite-784f8646cd730c381de394680740748b.res"]
+
+[params]
+

@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bxjkb3ilhxxor"
+path="res://.godot/imported/charac2_walkFront.aseprite-d9912fbcc253c0b2e7217446ec7892db.res"
+
+[deps]
+
+source_file="res://assets/board_characters/character2/charac2_walkFront.aseprite"
+dest_files=["res://.godot/imported/charac2_walkFront.aseprite-d9912fbcc253c0b2e7217446ec7892db.res"]
+
+[params]
+
