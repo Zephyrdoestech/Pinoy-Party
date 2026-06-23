@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bncrj2qsqj1r0"
+path="res://.godot/imported/Dcharac1_jumpLeft.aseprite-a603910818f78d4a414521901836210d.res"
+
+[deps]
+
+source_file="res://assets/minigame_characters/mg_charac1/Dcharac1_jumpLeft.aseprite"
+dest_files=["res://.godot/imported/Dcharac1_jumpLeft.aseprite-a603910818f78d4a414521901836210d.res"]
+
+[params]
+
