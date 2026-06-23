@@ -11,7 +11,7 @@ signal movement_finished(player_index: int)
 
 func setup(index: int, board: Node2D) -> void:
 	player_index = index
-	board_ref = board
+	board_ref    = board
 	color_rect.color = GameManager.players[player_index]["color"]
 	global_position = board_ref.get_tile_position(0) + Utils.token_offset(player_index)
 

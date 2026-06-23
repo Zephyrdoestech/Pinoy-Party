@@ -47,19 +47,19 @@ func enter() -> void:
 # Helpers
 # ---------------------------------------------------------------------------
 
-func _save_state(gm: GameManager) -> void:
+func _save_state(_gm: GameManager) -> void:
 	# TODO: Integrate with your persistence layer (e.g. FileAccess / JSON save).
 	# Example placeholder:
-	#   SaveGame.save(gm.players)
+	#   SaveGame.save(_gm.players)
 	pass
 
 
-func _update_ui(gm: GameManager, player_idx: int) -> void:
+func _update_ui(_gm: GameManager, _player_idx: int) -> void:
 	# The UI subscribes to EventBus signals; emit whatever is needed here.
 	# turn_started is emitted by State_StartTurn, so here we only need
 	# to refresh the scoreboard if you have a dedicated signal for it.
 	# Example:
-	#   EventBus.scores_updated.emit(gm.players)
+	#   EventBus.scores_updated.emit(_gm.players)
 	pass
 
 
