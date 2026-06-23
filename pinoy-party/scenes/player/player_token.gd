@@ -7,30 +7,12 @@ var board_ref: Node2D
 
 signal movement_finished(player_index: int)
 
-## Assign a SpriteFrames resource here per player (one per character).
-## Set in Game.gd._spawn_tokens() at runtime, or pre-assign in the editor.
-@export var sprite_frames: SpriteFrames
-
-@onready var sprite: AnimatedSprite2D = $Sprite
+@onready var color_rect: ColorRect = $ColorRect
 
 func setup(index: int, board: Node2D) -> void:
 	player_index = index
 	board_ref    = board
-
-	# Wire the SpriteFrames resource into the AnimatedSprite2D.
-	if sprite_frames != null:
-		sprite.sprite_frames = sprite_frames
-		# Play the front-facing idle walk animation as the board stance.
-		if sprite.sprite_frames.has_animation("walkFront"):
-			sprite.play("walkFront")
-		else:
-			# Fallback: play whatever the first animation is.
-			var anims := sprite.sprite_frames.get_animation_names()
-			if anims.size() > 0:
-				sprite.play(anims[0])
-	else:
-		push_warning("PlayerToken %d: no sprite_frames assigned." % index)
-
+	color_rect.color = GameManager.players[player_index]["color"]
 	global_position = board_ref.get_tile_position(0) + Utils.token_offset(player_index)
 
 func move_to(target_tile_index: int) -> void:

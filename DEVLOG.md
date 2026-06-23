@@ -284,8 +284,7 @@ Simple display node. Has `tile_index` and `tile_type`. Calls `_update_visual()` 
 ### `player_token.gd`
 Each of the 4 players gets a `PlayerToken` node spawned by `Game.gd._spawn_tokens()`.
 
-- `@export var sprite_frames: SpriteFrames` — assigned by `Game.gd` at runtime from `CHARACTER_SPRITE_FRAMES[]`
-- `setup(index, board)` — assigns `player_index`, stores `board_ref`, wires `sprite_frames` into the `AnimatedSprite2D`, plays `walkFront` animation as the idle board stance
+- `setup(index, board)` — assigns `player_index`, stores `board_ref`, sets `ColorRect.color` from `GameManager.players[i]["color"]`, positions at tile 0
 - `move_to(target_tile_index)` — reads current `tile_index` from GameManager, calls `_step_toward`
 - `_step_toward(current, target)` — recursively tweens one tile at a time (0.2s per hop via `Constants.MOVE_STEP_DURATION`)
   - At each step: updates `GameManager.players[player_index]["tile_index"]`
@@ -295,25 +294,12 @@ The local `movement_finished` signal is relayed to `EventBus.movement_finished` 
 
 ### `PlayerToken.tscn` node structure
 ```
-PlayerToken (Node2D)         ← player_token.gd
-├── Sprite (AnimatedSprite2D)  ← scale (0.5, 0.5), SpriteFrames injected at runtime
-└── Label (Label)             ← debug label (offset 0–40×0–23)
+PlayerToken (Node2D)   ← player_token.gd
+├── ColorRect          ← 50×50px placeholder, color set from GameManager.players[i]["color"]
+└── Label              ← debug label (offset 0–40×0–23)
 ```
 
-### Character Asset Wiring (`Game.gd`)
-`CHARACTER_SPRITE_FRAMES` maps player index → SpriteFrames `.tres` path:
-```
-Player 0 → res://assets/board_characters/character1/charac1_walkFront.tres
-Player 1 → res://assets/board_characters/character2/charac2_walkFront.tres
-Player 2 → res://assets/board_characters/character3/charac3_walkFront.tres
-Player 3 → res://assets/board_characters/character4/charac4_walkFront.tres
-```
-
-> **⚠️ AsepriteWizard baking required.** The `.aseprite` files in `assets/board_characters/` are imported by the AsepriteWizard addon with a `noop` importer — they are **not** directly loadable as `SpriteFrames` at runtime. To activate the sprites:
-> 1. Open the **AsepriteWizard** dock in the Godot editor.
-> 2. For each character, import `charac{N}_walkFront.aseprite` and save the generated `SpriteFrames` as `charac{N}_walkFront.tres` in the same folder.
-> 3. Run the game — `Game.gd` will find the `.tres` via `ResourceLoader.exists()` and load it automatically.
-> Until baked, tokens show a blank `AnimatedSprite2D` (no crash — just invisible sprites with a `push_warning` in the output).
+> **⚠️ Sprite blocked — PNG spritesheets not yet available.** See Known Issues.
 
 ---
 
@@ -421,8 +407,9 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 - `HUD.tscn` — exists but not added to `Game.tscn`
 - Minigames: `LangitLupa`, `BatoLata`, `AgawBase`, `SackRace` — not implemented
 - `Enums.TileType.SARI_SARI` — defined but never assigned to any tile
-- Board character `.aseprite` assets in `assets/board_characters/` — **wired into code** but require AsepriteWizard baking to produce `.tres` SpriteFrames before sprites appear at runtime
+- Board character `.aseprite` assets in `assets/board_characters/` — **not yet wired**. AsepriteWizard bake approach dropped (team uses Pixsquare on iPad which cannot produce `.tres` SpriteFrames). PNG spritesheet export from Pixsquare is the required next step before sprites can be wired. See Known Issues.
 - Minigame character assets in `assets/minigame_characters/` — present but not yet wired into any scene
+- **Board token sprites blocked** — `assets/board_characters/` contains only `.aseprite` files. Team must export PNG spritesheets from Pixsquare for each character before `PlayerToken` can display character art. Current placeholder is a solid-color `ColorRect`.
 
 ### Architecture Decisions Pending
 - **Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented
@@ -473,7 +460,7 @@ Minigame scene paths are built as `res://scenes/minigames/{ID}/{ID.to_snake_case
 | 2026-06-22 | `8524e1f` | Fixed turn freeze after Player 2 — open `await` loop in State_Moving stole `movement_finished` signals meant for later players; replaced with one-shot lambda + process_frame poll |
 | 2026-06-22 | `aa6dd23` | Fixed GDScript warnings — unused params (`_delta`, `_gm`, `_player_idx`), duplicate `call_deferred`, Tile.tscn UID mismatch, `@warning_ignore` on EventBus signals |
 | 2026-06-22 | `a774b3a` | Removed `copilot-advanced` addon; added `LICENSE` and `README.md` |
-| 2026-06-22 | *(pending)* | Wired character sprites into PlayerToken — ColorRect replaced with AnimatedSprite2D; SpriteFrames injected at runtime from `CHARACTER_SPRITE_FRAMES[]` in `Game.gd` |
+| 2026-06-23 | *(pending)* | Reverted PlayerToken to ColorRect placeholder — PNG spritesheets not yet exported by team. Removed AsepriteWizard/.tres references from PlayerToken.tscn, player_token.gd, and Game.gd. |
 
 ---
 
