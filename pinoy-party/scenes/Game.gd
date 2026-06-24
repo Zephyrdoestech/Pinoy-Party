@@ -10,19 +10,36 @@ extends Node2D
 
 var tokens: Array[Node2D] = []
 
+# ---------------------------------------------------------------------------
+# Board character spritesheets — one per player (0-indexed).
+# Path pattern: res://assets/characters/board_characs/charac{N}/charac{N}_walkFront.PNG
+# Sheets are 4096×1024px, 4 frames horizontal (hframes=4), imported as
+# CompressedTexture2D. player_token.gd slices them into AtlasTexture frames.
+# ---------------------------------------------------------------------------
+const CHARACTER_SHEETS: Array[String] = [
+	"res://assets/characters/board_characs/charac1/charac1_walkFront.PNG",  # Player 1
+	"res://assets/characters/board_characs/charac2/charac2_walkFront.PNG",  # Player 2
+	"res://assets/characters/board_characs/charac3/charac3_walkFront.PNG",  # Player 3
+	"res://assets/characters/board_characs/charac4/charac4_walkFront.PNG",  # Player 4
+]
+
 func _ready() -> void:
 	_spawn_tokens()
 	roll_button.pressed.connect(_on_roll_pressed)
 	EventBus.turn_started.connect(_on_turn_started)
 	EventBus.player_moved.connect(_on_player_moved)
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
-	# No need to call GameManager.start_turn() manually anymore — State_StartTurn does it.
 
 func _spawn_tokens() -> void:
 	for i in Constants.MAX_PLAYERS:
 		var token: Node2D = player_token_scene.instantiate()
 		add_child(token)
-		token.setup(i, board)
+
+		# Load the spritesheet for this player and pass it into setup().
+		# All 4 sheets are confirmed present; load() will assert if a path
+		# is wrong, which is the desired loud-failure behaviour during dev.
+		var sheet: Texture2D = load(CHARACTER_SHEETS[i])
+		token.setup(i, board, sheet)
 		token.movement_finished.connect(_on_token_movement_finished)
 		tokens.append(token)
 
@@ -30,10 +47,8 @@ func _on_token_movement_finished(player_index: int) -> void:
 	EventBus.movement_finished.emit(player_index)
 
 func _on_roll_pressed() -> void:
-	# Guard now lives implicitly in State_WaitingForDice — it only listens
-	# for dice_rolled while it's the active state, so a stray click while
-	# in another state is harmless (dice.roll() just won't have a listener
-	# waiting on EventBus.dice_rolled yet).
+	# Guard lives in State_WaitingForDice — stray clicks while in another
+	# state are harmless (dice.roll() just won't have a listener yet).
 	dice.roll()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -45,5 +60,5 @@ func _on_turn_started(player_index: int) -> void:
 	turn_label.text = "%s's turn — roll the dice!" % player_name
 
 func _on_player_moved(player_index: int, new_tile_index: int) -> void:
-	# Tell the token to actually animate to its new tile.
+	# Tell the token to animate to its new tile.
 	tokens[player_index].move_to(new_tile_index)
