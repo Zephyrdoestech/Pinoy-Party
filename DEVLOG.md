@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-06-22
+**Last Updated:** 2026-06-26 (merged from two parallel branch logs — game-logic track + sprite/art track; post-merge regression found and fixed same day)
 
 ---
 
@@ -160,7 +160,7 @@ Handles scene transitions for minigames.
 | `SIDE_TILES` | 8 | Tiles along left/right edges |
 | `MOVE_STEP_DURATION` | 0.2 | Seconds per tile hop animation |
 | `DICE_ROLL_TICKS` | 15 | Frames of dice animation |
-| `MINIGAMES` | `["LuksongBaka", ...]` | Registered minigame IDs (only LuksongBaka is implemented) |
+| `MINIGAMES` | `["LuksongBaka", "SackRace"]` | Registered minigame IDs in active rotation. `LangitLupa` has a complete scene/script but is deliberately withheld pending playtest (see Known Issues). `BatoLata`/"Labay Lata" and `AgawBase` have been **cut from the project** (2026-06-25) — see Planned Minigames. |
 
 ### `Enums` (`scripts/enums.gd`)
 
@@ -284,9 +284,11 @@ Simple display node. Has `tile_index` and `tile_type`. Calls `_update_visual()` 
 ### `player_token.gd`
 Each of the 4 players gets a `PlayerToken` node spawned by `Game.gd._spawn_tokens()`.
 
-- `setup(index, board, front_sheet)` — assigns `player_index`, stores `board_ref`, calls `_build_frames(charac_num, front_sheet)` to build all 4 directional animations, sets `sprite.scale = Vector2(0.05, 0.05)`, plays `walkFront` as the idle stance, positions at tile 0
-- `_build_frames(charac_num, front_sheet)` — builds a `SpriteFrames` at runtime with **4 animations** (`walkFront`, `walkBack`, `walkLeft`, `walkRight`). `walkFront` uses the sheet passed from `Game.gd`; the other 3 are loaded internally via the confirmed path pattern `res://assets/characters/board_characs/charac{N}/charac{N}_{dir}.PNG`. Each animation has 4 frames sliced via `AtlasTexture.region`.
-- `_get_direction_animation(from_index, to_index) -> String` — maps the current tile's board segment to the correct animation name:
+> **✅ Sprites wired in (2026-06-24).** The PNG spritesheet export blocker noted in earlier versions of this log is resolved — team exported spritesheets from Pixsquare, and `PlayerToken` was upgraded from a `ColorRect` placeholder to a real `AnimatedSprite2D`. Note this happened on the **same day** as several FSM/minigame fixes in this log, on parallel work — see the 2026-06-23 "Reverted PlayerToken to ColorRect placeholder" entry in Recent Bug Fixes for the immediately-preceding state.
+
+- `setup(index, board, front_sheet)` — assigns `player_index`, stores `board_ref`, calls `_build_frames(charac_num, front_sheet)` to build all 4 directional animations, sets `sprite.scale = Vector2(0.05, 0.05)`, plays `walkFront` as the idle stance, and positions the token via `global_position = board_ref.get_tile_position(current_tile) + Utils.token_offset(player_index)`, reading `current_tile` from `GameManager.players[index]["tile_index"]`. **(Re-fixed 2026-06-26 — see Known Issues.)**
+- `_build_frames(charac_num, front_sheet)` — builds a `SpriteFrames` resource at runtime with **4 animations** (`walkFront`, `walkBack`, `walkLeft`, `walkRight`). `walkFront` uses the sheet passed in from `Game.gd`; the other 3 are loaded internally via `res://assets/characters/board_characs/charac{N}/charac{N}_walk{dir}.PNG`. Each animation is sliced into 4 frames via `AtlasTexture.region`.
+- `_get_direction_animation(from_index, to_index) -> String` — maps the current tile's board segment to the correct walk animation:
   - Tiles 0–8 (top, moving right) → `walkRight`
   - Tiles 9–16 (right side, moving down) → `walkFront`
   - Tiles 17–25 (bottom, moving left) → `walkLeft`
@@ -302,13 +304,13 @@ The local `movement_finished` signal is relayed to `EventBus.movement_finished` 
 ```
 PlayerToken (Node2D)          ← player_token.gd
 ├── Sprite (AnimatedSprite2D)  ← scale (0.05, 0.05); SpriteFrames with 4 directional anims built at runtime
-└── Label (Label)             ← debug label (offset 0–40×0–23)
+└── Label                      ← debug label (offset 0–40×0–23)
 ```
 
 ### Character Asset Wiring (`Game.gd` + `player_token.gd`)
-`Game.gd` loads `walkFront` and passes it to `setup()`. `player_token.gd` loads the remaining 3 sheets internally.
+`Game.gd` loads `walkFront` and passes it into `setup()`. `player_token.gd` loads the remaining 3 directional sheets internally.
 
-| Player | walkFront (via Game.gd) | walkBack / walkLeft / walkRight (loaded in _build_frames) |
+| Player | walkFront (via Game.gd) | walkBack / walkLeft / walkRight (loaded in `_build_frames`) |
 |--------|------------------------|-----------------------------------------------------------|
 | 0 | `charac1/charac1_walkFront.PNG` | `charac1/charac1_walk{dir}.PNG` |
 | 1 | `charac2/charac2_walkFront.PNG` | `charac2/charac2_walk{dir}.PNG` |
@@ -317,9 +319,9 @@ PlayerToken (Node2D)          ← player_token.gd
 
 All paths are under `res://assets/characters/board_characs/`.
 
-**Spritesheet spec:** 4096×1024px, 4 frames horizontal (hframes=4), 1024×1024px per frame, 8 FPS looping, imported as `CompressedTexture2D`.
+**Spritesheet spec:** 4096×1024px, 4 frames horizontal (`hframes=4`), 1024×1024px per frame, 8 FPS looping, imported as `CompressedTexture2D`.
 
-
+> **✅ Folder path confirmed (2026-06-26):** verified against the FileSystem dock — the real path is `res://assets/characters/board_characs/` and `res://assets/characters/minigame_characs/`. This matches what `Game.gd` and `player_token.gd` actually use. The `assets/board_characters/` / `assets/minigame_characters/` naming earlier in this log (Repository Structure tree, and the original pre-sprite "blocked" notes) was simply stale — update the Repository Structure tree to match next time it's touched.
 
 ---
 
@@ -353,6 +355,8 @@ go_to_minigame(id, players):
 
 > **Gotcha:** SceneLoader uses `minigame_id.to_snake_case()` to build the script filename. So `"LuksongBaka"` → `"luksong_baka.gd"`. New minigames must follow this naming convention exactly.
 
+> **⚠️ Confirmed failure mode (2026-06-24):** This naming mismatch is not just theoretical — it caused a real, hard-to-diagnose bug. The actual `.tscn` file on disk did not match the `to_snake_case()` output exactly, so `get_tree().change_scene_to_file(path)` silently failed: it returned without throwing a catchable error in the surrounding code, `current_scene` remained `Game` (confirmed via the Remote scene tree while paused), and `State_TileEvent` was left permanently stuck awaiting `EventBus.minigame_finished` with zero console output after the `"Loading minigame scene"` print. From the player's perspective, landing on a `GAME_TRIGGER` tile appeared to do nothing — the Roll Dice button stayed clickable and turns kept silently advancing functionally, but the minigame never appeared. **Diagnosis required:** adding a `push_error` check on `change_scene_to_file()`'s return code, instrumenting `_start_minigame_deferred()` with a print at its very first line, and manually visually comparing the on-disk filename against the constructed path character-by-character in the FileSystem dock. **Lesson:** always verify the exact on-disk filename for every new minigame scene before adding it to `Constants.MINIGAMES` — do not assume `to_snake_case()` output matches what was actually saved.
+
 ### Implemented Minigame: `LuksongBaka`
 
 A rhythm-based timing minigame (jump-the-rope).
@@ -367,19 +371,38 @@ A rhythm-based timing minigame (jump-the-rope).
 - Each round speeds up (`ROUND_SPEEDUP = 0.85×`) and shrinks the zone (`ZONE_SHRINK = 0.92×`)
 - Game ends when ≤1 player remains alive
 
-**Known bug in `_unhandled_input`:**
-```gdscript
-# Line 136 — always calls _try_jump(0) regardless of which player pressed
-_try_jump(0)  # TODO: map to correct player_index per local/network input scheme
-```
-This causes Player 1 (index 0) to auto-jump whenever any player presses their button.
+~~**Known bug in `_unhandled_input`:** always called `_try_jump(0)` regardless of which player pressed.~~ **FIXED (2026-06-24):** The stray unconditional `_try_jump(0)` line (a leftover from a partial merge — see `Recent Bug Fixes`) has been deleted. The per-player loop (`for player_idx in alive_players: ... if event.is_action_pressed(action): _try_jump(player_idx)`) is now the only call path and has been verified correct via live testing.
 
 **Score integration:** Uses `GameManager.add_score()` during gameplay for "Cleared!" jumps. The `_end_game()` `scores` dictionary only tracks the +3 survivor bonus; the per-round `+1` points are already applied live.
 
-### Planned Minigames (not yet implemented)
-`Constants.MINIGAMES = ["LuksongBaka", "LangitLupa", "BatoLata", "AgawBase", "SackRace"]`
+### Implemented Minigame: `SackRace`
 
-Only `LuksongBaka` has a scene + script. The others are listed in constants but will crash `SceneLoader` if selected. `Utils.random_minigame()` can return any of them.
+A timed mash-race minigame. All 4 players race simultaneously on parallel tracks.
+
+**Mechanics:**
+- Each press of a player's jump button (`p1_jump`–`p4_jump`) advances their sack a fixed distance (`HOP_DISTANCE`)
+- First to reach `FINISH_DISTANCE` (20 hops) wins; race also ends via `RACE_TIMEOUT` (15s) if nobody finishes, ranking remaining players by progress
+- Scoring: finish order awards `3, 2, 1, 0` points (1st through 4th) via `GameManager.add_score()`
+- Visual: 4 `ColorRect` nodes under `Tracks/Player 1`–`Player 4` move along the X axis (`HOP_PIXELS` per hop); a `TimerLabel` shows live countdown
+
+**Folder/naming:** `res://scenes/minigames/SackRace/sack_race.gd` + `SackRace.tscn` (root node named `SackRace`). Filenames manually verified against `to_snake_case()` output before being added to `Constants.MINIGAMES`, per the lesson learned from the LuksongBaka scene-path bug above.
+
+### Implemented Minigame: `LangitLupa`
+
+A real-time tag minigame — meaningfully different from the other two since it requires continuous movement rather than single-button input, and currently only supports one human-controlled player (`local_player_index`) with the rest driven by a temporary wandering-AI stub. See "Mini-game Movement & Input Scope" and "Area Size" sections under Design Decisions & Gotchas for full detail.
+
+**Mechanics:**
+- One random participating player is designated "IT" (`it_player`), shown via a distinct color and `ItLabel`
+- `NUM_AREAS` (6) "elevated areas" spawn at random positions each round; non-IT players are safe from tagging while standing inside one
+- An area becomes permanently `unsafe` (flagged, flashes red, does not refresh) once any non-IT player has continuously occupied it for `AREA_SAFE_DURATION` (4s)
+- IT is blocked from ever stepping inside an area (checked in movement resolution)
+- IT tags any non-elevated, non-safe player within `TAG_RADIUS` via proximity check each frame
+- Round ends after `ROUND_DURATION` (60s); survivors (non-IT, untagged) each score 2 points; IT scores `2 × number tagged` if anyone was caught
+- A 3-second "Get ready" countdown (`COUNTDOWN_DURATION`) blocks movement/tagging at round start
+
+**Folder/naming:** `res://scenes/minigames/LangitLupa/langit_lupa.gd` + `LangitLupa.tscn` (root node named `LangitLupa`).
+
+pending full live playtest of the area/tag logic via the AI stub, and pending real LAN player movement to replace `local_player_index`'s current hardcoded value of `0`.
 
 ---
 
@@ -413,9 +436,11 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 ## Known Issues & TODOs
 
 ### Bugs
-- **Luksong Baka input bug** — `luksong_baka.gd:136` always calls `_try_jump(0)` regardless of which player pressed. Fix: replace with `_try_jump(player_idx)`.
-- **Dual tile type resolvers** — `State_TileEvent._get_tile_type()` uses a different rule (every 5th tile) than `Board._determine_tile_type()` (every 4th tile). The board visuals and the state machine disagree on which tiles trigger minigames.
-- **Random minigame crashes** — `Utils.random_minigame()` can return minigame IDs that don't have scenes yet (`LangitLupa`, `BatoLata`, `AgawBase`, `SackRace`). `SceneLoader.go_to_minigame()` will error.
+- ~~**Luksong Baka input bug**~~ **FIXED (2026-06-24).** See Minigame System section above.
+- ~~**Dual tile type resolvers**~~ **FIXED (2026-06-23).** See Minigame System section above.
+- ~~**SceneLoader silent failure on minigame load**~~ **FIXED (2026-06-24).** Root cause: on-disk `.tscn` filename for LuksongBaka did not exactly match the `to_snake_case()`-derived path, causing `change_scene_to_file()` to silently fail with no thrown error and no scene swap. Fixed by correcting the filename and adding explicit error-code checking + print instrumentation in `SceneLoader.go_to_minigame()` / `_start_minigame_deferred()` (kept in place for future debugging). **Process takeaway:** any new minigame's filename must be manually verified against the FileSystem dock before being added to `Constants.MINIGAMES` — see the dedicated gotcha note in the Minigame System section.
+- ~~**PlayerToken visual reset on minigame return**~~ **FIXED (2026-06-24), REGRESSED (branch merge, 2026-06-26), RE-FIXED (2026-06-26).** See "PlayerToken Visual Reset on Minigame Return" under Design Decisions & Gotchas — this is the same bug coming back via a silent merge, not a new bug.
+- **Random minigame crashes** — `Utils.random_minigame()` can still return minigame IDs without scenes if `Constants.MINIGAMES` is ever expanded carelessly (`LangitLupa` has a scene but is deliberately withheld — see below; pending playtest before it joins rotation). `BatoLata` and `AgawBase` have been cut from the project (2026-06-25) and will not be implemented — `Utils.random_minigame()` no longer needs to account for them.
 
 ### Stubs / Unimplemented
 - `State_EndTurn._save_state()` — TODO: persistence layer
@@ -425,15 +450,15 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 - `TilePath.gd` — empty stub
 - `ScoreBoard.tscn` — not connected to game scene
 - `HUD.tscn` — exists but not added to `Game.tscn`
-- Minigames: `LangitLupa`, `BatoLata`, `AgawBase`, `SackRace` — not implemented
+- Minigames: `LangitLupa` — not yet in active rotation, pending playtest. `BatoLata` and `AgawBase` are **cut from the project** (2026-06-25), see Planned Minigames.
 - `Enums.TileType.SARI_SARI` — defined but never assigned to any tile
-- Board character PNG spritesheets in `assets/characters/board_characs/` — **wired** into `PlayerToken` via `AnimatedSprite2D` + runtime-built `SpriteFrames`
-- Minigame character assets in `assets/characters/minigame_characs/` — present but not yet wired into any scene
-
+- Board character sprites — **wired in (2026-06-24).** See "Player Token System" for the AnimatedSprite2D/`_build_frames()` implementation. Note the on-disk asset folder path needs verification — see the flagged mismatch in that section.
+- Minigame character assets — present but not yet wired into any minigame scene
 
 ### Architecture Decisions Pending
 - **Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented
 - **Local multiplayer input** — all 4 players share one screen/keyboard; no network/controller support
+- **LAN multiplayer (planned)** — `LangitLupa` was deliberately built around a single `local_player_index` (currently hardcoded to `0`) controlling one set of generic movement keys (`move_up/down/left/right`), anticipating that each LAN client will eventually control only its own player. This pattern is not yet wired to real networking and should be treated as the template for retrofitting movement-based minigames once LAN play exists.
 - **Score display** — scores are tracked in `GameManager.players` but never shown to the user
 
 ---
@@ -466,8 +491,55 @@ Minigame scene paths are built as `res://scenes/minigames/{ID}/{ID.to_snake_case
 3. Create `{ID}.tscn` with root node named exactly `{ID}`
 4. Add the ID string to `Constants.MINIGAMES`
 
+### PlayerToken Visual Reset on Minigame Return (FIXED 2026-06-24, REGRESSED 2026-06-26, RE-FIXED 2026-06-26)
+`PlayerToken.setup()` previously hardcoded the token's spawn position to tile 0 unconditionally. This was fine at game start, but `Game.tscn` is destroyed and rebuilt every time a minigame scene loads/returns (per `SceneLoader`), which means `Game.gd._spawn_tokens()` runs again and calls `setup()` again on fresh `PlayerToken` instances after every minigame.
+
+**Symptom:** after returning from a minigame, all player tokens visually snapped back to tile 0, even though `GameManager.players[i]["tile_index"]` correctly still held each player's real position (this data survives scene changes since `GameManager` is an autoload). On the next roll, the token would visibly "travel" from tile 0 to the correct destination, since `move_to()` correctly read the real `tile_index` — masking the bug as something that looked self-correcting rather than obviously wrong.
+
+**Original fix (2026-06-24):** `setup()` read the player's actual current `tile_index` from `GameManager.players[index]["tile_index"]` and placed the token there immediately (snap, no animation) instead of hardcoding tile 0.
+
+**Regression (branch merge, 2026-06-26):** the sprite-wiring branch (see "Sprites wired in" above) had forked from before this fix landed, and rewrote `setup()` to add `_build_frames()`/sprite setup using its own `global_position = board_ref.get_tile_position(0) + ...` line. Since both branches touched the same function for unrelated reasons, Git's line-based merge produced no conflict markers — it just silently kept a version of `setup()` that snapped back to tile 0 again. Caught by re-reading the merged file line-by-line rather than by any tooling; the bug itself produces no error, same as its first occurrence.
+
+**Re-fix (2026-06-26):** restored the `GameManager.players[index]["tile_index"]` read, now combined with `board_ref.get_tile_position(current_tile)` (signature changed to use `global_position`/`board_ref` after the sprite rewrite, so the fix had to be re-applied in the new shape of the function, not just pasted back verbatim):
+```gdscript
+var current_tile: int = GameManager.players[index]["tile_index"]
+global_position = board_ref.get_tile_position(current_tile) + Utils.token_offset(player_index)
+```
+
+> **Process takeaway:** a clean (no-conflict) merge is not proof that both branches' fixes survived. When two branches edit the same function for different reasons, Git can merge them without complaint while still dropping one side's actual behavior. Worth a quick side-by-side read of any function both branches touched, even after a "successful" merge.
+
+### Mini-game Movement & Input Scope (LangitLupa)
+`LangitLupa` is the first minigame requiring continuous movement input rather than a single button press (`LuksongBaka`, `SackRace`). Since the project plans LAN multiplayer (each physical device controls only its own local player), per-player movement keymaps were deliberately **not** added. Instead, a single generic WASD-style input set (`move_up`, `move_down`, `move_left`, `move_right`) drives only `local_player_index` (currently hardcoded to `0` as a placeholder — TODO: replace with real per-client player assignment once LAN networking exists). The other 3 participating players are currently driven by a temporary wandering-AI stub (see `langit_lupa.gd` — `_init_ai()`, random direction changes every 1.5s, bounces off screen edges) purely so tagging/area logic can be solo-tested before LAN input replaces it.
+
+### Area Size — Single Source of Truth (LangitLupa)
+Initially, each elevated-area `ColorRect`'s visual size (set by hand in the editor) and its gameplay detection radius (`AREA_RADIUS` constant in script) were two independently-edited values that could silently drift out of sync. Refactored so `AREA_RADIUS` is now derived from a single `AREA_SIZE` constant (`AREA_RADIUS := AREA_SIZE * 0.5`), and `_spawn_areas()` sets each ColorRect's `size` programmatically at spawn time rather than relying on manual editor edits. This also surfaced and fixed a related alignment bug: `ColorRect.position` is the rect's **top-left corner**, but all distance/safety-check math in the script treats `area.pos` as the **center point** — `_spawn_areas()` now offsets `rect.position = pos - rect.size / 2.0` so the visual rect is actually centered on the logical safe-zone point instead of being offset by half its width/height.
+
 ### Tile Index Persistence
-`GameManager.players[i]["tile_index"]` is updated **step-by-step inside the tween callback** in `player_token.gd`. It reaches the final value only after the full animation completes. `State_Moving` also writes it once more after the animation finishes (defensive redundancy). `State_TileEvent` reads it after movement, so timing is safe.
+`GameManager.players[i]["tile_index"]` is **no longer pre-set by `State_Moving` before the animation runs.** Earlier versions set the destination `tile_index` immediately in `State_Moving.enter()`, *before* the token actually animated — this caused `PlayerToken.move_to()` to see `current_idx == target_idx` immediately, emit `movement_finished` synchronously, before `State_Moving`'s `await` was even reached. The signal fired into the void and the FSM hung forever on every move.
+
+**Current (correct) behavior:** `State_Moving.enter()` only *computes* the target tile and triggers the animation via `EventBus.player_moved`. From there, `tile_index` is actually updated twice, by design, not by accident: `player_token.gd`'s `_step_toward()` writes it incrementally at each hop as the token visually advances tile-by-tile, and `_animate_and_advance()` in `State_Moving` writes it once more at the very end, after the per-player-filtered `movement_finished` signal confirms the animation actually completed. The second write is defensive redundancy (guarantees the final value is correct even if a hop-level write were ever skipped), not the *only* write. `State_TileEvent` reads `tile_index` after this point, so timing is safe either way.
+
+### Movement Completion — Combined Fix (lambda capture + signal theft)
+`State_Moving._animate_and_advance()` previously used a raw `await EventBus.movement_finished`, which had two compounding bugs, found and fixed by two different people on two different passes:
+
+1. **Lambda capture-by-value:** GDScript 4 lambdas capture primitives (`bool`, `int`, `float`) by value, not by reference. A naive `var done := false` checked inside a lambda would never actually update the outer scope's `done`. Fixed by using `var done := [false]` (an `Array`, which *is* captured by reference) and mutating `done[0]` inside the lambda.
+2. **Signal theft:** Since `EventBus.movement_finished` is global, if multiple players' tokens are mid-animation simultaneously, a raw `await EventBus.movement_finished` could resolve on the **wrong player's** signal emission, since the first emission of any kind satisfies the await.
+
+**Final combined fix** (current code, verified correct):
+```gdscript
+var done := [false]
+var _handler := func(finished_idx: int) -> void:
+    if finished_idx == player_idx:
+        done[0] = true
+EventBus.movement_finished.connect(_handler, CONNECT_ONE_SHOT)
+while not done[0]:
+    await get_tree().process_frame
+if EventBus.movement_finished.is_connected(_handler):
+    EventBus.movement_finished.disconnect(_handler)
+```
+This filters the signal by `player_idx` before considering the wait satisfied, and uses a poll loop instead of a raw await so the filtering logic can run on each frame.
+
+> **Known minor gap:** the `while not done[0]` poll loop has no timeout. If a token's animation ever silently fails to emit `movement_finished` for its player index, this will poll forever rather than fail loudly. Not yet a problem in practice, but worth a defensive timeout if movement reliability issues ever appear.
 
 ---
 
@@ -480,9 +552,19 @@ Minigame scene paths are built as `res://scenes/minigames/{ID}/{ID.to_snake_case
 | 2026-06-22 | `8524e1f` | Fixed turn freeze after Player 2 — open `await` loop in State_Moving stole `movement_finished` signals meant for later players; replaced with one-shot lambda + process_frame poll |
 | 2026-06-22 | `aa6dd23` | Fixed GDScript warnings — unused params (`_delta`, `_gm`, `_player_idx`), duplicate `call_deferred`, Tile.tscn UID mismatch, `@warning_ignore` on EventBus signals |
 | 2026-06-22 | `a774b3a` | Removed `copilot-advanced` addon; added `LICENSE` and `README.md` |
-| 2026-06-24 | *(pending)* | Wired PNG spritesheets into PlayerToken — ColorRect → AnimatedSprite2D; `_build_frames()` slices 4096×1024 spritesheet into 4×1024px AtlasTexture frames at runtime; no .tres bake needed |
-| 2026-06-24 | *(pending)* | Added directional animation to PlayerToken — `_get_direction_animation()` maps tile index to board segment; `_step_toward()` switches `walkRight`/`walkFront`/`walkLeft`/`walkBack` per hop; `_build_frames()` extended to load all 4 directional PNGs |
-
+| 2026-06-23 | *(pending)* | Reverted PlayerToken to ColorRect placeholder — PNG spritesheets not yet exported by team. Removed AsepriteWizard/.tres references from PlayerToken.tscn, player_token.gd, and Game.gd. |
+| 2026-06-24 | *(pending)* | **(parallel work)** Wired PNG spritesheets into PlayerToken — ColorRect → AnimatedSprite2D; `_build_frames()` slices a 4096×1024 spritesheet into 4×1024px AtlasTexture frames at runtime; no `.tres` bake needed. Pixsquare export unblocked this after the 6/23 revert above. |
+| 2026-06-24 | *(pending)* | **(parallel work)** Added directional walk animation to PlayerToken — `_get_direction_animation()` maps tile index to board segment; `_step_toward()` switches `walkRight`/`walkFront`/`walkLeft`/`walkBack` per hop; `_build_frames()` extended to load all 4 directional PNGs. |
+| 2026-06-23 | *(pending)* | Fixed dual tile-type resolver bug — added `GameManager.board_ref`, set by `Game.gd`, so `State_TileEvent._get_tile_type()` delegates to the real `board.gd.get_tile_type()` instead of an independent `% 5` placeholder formula. Verified via debug prints. |
+| 2026-06-23 | *(pending)* | Found leftover unconditional `_try_jump(0)` line still present inside `luksong_baka.gd`'s `_unhandled_input` loop, left over from a partial merge of the per-player input fix. Caused Player 1 to receive extra phantom jump attempts on every keypress, scaling with the number of alive players. Fix: delete the stray line; the per-player loop above it is already correct standalone. |
+| 2026-06-23 | *(pending)* | Confirmed `Constants.MINIGAMES` still includes all 5 IDs while only `LuksongBaka` has an implemented scene. Landing on a GAME_TRIGGER tile that randomly selects `AgawBase`/`BatoLata`/`LangitLupa`/`SackRace` causes `SceneLoader` to fail loading the scene and permanently stalls `State_TileEvent`'s `await EventBus.minigame_finished`. Recommended temporary fix (not yet applied): restrict `Constants.MINIGAMES = ["LuksongBaka"]` until the other 4 are implemented. |
+| 2026-06-24 | *(pending)* | Found and fixed the actual root cause of minigames never triggering visually: the on-disk `.tscn` filename for LuksongBaka didn't exactly match the path `SceneLoader` constructed via `to_snake_case()`. `change_scene_to_file()` was failing silently — no thrown error, scene stayed on `Game` (confirmed via Remote scene tree) — leaving `State_TileEvent` stuck forever awaiting a signal that would never fire. Diagnosed via explicit error-code checks and print instrumentation added to `SceneLoader.gd`. |
+| 2026-06-24 | *(pending)* | Deleted the stray unconditional `_try_jump(0)` line inside `luksong_baka.gd`'s `_unhandled_input` loop (left over from a prior partial merge). Verified live that only the correct player jumps per keypress. |
+| 2026-06-24 | *(pending)* | Fixed `PlayerToken.setup()` hardcoding spawn position to tile 0 on every spawn. Since `Game.tscn` (and therefore all `PlayerToken` instances) is rebuilt on every minigame return, this caused tokens to visually snap back to the start tile after every minigame even though `GameManager`'s tracked `tile_index` was correct. `setup()` now reads the real `tile_index` from `GameManager` and snaps the token there immediately instead of defaulting to tile 0. |
+| 2026-06-24 | *(pending)* | Implemented `SackRace` minigame (mash-to-race mechanic) end-to-end, including scene/script naming verified against the `to_snake_case()` lesson above, and added it to `Constants.MINIGAMES`. |
+| 2026-06-24 | *(pending)* | Implemented `LangitLupa` minigame (real-time tag with elevated safe-zones) including movement input, area spawn/unsafe-flagging logic, IT-blocked-from-areas rule, and a temporary wandering-AI stub for non-local players (no LAN networking yet). Not yet added to `Constants.MINIGAMES` pending a full playtest. |
+| 2026-06-25 | *(pending)* | Cut `BatoLata` (Labay Lata) and `AgawBase` from the planned minigame roster. Two design/prototype passes on `BatoLata` (lane-based fixed-position throwing, then a free-movement WASD + AI-opponent rebuild) were completed before the decision to drop it; neither was merged. Project moves forward with the existing 3-minigame set (`LuksongBaka`, `SackRace`, `LangitLupa`). |
+| 2026-06-26 | *(pending)* | Merged the game-logic branch and the sprite/art branch. Confirmed the real asset path is `res://assets/characters/board_characs/` (and `minigame_characs/`) via the FileSystem dock, resolving the naming mismatch flagged after the merge. Also found and re-fixed a regression: the merge silently reintroduced the "PlayerToken visual reset on minigame return" bug (fixed 2026-06-24) because the sprite branch's rewritten `setup()` had forked from before that fix and Git merged the two versions of the function with no conflict. See "PlayerToken Visual Reset on Minigame Return" under Design Decisions & Gotchas. |
 
 ---
 
@@ -491,7 +573,7 @@ Minigame scene paths are built as `res://scenes/minigames/{ID}/{ID.to_snake_case
 | ID | Status | Description |
 |----|--------|-------------|
 | `LuksongBaka` | ✅ Implemented | Jump the rope timing minigame |
-| `LangitLupa` | ❌ Not started | Heaven and Earth (jump/duck) |
-| `BatoLata` | ❌ Not started | Tin can toss |
-| `AgawBase` | ❌ Not started | Base stealing |
-| `SackRace` | ❌ Not started | Sack race |
+| `SackRace` | ✅ Implemented | Mash-to-race sack race |
+| `LangitLupa` | ✅ Implemented | Real-time tag with elevated safe-zones; scene/script complete, pending playtest + LAN movement |
+| `BatoLata` (Labay Lata) | 🚫 Cut (2026-06-25) | Hit-the-can-and-run minigame; two prototype passes (lane-based, then free-movement w/ AI) were built and discarded before the decision to cut. No longer planned. |
+| `AgawBase` | 🚫 Cut (2026-06-25) | Base stealing — never started, no longer planned. |

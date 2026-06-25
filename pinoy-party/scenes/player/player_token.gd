@@ -39,7 +39,8 @@ func setup(index: int, board: Node2D, front_sheet: Texture2D) -> void:
 	sprite.scale         = SPRITE_SCALE
 	sprite.play("walkFront")
 
-	global_position = board_ref.get_tile_position(0) + Utils.token_offset(player_index)
+	var current_tile: int = GameManager.players[index]["tile_index"]
+	global_position = board_ref.get_tile_position(current_tile) + Utils.token_offset(player_index)
 
 ## Builds a SpriteFrames resource at runtime containing all 4 directional
 ## animations. `front_sheet` comes from Game.gd (already loaded); the other
