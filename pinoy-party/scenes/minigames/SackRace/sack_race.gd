@@ -25,8 +25,12 @@ func start_game(players: Array[int]) -> void:
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
 	print("[SackRace] Race started for players: %s" % [players])
+	run_intro()
 
 func _process(delta: float) -> void:
+	if gameplay_locked:
+		return
+	
 	if not race_active:
 		return
 	timeout_timer += delta

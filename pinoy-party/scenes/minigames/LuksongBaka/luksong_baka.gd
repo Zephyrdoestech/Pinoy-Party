@@ -31,6 +31,7 @@ func start_game(players: Array[int]) -> void:
 	alive_players = players.duplicate()
 	_spawn_player_bars()
 	_start_countdown()
+	run_intro()
 
 func _spawn_player_bars() -> void:
 	var spacing := 90
@@ -112,6 +113,8 @@ func _begin_sweep() -> void:
 	sweeping = true
 
 func _process(delta: float) -> void:
+	if gameplay_locked:
+		return
 	if not sweeping:
 		return
 
