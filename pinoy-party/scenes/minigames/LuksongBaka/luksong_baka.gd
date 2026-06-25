@@ -93,6 +93,8 @@ func _start_countdown() -> void:
 		var zone_rect: ColorRect = bars[player_idx].get_node("Track/Zone")
 		zone_rect.position.x = BAR_WIDTH * zone_start
 		zone_rect.size.x = BAR_WIDTH * zone_width
+		var marker_rect: ColorRect = bars[player_idx].get_node("Track/Marker")
+		marker_rect.position.x = 0.0
 		var status: Label = bars[player_idx].get_node("Status")
 		status.text = ""
 		status.modulate = Color.WHITE

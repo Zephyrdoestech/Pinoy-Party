@@ -32,6 +32,29 @@ const AI_DASH_CHANCE := 0.3   # chance an AI dashes whenever it picks a new dire
 
 var dash_cooldown_remaining: Dictionary = {} # idx -> float
 var dash_time_remaining: Dictionary = {}     # idx -> float, >0 while a dash burst is active
+var dash_rings: Dictionary = {}              # idx -> Node2D (radial cooldown indicator)
+
+# A tiny custom-drawn Node2D for the radial dash-cooldown indicator, built at
+# runtime so no new scene/script file is needed. Draws a shrinking wedge —
+# full circle = just dashed, nothing drawn = ready to dash again.
+const _DASH_RING_SOURCE := """
+extends Node2D
+
+var progress := 0.0
+var ring_radius := 22.0
+var ring_color := Color(1, 1, 1, 0.9)
+
+func _draw() -> void:
+	if progress <= 0.0:
+		return
+	var start_angle := -PI / 2.0
+	var end_angle := start_angle + TAU * progress
+	draw_arc(Vector2.ZERO, ring_radius, start_angle, end_angle, 32, ring_color, 3.0, true)
+
+func set_progress(p: float) -> void:
+	progress = clamp(p, 0.0, 1.0)
+	queue_redraw()
+"""
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
@@ -48,6 +71,7 @@ func start_game(players: Array[int]) -> void:
 	for idx in players:
 		dash_cooldown_remaining[idx] = 0.0
 		dash_time_remaining[idx] = 0.0
+		_create_dash_ring(idx)
 	run_intro("Player %d is IT!" % (it_player + 1))
 
 func _spawn_areas() -> void:
@@ -128,12 +152,26 @@ func _try_dash(idx: int) -> void:
 	dash_time_remaining[idx] = DASH_DURATION
 	dash_cooldown_remaining[idx] = DASH_COOLDOWN
 
+## Builds and attaches a radial cooldown indicator as a child of the given
+## player's node — follows them automatically since it's a local-space child.
+func _create_dash_ring(idx: int) -> void:
+	var ring := Node2D.new()
+	var script := GDScript.new()
+	script.source_code = _DASH_RING_SOURCE
+	script.reload()
+	ring.set_script(script)
+	_get_player_node(idx).add_child(ring)
+	dash_rings[idx] = ring
+
 func _update_dash_timers(delta: float) -> void:
 	for idx in participating_players:
 		if dash_cooldown_remaining.get(idx, 0.0) > 0.0:
 			dash_cooldown_remaining[idx] = max(0.0, dash_cooldown_remaining[idx] - delta)
 		if dash_time_remaining.get(idx, 0.0) > 0.0:
 			dash_time_remaining[idx] = max(0.0, dash_time_remaining[idx] - delta)
+		if dash_rings.has(idx):
+			var ratio: float = dash_cooldown_remaining.get(idx, 0.0) / DASH_COOLDOWN
+			dash_rings[idx].set_progress(ratio)
 
 func _init_ai(players: Array[int]) -> void:
 	ai_directions.clear()
