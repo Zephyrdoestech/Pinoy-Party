@@ -2,20 +2,94 @@ extends Node2D
 
 const Utils = preload("res://scripts/utils.gd")
 
+# Spritesheet constants matching the exported PNG format from Pixsquare.
+const FRAME_WIDTH  := 1024   # each frame is 1024×1024px
+const FRAME_HEIGHT := 1024
+const HFRAMES      := 4      # 4 frames in a single horizontal row
+const FPS          := 8      # playback speed
+
+# Scale: 1024px native → ~51px on screen, fits within the 70px tile spacing.
+const SPRITE_SCALE := Vector2(0.05, 0.05)
+
+# Board segment boundaries (derived from Constants, listed here for clarity).
+# Segment   Tiles       Direction
+# Top        0–8        walkRight   (Constants.TOP_TILES = 9, so last index = 8)
+# Right      9–16       walkFront   (+ SIDE_TILES = 8)
+# Bottom    17–25       walkLeft    (+ TOP_TILES  = 9)
+# Left      26–33       walkBack    (remainder to finish loop)
+const TOP_END    := Constants.TOP_TILES - 1                          # 8
+const RIGHT_END  := Constants.TOP_TILES - 1 + Constants.SIDE_TILES   # 16
+const BOTTOM_END := Constants.TOP_TILES - 1 + Constants.SIDE_TILES + Constants.TOP_TILES  # 25
+
 var player_index: int = 0
 var board_ref: Node2D
 
 signal movement_finished(player_index: int)
 
-@onready var color_rect: ColorRect = $ColorRect
+@onready var sprite: AnimatedSprite2D = $Sprite
 
-func setup(index: int, board: Node2D) -> void:
+## Called by Game.gd after instancing.
+## `front_sheet` is the walkFront Texture2D for this player — the other three
+## directional sheets are loaded internally using the same path pattern.
+func setup(index: int, board: Node2D, front_sheet: Texture2D) -> void:
 	player_index = index
-	board_ref = board
-	$ColorRect.color = GameManager.players[index]["color"]
-	var current_tile: int = GameManager.players[index]["tile_index"]
-	position = Utils.tile_position(current_tile) + Utils.token_offset(index)
-	
+	board_ref    = board
+
+	sprite.sprite_frames = _build_frames(player_index + 1, front_sheet)
+	sprite.scale         = SPRITE_SCALE
+	sprite.play("walkFront")
+
+	global_position = board_ref.get_tile_position(0) + Utils.token_offset(player_index)
+
+## Builds a SpriteFrames resource at runtime containing all 4 directional
+## animations. `front_sheet` comes from Game.gd (already loaded); the other
+## three sheets are loaded here using the confirmed path pattern.
+## No .tres bake or AsepriteWizard dependency.
+func _build_frames(charac_num: int, front_sheet: Texture2D) -> SpriteFrames:
+	var base := "res://assets/characters/board_characs/charac%d/charac%d_" % [charac_num, charac_num]
+
+	# Map animation name → Texture2D source.
+	# walkFront is already loaded (passed in); the rest are loaded here.
+	var sheet_map: Dictionary = {
+		"walkFront": front_sheet,
+		"walkBack":  load(base + "walkBack.PNG"),
+		"walkLeft":  load(base + "walkLeft.PNG"),
+		"walkRight": load(base + "walkRight.PNG"),
+	}
+
+	var frames := SpriteFrames.new()
+	# Remove the default "default" animation that SpriteFrames.new() adds.
+	frames.remove_animation("default")
+
+	for anim_name in sheet_map:
+		var sheet: Texture2D = sheet_map[anim_name]
+		frames.add_animation(anim_name)
+		frames.set_animation_loop(anim_name, true)
+		frames.set_animation_speed(anim_name, FPS)
+		for i in HFRAMES:
+			var atlas := AtlasTexture.new()
+			atlas.atlas  = sheet
+			atlas.region = Rect2(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT)
+			frames.add_frame(anim_name, atlas)
+
+	return frames
+
+## Returns the animation name matching the board segment that `from_index`
+## sits on. The board is a clockwise rectangular loop:
+##   Tiles  0–8  → top edge,   moving right → walkRight
+##   Tiles  9–16 → right edge, moving down  → walkFront
+##   Tiles 17–25 → bottom edge, moving left → walkLeft
+##   Tiles 26–33 → left edge,  moving up    → walkBack
+func _get_direction_animation(from_index: int, _to_index: int) -> String:
+	if from_index <= TOP_END:
+		return "walkRight"
+	elif from_index <= RIGHT_END:
+		return "walkFront"
+	elif from_index <= BOTTOM_END:
+		return "walkLeft"
+	else:
+		return "walkBack"
+
 func move_to(target_tile_index: int) -> void:
 	if board_ref == null:
 		return
@@ -29,6 +103,10 @@ func _step_toward(current_idx: int, target_idx: int) -> void:
 
 	var next_idx: int = min(current_idx + 1, target_idx)
 	var target_pos: Vector2 = board_ref.get_tile_position(next_idx) + Utils.token_offset(player_index)
+
+	# Switch to the animation that matches the board segment being traversed.
+	var anim: String = _get_direction_animation(current_idx, next_idx)
+	sprite.play(anim)
 
 	var tween := create_tween()
 	tween.tween_property(self, "global_position", target_pos, Constants.MOVE_STEP_DURATION)

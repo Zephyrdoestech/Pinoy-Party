@@ -284,9 +284,15 @@ Simple display node. Has `tile_index` and `tile_type`. Calls `_update_visual()` 
 ### `player_token.gd`
 Each of the 4 players gets a `PlayerToken` node spawned by `Game.gd._spawn_tokens()`.
 
-- `setup(index, board)` — assigns `player_index`, stores `board_ref`, sets `ColorRect.color` from `GameManager.players[i]["color"]`, positions at tile 0
+- `setup(index, board, front_sheet)` — assigns `player_index`, stores `board_ref`, calls `_build_frames(charac_num, front_sheet)` to build all 4 directional animations, sets `sprite.scale = Vector2(0.05, 0.05)`, plays `walkFront` as the idle stance, positions at tile 0
+- `_build_frames(charac_num, front_sheet)` — builds a `SpriteFrames` at runtime with **4 animations** (`walkFront`, `walkBack`, `walkLeft`, `walkRight`). `walkFront` uses the sheet passed from `Game.gd`; the other 3 are loaded internally via the confirmed path pattern `res://assets/characters/board_characs/charac{N}/charac{N}_{dir}.PNG`. Each animation has 4 frames sliced via `AtlasTexture.region`.
+- `_get_direction_animation(from_index, to_index) -> String` — maps the current tile's board segment to the correct animation name:
+  - Tiles 0–8 (top, moving right) → `walkRight`
+  - Tiles 9–16 (right side, moving down) → `walkFront`
+  - Tiles 17–25 (bottom, moving left) → `walkLeft`
+  - Tiles 26–33 (left side, moving up) → `walkBack`
 - `move_to(target_tile_index)` — reads current `tile_index` from GameManager, calls `_step_toward`
-- `_step_toward(current, target)` — recursively tweens one tile at a time (0.2s per hop via `Constants.MOVE_STEP_DURATION`)
+- `_step_toward(current, target)` — calls `_get_direction_animation()`, plays the result on `sprite`, then tweens one tile at a time (0.2s per hop via `Constants.MOVE_STEP_DURATION`)
   - At each step: updates `GameManager.players[player_index]["tile_index"]`
   - On arrival: emits local `movement_finished(player_index)` signal
 
@@ -294,12 +300,26 @@ The local `movement_finished` signal is relayed to `EventBus.movement_finished` 
 
 ### `PlayerToken.tscn` node structure
 ```
-PlayerToken (Node2D)   ← player_token.gd
-├── ColorRect          ← 50×50px placeholder, color set from GameManager.players[i]["color"]
-└── Label              ← debug label (offset 0–40×0–23)
+PlayerToken (Node2D)          ← player_token.gd
+├── Sprite (AnimatedSprite2D)  ← scale (0.05, 0.05); SpriteFrames with 4 directional anims built at runtime
+└── Label (Label)             ← debug label (offset 0–40×0–23)
 ```
 
-> **⚠️ Sprite blocked — PNG spritesheets not yet available.** See Known Issues.
+### Character Asset Wiring (`Game.gd` + `player_token.gd`)
+`Game.gd` loads `walkFront` and passes it to `setup()`. `player_token.gd` loads the remaining 3 sheets internally.
+
+| Player | walkFront (via Game.gd) | walkBack / walkLeft / walkRight (loaded in _build_frames) |
+|--------|------------------------|-----------------------------------------------------------|
+| 0 | `charac1/charac1_walkFront.PNG` | `charac1/charac1_walk{dir}.PNG` |
+| 1 | `charac2/charac2_walkFront.PNG` | `charac2/charac2_walk{dir}.PNG` |
+| 2 | `charac3/charac3_walkFront.PNG` | `charac3/charac3_walk{dir}.PNG` |
+| 3 | `charac4/charac4_walkFront.PNG` | `charac4/charac4_walk{dir}.PNG` |
+
+All paths are under `res://assets/characters/board_characs/`.
+
+**Spritesheet spec:** 4096×1024px, 4 frames horizontal (hframes=4), 1024×1024px per frame, 8 FPS looping, imported as `CompressedTexture2D`.
+
+
 
 ---
 
@@ -407,9 +427,9 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 - `HUD.tscn` — exists but not added to `Game.tscn`
 - Minigames: `LangitLupa`, `BatoLata`, `AgawBase`, `SackRace` — not implemented
 - `Enums.TileType.SARI_SARI` — defined but never assigned to any tile
-- Board character `.aseprite` assets in `assets/board_characters/` — **not yet wired**. AsepriteWizard bake approach dropped (team uses Pixsquare on iPad which cannot produce `.tres` SpriteFrames). PNG spritesheet export from Pixsquare is the required next step before sprites can be wired. See Known Issues.
-- Minigame character assets in `assets/minigame_characters/` — present but not yet wired into any scene
-- **Board token sprites blocked** — `assets/board_characters/` contains only `.aseprite` files. Team must export PNG spritesheets from Pixsquare for each character before `PlayerToken` can display character art. Current placeholder is a solid-color `ColorRect`.
+- Board character PNG spritesheets in `assets/characters/board_characs/` — **wired** into `PlayerToken` via `AnimatedSprite2D` + runtime-built `SpriteFrames`
+- Minigame character assets in `assets/characters/minigame_characs/` — present but not yet wired into any scene
+
 
 ### Architecture Decisions Pending
 - **Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented
@@ -460,7 +480,9 @@ Minigame scene paths are built as `res://scenes/minigames/{ID}/{ID.to_snake_case
 | 2026-06-22 | `8524e1f` | Fixed turn freeze after Player 2 — open `await` loop in State_Moving stole `movement_finished` signals meant for later players; replaced with one-shot lambda + process_frame poll |
 | 2026-06-22 | `aa6dd23` | Fixed GDScript warnings — unused params (`_delta`, `_gm`, `_player_idx`), duplicate `call_deferred`, Tile.tscn UID mismatch, `@warning_ignore` on EventBus signals |
 | 2026-06-22 | `a774b3a` | Removed `copilot-advanced` addon; added `LICENSE` and `README.md` |
-| 2026-06-23 | *(pending)* | Reverted PlayerToken to ColorRect placeholder — PNG spritesheets not yet exported by team. Removed AsepriteWizard/.tres references from PlayerToken.tscn, player_token.gd, and Game.gd. |
+| 2026-06-24 | *(pending)* | Wired PNG spritesheets into PlayerToken — ColorRect → AnimatedSprite2D; `_build_frames()` slices 4096×1024 spritesheet into 4×1024px AtlasTexture frames at runtime; no .tres bake needed |
+| 2026-06-24 | *(pending)* | Added directional animation to PlayerToken — `_get_direction_animation()` maps tile index to board segment; `_step_toward()` switches `walkRight`/`walkFront`/`walkLeft`/`walkBack` per hop; `_build_frames()` extended to load all 4 directional PNGs |
+
 
 ---
 
