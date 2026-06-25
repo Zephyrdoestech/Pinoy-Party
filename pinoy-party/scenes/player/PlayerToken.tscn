@@ -5,11 +5,7 @@
 [node name="PlayerToken" type="Node2D" unique_id=1295295330]
 script = ExtResource("1_rf7oy")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=1682481046]
-offset_left = -25.0
-offset_top = -25.0
-offset_right = 25.0
-offset_bottom = 25.0
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1682481046]
 
 [node name="Label" type="Label" parent="." unique_id=1706046835]
 offset_right = 40.0
