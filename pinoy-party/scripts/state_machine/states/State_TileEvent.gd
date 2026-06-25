@@ -88,7 +88,7 @@ func _wait_for_minigame_result() -> void:
 ## TODO: Replace this stub with a real lookup once your Board node exposes a
 ##       get_tile_type(tile_index: int) -> Enums.TileType method.
 func _get_tile_type(tile_index: int) -> Enums.TileType:
-	# Placeholder rule: every 5th tile (except 0) is a mini-game trigger.
-	if tile_index > 0 and tile_index % 5 == 0:
-		return Enums.TileType.GAME_TRIGGER
-	return Enums.TileType.BLANK
+	if GameManager.board_ref == null:
+		push_warning("[TileEvent] board_ref not set — defaulting to BLANK.")
+		return Enums.TileType.BLANK
+	return GameManager.board_ref.get_tile_type(tile_index)
