@@ -133,7 +133,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		var action: String = PLAYER_JUMP_ACTIONS[player_idx]
 		if event.is_action_pressed(action):
 			_try_jump(player_idx)
-		_try_jump(0)  # TODO: map to correct player_index per local/network input scheme
 
 func _try_jump(player_idx: int) -> void:
 	if not alive_players.has(player_idx) or jumped_this_round.has(player_idx):

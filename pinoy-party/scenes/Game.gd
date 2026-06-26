@@ -24,6 +24,7 @@ const CHARACTER_SHEETS: Array[String] = [
 ]
 
 func _ready() -> void:
+	GameManager.board_ref = board
 	_spawn_tokens()
 	roll_button.pressed.connect(_on_roll_pressed)
 	EventBus.turn_started.connect(_on_turn_started)

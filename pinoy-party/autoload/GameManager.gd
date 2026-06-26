@@ -32,7 +32,7 @@ var players: Array[Dictionary] = []
 ## The result of the most recent dice roll.
 ## Written by State_WaitingForDice, read by State_Moving.
 var pending_roll: int = 0
-
+var board_ref: Node2D = null
 
 # ---------------------------------------------------------------------------
 # Lifecycle

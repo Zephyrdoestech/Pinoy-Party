@@ -44,5 +44,3 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 	gm.players[player_idx]["tile_index"] = new_tile
 	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
 	request_transition(&"State_TileEvent")
-
-
