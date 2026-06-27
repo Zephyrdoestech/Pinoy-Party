@@ -32,12 +32,41 @@ func start_game(players: Array[int]) -> void:
 	participating_players = players
 
 
+# ---------------------------------------------------------------------------
+# Shared placement scoring for "elimination" minigames (LuksongBaka,
+# SackRace) — anywhere players are progressively knocked out and the result
+# is a 1st/2nd/3rd placement.
+#
+# `groups` must be ordered BEST placement first, where each element is an
+# Array[int] of player indices who tied for that placement block (size 1 =
+# no tie). A tied group is awarded the point value of the WORST individual
+# rank their group would have spanned had they not tied — e.g. two players
+# tied for what would have been 2nd/3rd both get 3rd's value. Any rank
+# beyond 3rd scores 0. See DEVLOG.md for the worked examples this matches.
+# ---------------------------------------------------------------------------
+const PLACEMENT_POINTS := {1: 3, 2: 2, 3: 1}
+
+static func compute_placement_scores(groups: Array) -> Dictionary:
+	var scores: Dictionary = {}
+	var rank_cursor := 1
+	for group in groups:
+		var worst_rank: int = rank_cursor + group.size() - 1
+		var reward := 0
+		if rank_cursor <= 3:
+			reward = PLACEMENT_POINTS.get(min(worst_rank, 3), 0)
+		for idx in group:
+			scores[idx] = reward
+		rank_cursor += group.size()
+	return scores
+
+
 ## Call from a subclass's start_game(), AFTER any setup that determines the
 ## announcement text (e.g. picking who is "IT") or world layout, and BEFORE
 ## any gameplay should be possible. `announcement_text` is optional — pass
 ## "" to skip straight to the countdown.
 func run_intro(announcement_text: String = "") -> void:
 	gameplay_locked = true
+	set_process_unhandled_input(false) # belt-and-suspenders: no inputs reach any minigame during the intro
 	_build_intro_overlay()
 
 	if announcement_text != "":
@@ -54,6 +83,7 @@ func run_intro(announcement_text: String = "") -> void:
 		_intro_layer.queue_free()
 
 	gameplay_locked = false
+	set_process_unhandled_input(true)
 	intro_finished.emit()
 
 

@@ -24,6 +24,9 @@ var jumped_this_round: Dictionary = {}   # player_index -> bool
 var marker_t := 0.0                      # 0.0–1.0 sweep progress
 var sweeping := false
 
+var eliminated_this_round: Array[int] = []
+var elimination_order: Array = []  # Array of Array[int], chronological (earliest round first)
+
 var bars: Dictionary = {}  # player_index -> bar UI nodes
 
 func start_game(players: Array[int]) -> void:
@@ -86,6 +89,7 @@ func _start_countdown() -> void:
 	current_round += 1
 	round_label.text = "Round %d" % current_round
 	jumped_this_round.clear()
+	eliminated_this_round.clear()
 
 	# Randomize zone position each round
 	zone_start = randf_range(0.0, 1.0 - zone_width)
@@ -150,7 +154,6 @@ func _try_jump(player_idx: int) -> void:
 	if in_zone:
 		status.text = "Cleared!"
 		status.modulate = Color(0.3, 0.9, 0.4)
-		GameManager.add_score(player_idx, 1)
 	else:
 		status.text = "Caught!"
 		status.modulate = Color(0.9, 0.3, 0.3)
@@ -166,10 +169,14 @@ func _end_round_sweep() -> void:
 			status.modulate = Color(0.9, 0.3, 0.3)
 			_eliminate(player_idx)
 
+	if eliminated_this_round.size() > 0:
+		elimination_order.append(eliminated_this_round.duplicate())
+
 	_check_game_over()
 
 func _eliminate(player_idx: int) -> void:
 	alive_players.erase(player_idx)
+	eliminated_this_round.append(player_idx)
 
 func _check_game_over() -> void:
 	if alive_players.size() <= 1:
@@ -184,11 +191,15 @@ func _check_game_over() -> void:
 	_start_countdown()
 
 func _end_game() -> void:
-	var scores: Dictionary = {}
-	for player_idx in participating_players:
-		# Bonus: last one standing gets +3
-		scores[player_idx] = 0
+	# Build placement groups, BEST placement first: a lone survivor (if any)
+	# is 1st on their own, then each elimination round's group in reverse
+	# chronological order (most recently eliminated = better placement).
+	var groups: Array = []
 	if alive_players.size() == 1:
-		scores[alive_players[0]] = 3
+		groups.append(alive_players.duplicate())
+	var reversed_eliminations: Array = elimination_order.duplicate()
+	reversed_eliminations.reverse()
+	groups += reversed_eliminations
 
+	var scores: Dictionary = compute_placement_scores(groups)
 	_finish(scores)

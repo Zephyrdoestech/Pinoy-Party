@@ -279,14 +279,20 @@ func _check_tagging() -> void:
 
 func _end_game() -> void:
 	round_active = false
+
+	# Per design: IT scores 1 point per tagged player. Each surviving
+	# non-IT player scores 1 point per surviving non-IT player (including
+	# themselves). Tagged players score 0 — they simply get no entry below.
+	var total_others: int = alive_players.size() - 1  # everyone except IT
+	var tagged_count: int = tagged_players.size()
+	var survivor_count: int = total_others - tagged_count
+
 	var scores: Dictionary = {}
-	for idx in participating_players:
-		if idx == it_player:
-			if tagged_players.size() > 0:
-				scores[idx] = tagged_players.size() * 2
-				GameManager.add_score(idx, scores[idx])
-		elif idx not in tagged_players:
-			scores[idx] = 2
-			GameManager.add_score(idx, 2)
+	scores[it_player] = tagged_count
+	for idx in alive_players:
+		if idx == it_player or idx in tagged_players:
+			continue
+		scores[idx] = survivor_count
+
 	print("[LangitLupa] Round over. Tagged: %s" % [tagged_players])
 	_finish(scores)
