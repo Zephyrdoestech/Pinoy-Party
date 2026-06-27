@@ -1,7 +1,5 @@
 extends Node2D
 
-const Utils = preload("res://scripts/utils.gd")
-
 @export var tile_scene: PackedScene = preload("res://scenes/board/Tile.tscn")
 
 var tiles: Array[Node2D] = []

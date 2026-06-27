@@ -8,7 +8,6 @@ const AREA_RADIUS := AREA_SIZE * 0.5 # detection radius derived from size, not s
 const AREA_SAFE_DURATION := 4.0
 const NUM_AREAS := 6
 const ROUND_DURATION := 60.0
-const COUNTDOWN_DURATION := 3.0
 
 # TODO: once LAN play is in, this should come from the network session
 # (i.e. "which player am I controlling on this device"). Hardcoded for now.
@@ -20,27 +19,60 @@ var alive_players: Array[int] = []
 var tagged_players: Array[int] = []
 var round_time := 0.0
 var round_active := false
-var countdown_time := 0.0
-var countdown_active := false
 
 var ai_directions: Dictionary = {}   # idx -> Vector2
 var ai_change_timer: Dictionary = {} # idx -> float
 const AI_DIRECTION_CHANGE_INTERVAL := 1.5
 
+# --- Dash mechanic ---
+const DASH_SPEED_MULTIPLIER := 3.0
+const DASH_DURATION := 0.15   # seconds the speed boost lasts
+const DASH_COOLDOWN := 5.0    # seconds before that player can dash again
+const AI_DASH_CHANCE := 0.3   # chance an AI dashes whenever it picks a new direction
+
+var dash_cooldown_remaining: Dictionary = {} # idx -> float
+var dash_time_remaining: Dictionary = {}     # idx -> float, >0 while a dash burst is active
+var dash_rings: Dictionary = {}              # idx -> Node2D (radial cooldown indicator)
+
+# A tiny custom-drawn Node2D for the radial dash-cooldown indicator, built at
+# runtime so no new scene/script file is needed. Draws a shrinking wedge —
+# full circle = just dashed, nothing drawn = ready to dash again.
+const _DASH_RING_SOURCE := """
+extends Node2D
+
+var progress := 0.0
+var ring_radius := 22.0
+var ring_color := Color(1, 1, 1, 0.9)
+
+func _draw() -> void:
+	if progress <= 0.0:
+		return
+	var start_angle := -PI / 2.0
+	var end_angle := start_angle + TAU * progress
+	draw_arc(Vector2.ZERO, ring_radius, start_angle, end_angle, 32, ring_color, 3.0, true)
+
+func set_progress(p: float) -> void:
+	progress = clamp(p, 0.0, 1.0)
+	queue_redraw()
+"""
+
 func start_game(players: Array[int]) -> void:
-	participating_players = players
+	super.start_game(players)
 	alive_players = players.duplicate()
 	tagged_players.clear()
 	round_time = 0.0
 	round_active = false
-	countdown_time = 0.0
-	countdown_active = true
 	it_player = players[randi() % players.size()]
 	$UI/ItLabel.text = "Player %d is IT!" % (it_player + 1)
 	print("[LangitLupa] Player %d is IT." % it_player)
 	_spawn_areas()
 	_position_players()
 	_init_ai(players)
+	for idx in players:
+		dash_cooldown_remaining[idx] = 0.0
+		dash_time_remaining[idx] = 0.0
+		_create_dash_ring(idx)
+	run_intro("Player %d is IT!" % (it_player + 1))
 
 func _spawn_areas() -> void:
 	areas.clear()
@@ -55,30 +87,42 @@ func _spawn_areas() -> void:
 
 func _position_players() -> void:
 	for idx in participating_players:
-		_get_player_node(idx).position = Vector2(randf_range(100, 700), randf_range(100, 400))
-		_get_player_node(idx).color = Color.RED if idx == it_player else Color.BLUE
+		var node := _get_player_node(idx)
+		node.position = _find_clear_spawn()
+		node.color = Color.RED if idx == it_player else Color.BLUE
+
+## Picks a random spawn point that isn't already standing inside an
+## elevated area — fixes players starting the round already "safe".
+func _find_clear_spawn() -> Vector2:
+	var pos := Vector2.ZERO
+	for attempt in 30:
+		pos = Vector2(randf_range(100, 700), randf_range(100, 400))
+		var clear := true
+		for area in areas:
+			if pos.distance_to(area.pos) < AREA_RADIUS + 20.0:
+				clear = false
+				break
+		if clear:
+			return pos
+	return pos # fallback after 30 attempts — better than an infinite loop
 
 func _get_player_node(idx: int) -> ColorRect:
 	return get_node("Players/Player %d" % (idx + 1))
 
 func _process(delta: float) -> void:
-	if countdown_active:
-		countdown_time += delta
-		var remaining := COUNTDOWN_DURATION - countdown_time
-		$UI/TimerLabel.text = "Get ready: %.1f" % max(remaining, 0.0)
-		if countdown_time >= COUNTDOWN_DURATION:
-			countdown_active = false
-			round_active = true
-			print("[LangitLupa] Round started.")
+	if gameplay_locked:
 		return
 
 	if not round_active:
-		return
+		round_active = true
+		print("[LangitLupa] Round started.")
+
 	round_time += delta
 	$UI/TimerLabel.text = "Time: %.1f" % max(ROUND_DURATION - round_time, 0.0)
 	if round_time >= ROUND_DURATION:
 		_end_game()
 		return
+	_update_dash_timers(delta)
 	_handle_movement(delta)
 	_update_areas(delta)
 	_check_tagging()
@@ -90,6 +134,44 @@ func _get_local_input_dir() -> Vector2:
 	if Input.is_action_pressed("move_left"): dir.x -= 1
 	if Input.is_action_pressed("move_right"): dir.x += 1
 	return dir
+
+func _unhandled_input(event: InputEvent) -> void:
+	if gameplay_locked:
+		return
+	if local_player_index in participating_players and event.is_action_pressed("dash"):
+		_try_dash(local_player_index)
+
+## Starts a dash burst for `idx` if they're not tagged out and their
+## cooldown has fully elapsed. Direction comes from whatever they're
+## currently moving in — applied inside _apply_move via the speed multiplier.
+func _try_dash(idx: int) -> void:
+	if idx in tagged_players:
+		return
+	if dash_cooldown_remaining.get(idx, 0.0) > 0.0:
+		return
+	dash_time_remaining[idx] = DASH_DURATION
+	dash_cooldown_remaining[idx] = DASH_COOLDOWN
+
+## Builds and attaches a radial cooldown indicator as a child of the given
+## player's node — follows them automatically since it's a local-space child.
+func _create_dash_ring(idx: int) -> void:
+	var ring := Node2D.new()
+	var script := GDScript.new()
+	script.source_code = _DASH_RING_SOURCE
+	script.reload()
+	ring.set_script(script)
+	_get_player_node(idx).add_child(ring)
+	dash_rings[idx] = ring
+
+func _update_dash_timers(delta: float) -> void:
+	for idx in participating_players:
+		if dash_cooldown_remaining.get(idx, 0.0) > 0.0:
+			dash_cooldown_remaining[idx] = max(0.0, dash_cooldown_remaining[idx] - delta)
+		if dash_time_remaining.get(idx, 0.0) > 0.0:
+			dash_time_remaining[idx] = max(0.0, dash_time_remaining[idx] - delta)
+		if dash_rings.has(idx):
+			var ratio: float = dash_cooldown_remaining.get(idx, 0.0) / DASH_COOLDOWN
+			dash_rings[idx].set_progress(ratio)
 
 func _init_ai(players: Array[int]) -> void:
 	ai_directions.clear()
@@ -120,6 +202,8 @@ func _handle_movement(delta: float) -> void:
 		if ai_change_timer[idx] >= AI_DIRECTION_CHANGE_INTERVAL:
 			ai_directions[idx] = _random_direction()
 			ai_change_timer[idx] = 0.0
+			if dash_cooldown_remaining.get(idx, 0.0) <= 0.0 and randf() < AI_DASH_CHANCE:
+				_try_dash(idx)
 		var node := _get_player_node(idx)
 		node.position = _apply_move(idx, node.position, ai_directions[idx], delta)
 		# bounce off walls so they don't wander off-screen forever
@@ -129,7 +213,10 @@ func _handle_movement(delta: float) -> void:
 			ai_directions[idx].y *= -1
 
 func _apply_move(idx: int, pos: Vector2, dir: Vector2, delta: float) -> Vector2:
-	var new_pos: Vector2 = pos + dir.normalized() * PLAYER_SPEED * delta
+	var speed := PLAYER_SPEED
+	if dash_time_remaining.get(idx, 0.0) > 0.0:
+		speed *= DASH_SPEED_MULTIPLIER
+	var new_pos: Vector2 = pos + dir.normalized() * speed * delta
 	if idx == it_player:
 		for area in areas:
 			if new_pos.distance_to(area.pos) < AREA_RADIUS:
@@ -184,16 +271,28 @@ func _check_tagging() -> void:
 			node.modulate.a = 0.3
 			print("[LangitLupa] Player %d tagged!" % idx)
 
+	# IT wins outright once every other player has been tagged — no need
+	# to wait out the rest of the round timer.
+	if tagged_players.size() >= alive_players.size() - 1:
+		print("[LangitLupa] All players tagged — ending round early.")
+		_end_game()
+
 func _end_game() -> void:
 	round_active = false
+
+	# Per design: IT scores 1 point per tagged player. Each surviving
+	# non-IT player scores 1 point per surviving non-IT player (including
+	# themselves). Tagged players score 0 — they simply get no entry below.
+	var total_others: int = alive_players.size() - 1  # everyone except IT
+	var tagged_count: int = tagged_players.size()
+	var survivor_count: int = total_others - tagged_count
+
 	var scores: Dictionary = {}
-	for idx in participating_players:
-		if idx == it_player:
-			if tagged_players.size() > 0:
-				scores[idx] = tagged_players.size() * 2
-				GameManager.add_score(idx, scores[idx])
-		elif idx not in tagged_players:
-			scores[idx] = 2
-			GameManager.add_score(idx, 2)
+	scores[it_player] = tagged_count
+	for idx in alive_players:
+		if idx == it_player or idx in tagged_players:
+			continue
+		scores[idx] = survivor_count
+
 	print("[LangitLupa] Round over. Tagged: %s" % [tagged_players])
 	_finish(scores)

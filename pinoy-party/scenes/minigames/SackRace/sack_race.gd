@@ -25,8 +25,12 @@ func start_game(players: Array[int]) -> void:
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
 	print("[SackRace] Race started for players: %s" % [players])
+	run_intro()
 
 func _process(delta: float) -> void:
+	if gameplay_locked:
+		return
+	
 	if not race_active:
 		return
 	timeout_timer += delta
@@ -58,15 +62,30 @@ func _advance(player_idx: int) -> void:
 
 func _end_race() -> void:
 	race_active = false
-	var scores: Dictionary = {}
-	# Award points by finish order; anyone who didn't finish goes last, ranked by progress.
+
+	# Players who actually crossed the finish line have a strict, tie-free
+	# order (only one player advances per key-press event, so two players
+	# can't finish on the exact same input) — each is their own group.
+	var groups: Array = []
+	for idx in finished_order:
+		groups.append([idx])
+
+	# Anyone who didn't finish is ranked by remaining progress, with equal
+	# progress at the timeout treated as a genuine tie (grouped together)
+	# instead of being arbitrarily ordered by sort_custom.
 	var unfinished: Array[int] = participating_players.filter(func(p): return p not in finished_order)
 	unfinished.sort_custom(func(a, b): return progress[a] > progress[b])
-	var final_order: Array[int] = finished_order + unfinished
-	for rank in final_order.size():
-		var player_idx: int = final_order[rank]
-		var points: int = max(3 - rank, 0)  # 1st=3, 2nd=2, 3rd=1, 4th=0
-		scores[player_idx] = points
-		GameManager.add_score(player_idx, points)
-	print("[SackRace] Final order: %s" % [final_order])
+
+	var i := 0
+	while i < unfinished.size():
+		var tie_group: Array = [unfinished[i]]
+		var j := i + 1
+		while j < unfinished.size() and is_equal_approx(progress[unfinished[j]], progress[unfinished[i]]):
+			tie_group.append(unfinished[j])
+			j += 1
+		groups.append(tie_group)
+		i = j
+
+	var scores: Dictionary = compute_placement_scores(groups)
+	print("[SackRace] Final placement groups (best to worst): %s" % [groups])
 	_finish(scores)

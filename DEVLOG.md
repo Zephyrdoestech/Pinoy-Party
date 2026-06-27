@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-06-26 (merged from two parallel branch logs — game-logic track + sprite/art track; post-merge regression found and fixed same day)
+**Last Updated:** 2026-06-27 (post-merge regression fixes, GameManager-driven turn advancement, BaseMinigame intro/countdown system, HUD + ScoreBoard implementation, LangitLupa dash mechanic, full scoring-system rework across all 3 minigames)
 
 ---
 
@@ -140,6 +140,15 @@ var pending_roll: int               # Written by State_WaitingForDice, read by S
 - `on_move_complete()` → emits `EventBus.player_moved` (may be unused)
 - `add_score(player_index, points)` → mutates score, checks game over
 
+> **✅ `_on_minigame_finished()` added (2026-06-27) — this is what actually fixes the "still the same player's turn after a minigame" bug.** `GameManager._ready()` connects to `EventBus.minigame_finished` and, on receipt:
+> ```gdscript
+> func _on_minigame_finished(scores: Dictionary) -> void:
+> 	for idx in scores:
+> 		players[idx]["score"] += scores[idx]
+> 	current_player_index = (current_player_index + 1) % Constants.MAX_PLAYERS
+> ```
+> See "Minigame Result Handling Moved to GameManager" under Design Decisions & Gotchas for why this couldn't live in `State_TileEvent` at all — short version: that node is destroyed by the scene change before the signal can ever reach it, so only an autoload can safely react to `minigame_finished`.
+
 ### `SceneLoader` (`autoload/SceneLoader.gd`)
 Handles scene transitions for minigames.
 
@@ -171,11 +180,15 @@ enum PlayerState { IDLE, MOVING, IN_MINIGAME }
 ```
 
 ### `Utils` (`scripts/utils.gd`)
-Static utility functions. Accessed as `Utils.function_name()` (static call, not instance).
+Utility functions, accessed as `Utils.function_name()` via the autoload.
+
+> **⚠️ Not actually static (2026-06-27).** `tile_position()` and `token_offset()` were originally written as `static func`s, which is fine on its own — but Godot 4.6 refuses to let a script be *both* an autoload singleton **and** declare a matching `class_name` (`Error: Class "Utils" hides an autoload singleton`), and without a `class_name`, calling a `static func` through the autoload's instance name throws `"is a static function but was called from an instance"`. Since the project wants to keep `Utils` registered as an autoload (rather than removing the autoload and relying purely on `class_name`), the fix was the opposite of what it looks like it should be: **`static` was removed** from every function in this file, and there is **no `class_name` declaration**. `Utils.foo()` now works because it's an ordinary instance-method call on the autoload, not because anything is static. Don't re-add `static` here, and don't re-add `class_name Utils` — either one reopens this exact error.
 
 - `random_minigame() -> String` — picks a random ID from `Constants.MINIGAMES`
 - `tile_position(index) -> Vector2` — converts a tile index to a world position on the board perimeter loop (clockwise: top → right → bottom → left)
 - `token_offset(player_index) -> Vector2` — offsets tokens so multiple players on the same tile don't overlap
+
+> **Gotcha — local `preload` shadowing the autoload:** `player_token.gd` once had `const Utils = preload("res://scripts/utils.gd")` at the top of the file. This shadows the global `Utils` autoload identifier *within that script only*, so every `Utils.token_offset()` call in that file resolved to the raw script resource instead of the autoload instance — producing the exact same "cannot call non-static function ... directly, make an instance" error, just from a different cause than the one above. Fixed by deleting the local `preload` line; the autoload is already globally accessible without it. **If this error reappears anywhere else, grep the whole project for `preload("res://scripts/utils.gd")` before assuming it's the static/autoload conflict again** — it can be either cause, and they look identical from the error message alone.
 
 ---
 
@@ -197,7 +210,7 @@ Game (Node2D)                         ← Game.gd
     └── TurnLabel (Label)             ← at (666, 362)–(916, 392)
 ```
 
-> **Note:** `HUD.tscn` and `ScoreBoard.tscn` exist but are **not yet added to Game.tscn**. `HUD.gd` connects to `EventBus.turn_started` and would update its own turn label — there is a **duplicate** turn label responsibility between `Game.gd` and `HUD.gd`.
+> **✅ Resolved 2026-06-27:** `HUD.tscn` and `ScoreBoard.tscn` are now both implemented and added to `Game.tscn`. The duplicate turn-label situation is gone — see "UI System" below for current detail.
 
 PlayerToken nodes are **spawned at runtime** by `Game.gd._spawn_tokens()` and added as children of the Game node. They are not in the `.tscn` file.
 
@@ -238,11 +251,10 @@ The FSM lives in `scripts/state_machine/`. `StateMachine.gd` discovers child Sta
 > **Critical design note:** `_animate_and_advance` is a deferred coroutine. It outlives the state if a forced transition happens. The one-shot + done-array pattern prevents stale coroutines from stealing signals for future players' movements.
 
 ### State: `State_TileEvent`
-- Reads the tile type from `_get_tile_type(tile_idx)` (placeholder stub — every 5th tile triggers a minigame)
-- **TODO:** Replace `_get_tile_type()` with `Board.get_tile_type(tile_idx)` for accuracy
+- Reads the tile type via `GameManager.board_ref.get_tile_type(tile_idx)` (delegates to the real board lookup — see "Dual tile-type resolver" fix below)
 - Emits `EventBus.tile_landed`
 - `BLANK` → immediately transitions to `State_EndTurn`
-- `GAME_TRIGGER` → picks a random minigame, emits `minigame_started`, calls `SceneLoader.go_to_minigame()`, awaits `EventBus.minigame_finished`
+- `GAME_TRIGGER` → picks a random minigame, emits `minigame_started`, calls `SceneLoader.go_to_minigame()`, and **returns — it does NOT await `EventBus.minigame_finished` anymore.** See "Minigame Result Handling Moved to GameManager" below for why; the short version is that this node is destroyed by the scene change before the signal could ever reach it, so `GameManager` (an autoload) handles the result instead.
 
 > **Note:** There are currently TWO tile type resolution systems — `State_TileEvent._get_tile_type()` (every 5th tile) and `Board._determine_tile_type()` (every 4th tile). They disagree. The board's visual color (red = GAME_TRIGGER) reflects `Board._determine_tile_type()`, but the state machine uses its own `_get_tile_type()`. These need to be unified.
 
@@ -332,14 +344,34 @@ Abstract base class for all minigames.
 
 ```gdscript
 var participating_players: Array[int]  # set by SceneLoader before start_game()
+var gameplay_locked: bool              # true until run_intro() finishes — see below
 func start_game(players: Array[int])   # override in subclasses
+func run_intro(announcement_text: String = "")  # see "Pre-round intro" below
 func _finish(scores: Dictionary)       # call at end; emits minigame_finished, then returns to board
+static func compute_placement_scores(groups: Array) -> Dictionary  # see "Shared placement scoring" below
 ```
 
 `_finish(scores)` flow:
-1. Emits `EventBus.minigame_finished(scores)` — caught by `State_TileEvent`'s await
+1. Emits `EventBus.minigame_finished(scores)` — caught by `GameManager._on_minigame_finished()` (an autoload, not `State_TileEvent` — see Design Decisions & Gotchas for why)
 2. Waits 2 seconds (to show results)
 3. Calls `SceneLoader.return_to_board()`
+
+#### Pre-round intro (added 2026-06-27)
+Every minigame gets a shared pre-round sequence for free, applying uniformly without touching each minigame's `.tscn`:
+- `run_intro(announcement_text: String = "")` — call from a subclass's `start_game()`, *after* any setup that determines the announcement text or world layout (e.g. picking who is "IT"), and *before* gameplay should be possible.
+- Builds a `CanvasLayer` + dimmed `ColorRect` (alpha `0.85` — background is barely visible) + centered `Label`, all created at runtime (no scene edits needed).
+- Flow: show `announcement_text` for 2s (skipped entirely if `""`) → 3-2-1 countdown (1s each) → overlay frees itself → `gameplay_locked = false` → emits `intro_finished`.
+- **Subclasses MUST check `if gameplay_locked: return` at the top of their own `_process()`** — that's what actually blocks movement/timers/tagging during the intro. `BaseMinigame` also calls `set_process_unhandled_input(false)` for the duration as a belt-and-suspenders measure against stray button presses.
+- Currently wired into `LangitLupa` (announces who is IT) and `SackRace` (no announcement, just the countdown). **`LuksongBaka` calls `run_intro()` too** but still runs its own separate `_start_countdown()` 3-2-1 sequence on the bars — these two countdowns are currently redundant/stacked rather than unified; worth deduping later (TODO below).
+
+#### Shared placement scoring (added 2026-06-27)
+`compute_placement_scores(groups: Array) -> Dictionary` — used by `LuksongBaka` and `SackRace` (both "elimination" minigames where the result is a 1st/2nd/3rd placement). `groups` must be ordered best-to-worst placement, where each element is an `Array[int]` of player indices tied for that placement block (size 1 = no tie).
+
+**Tie rule:** a tied group is awarded the point value of the **worst** individual rank their group would have spanned had they not tied. Any rank beyond 3rd scores 0. Worked examples (from the original scoring spec):
+- 4 players: P1 eliminated alone first, then P2+P3 eliminated together, leaving P4 as sole survivor. Groups (best→worst): `[[P4], [P2, P3], [P1]]`. P4 (rank 1) → 3pts. P2/P3 would span ranks 2–3 → worst-in-span = rank 3 → both get 1pt. P1 would be rank 4 → beyond 3rd → 0pts.
+- 4 players: 3 players eliminated simultaneously, 1 survivor. Groups: `[[winner], [the 3 losers]]`. Winner → 3pts. The 3-loser group would span ranks 2–4; clipped to the defined 1st/2nd/3rd tiers, the worst rank *within that overlap* is 3 → all three get 1pt (not 0 — the clip to "ranks that actually have a reward" is what makes this differ from naively reading the bottom of the full span).
+
+Algorithm: walk `groups` in order, tracking a `rank_cursor` starting at 1. For each group, `worst_rank = rank_cursor + group.size() - 1`; if `rank_cursor <= 3`, the reward is `PLACEMENT_POINTS[min(worst_rank, 3)]` (`{1:3, 2:2, 3:1}`) for every member; otherwise the whole group scores 0. Advance `rank_cursor` by the group's size and continue.
 
 > **Important:** `minigame_finished` must be emitted BEFORE `return_to_board()` is called, because `change_scene_to_file()` destroys the FSM and all awaiting coroutines.
 
@@ -373,7 +405,9 @@ A rhythm-based timing minigame (jump-the-rope).
 
 ~~**Known bug in `_unhandled_input`:** always called `_try_jump(0)` regardless of which player pressed.~~ **FIXED (2026-06-24):** The stray unconditional `_try_jump(0)` line (a leftover from a partial merge — see `Recent Bug Fixes`) has been deleted. The per-player loop (`for player_idx in alive_players: ... if event.is_action_pressed(action): _try_jump(player_idx)`) is now the only call path and has been verified correct via live testing.
 
-**Score integration:** Uses `GameManager.add_score()` during gameplay for "Cleared!" jumps. The `_end_game()` `scores` dictionary only tracks the +3 survivor bonus; the per-round `+1` points are already applied live.
+> **✅ Marker visual reset bug — FIXED (2026-06-27).** Surviving players' markers visually stayed at their previous round's end position throughout the next round's 3-2-1 countdown, then snapped to the start the instant the sweep began. Cause: `_start_countdown()` reset the zone and status label each round but never reset `marker_rect.position.x` — the marker is only ever moved inside `_process()`, which returns immediately while `sweeping` is false (i.e. for the entire countdown). Fixed by adding `marker_rect.position.x = 0.0` to the same per-player reset loop that already resets the zone/status.
+
+**Scoring (reworked 2026-06-27):** No more live per-jump points. Score is now placement-only, computed once at `_end_game()` via `BaseMinigame.compute_placement_scores()`. Each round's simultaneous eliminations (both immediate "Caught!" misses via `_try_jump` and end-of-round auto-eliminations for anyone who never jumped) are collected into `eliminated_this_round` and pushed onto `elimination_order` as one tie-group. At game end, the placement groups are built as: the lone survivor (if `alive_players.size() == 1`) first, then `elimination_order` reversed (most recently eliminated = better placement) — fed straight into `compute_placement_scores()`. See that function's doc above for the exact tie-breaking rule and worked examples.
 
 ### Implemented Minigame: `SackRace`
 
@@ -381,11 +415,12 @@ A timed mash-race minigame. All 4 players race simultaneously on parallel tracks
 
 **Mechanics:**
 - Each press of a player's jump button (`p1_jump`–`p4_jump`) advances their sack a fixed distance (`HOP_DISTANCE`)
-- First to reach `FINISH_DISTANCE` (20 hops) wins; race also ends via `RACE_TIMEOUT` (15s) if nobody finishes, ranking remaining players by progress
-- Scoring: finish order awards `3, 2, 1, 0` points (1st through 4th) via `GameManager.add_score()`
+- First to reach `FINISH_DISTANCE` (30 hops) wins; race also ends via `RACE_TIMEOUT` (15s) if nobody finishes, ranking remaining players by progress
 - Visual: 4 `ColorRect` nodes under `Tracks/Player 1`–`Player 4` move along the X axis (`HOP_PIXELS` per hop); a `TimerLabel` shows live countdown
 
 **Folder/naming:** `res://scenes/minigames/SackRace/sack_race.gd` + `SackRace.tscn` (root node named `SackRace`). Filenames manually verified against `to_snake_case()` output before being added to `Constants.MINIGAMES`, per the lesson learned from the LuksongBaka scene-path bug above.
+
+> **✅ Double-scoring + missing tie-handling — FIXED (2026-06-27).** `_end_race()` previously called `GameManager.add_score()` directly *and* passed the same scores through `_finish()` — which (via `GameManager._on_minigame_finished()`) applies them a second time, silently doubling every player's points from this minigame. It also had zero tie handling: two players with identical progress at the 15s timeout were given an arbitrary order by `sort_custom` instead of being treated as tied. **Fix:** finishers (who crossed the line) keep their strict order — simultaneous finishes aren't physically possible since only one key-press event ever fires per advance. Anyone who didn't finish is now grouped by `is_equal_approx(progress[a], progress[b])` into real tie-groups, then the whole placement list is fed through `BaseMinigame.compute_placement_scores()` exactly once.
 
 ### Implemented Minigame: `LangitLupa`
 
@@ -397,26 +432,39 @@ A real-time tag minigame — meaningfully different from the other two since it 
 - An area becomes permanently `unsafe` (flagged, flashes red, does not refresh) once any non-IT player has continuously occupied it for `AREA_SAFE_DURATION` (4s)
 - IT is blocked from ever stepping inside an area (checked in movement resolution)
 - IT tags any non-elevated, non-safe player within `TAG_RADIUS` via proximity check each frame
-- Round ends after `ROUND_DURATION` (60s); survivors (non-IT, untagged) each score 2 points; IT scores `2 × number tagged` if anyone was caught
-- A 3-second "Get ready" countdown (`COUNTDOWN_DURATION`) blocks movement/tagging at round start
+- Round ends after `ROUND_DURATION` (60s), **or immediately once IT has tagged every other player** (added 2026-06-27 — see `_check_tagging()`, no need to wait out the rest of the timer)
+- Pre-round sequence now goes through the shared `BaseMinigame.run_intro()` (announces "Player X is IT!" for 2s, then a dimmed 3-2-1) instead of its own local countdown — see `BaseMinigame.gd` above
+
+**Dash mechanic (added 2026-06-27):** every player — human and AI — can dash for a 3× speed burst (`DASH_SPEED_MULTIPLIER`) lasting `DASH_DURATION` (0.15s), on a per-player `DASH_COOLDOWN` (5s). Human triggers it via the `dash` input action (bound to Shift); AI rolls a 30% chance (`AI_DASH_CHANCE`) to dash whenever it picks a new wander direction, only if off cooldown. Dash still respects the "IT can't enter elevated areas" rule since both normal movement and dash bursts flow through the same `_apply_move()`. Each player has a small radial cooldown ring — a `Node2D` with a script built **at runtime** via `GDScript.new()`/`set_source_code()` (no new scene file needed) drawing a shrinking wedge with `draw_arc()`; full circle = just dashed, shrinks to nothing as the cooldown clears.
+
+> **✅ Players spawning inside safe zones — FIXED (2026-06-27).** Player spawn positions were fully random within the arena bounds, with no check against the elevated areas — so a player could (and often would) start the round already standing safely inside one. Fixed via `_find_clear_spawn()`: rerolls the candidate spawn point (up to 30 attempts) if it lands within `AREA_RADIUS + 20px` of any area, falling back to the last attempt if it somehow never finds a clear spot (better than an infinite loop).
+
+> **✅ Scoring formula was wrong AND double-counted — FIXED (2026-06-27).** Old `_end_game()` gave IT `tagged_count * 2` and every survivor a flat `2` regardless of how many survived, **and** called `GameManager.add_score()` directly while also passing the same dict through `_finish()` — doubling every point awarded. Correct formula per design: IT scores 1 point per tagged player; each surviving non-IT player scores 1 point per surviving non-IT player (so with 4 total players and exactly 1 tagged, IT gets 1 and each of the 2 survivors gets 2). Tagged players get no entry in the scores dict at all (defaults to 0). Scoring now flows through `_finish()` exactly once.
 
 **Folder/naming:** `res://scenes/minigames/LangitLupa/langit_lupa.gd` + `LangitLupa.tscn` (root node named `LangitLupa`).
 
 pending full live playtest of the area/tag logic via the AI stub, and pending real LAN player movement to replace `local_player_index`'s current hardcoded value of `0`.
+
+> **⚠️ Resolved file-mixup scare (2026-06-26):** at one point `langit_lupa.gd` was found to actually contain `bato_lata.gd`'s content (node lookups for `$Player1`, `$ResultLabel`, slipper-throwing logic — none of which exist in `LangitLupa.tscn`), causing a wall of "Node not found" errors. Root cause not fully confirmed, but most likely an accidental copy-paste mixup or a stray file grab during the branch merge. Restored from the correct source; flagging here in case the same mixup recurs with any other minigame file pair.
 
 ---
 
 ## UI System
 
 ### `hud.gd` (`scenes/ui/HUD.tscn`)
-Connects to `EventBus.turn_started`. Updates a `TurnLabel` with the player's name and color.
+Connects to `EventBus.turn_started`. Builds its own `Label` at runtime in `_ready()` (the scene itself has no child nodes — root `Control` + script only) and updates it with the current player's name and color.
 
-> **Not yet added to `Game.tscn`**. There is a duplicate `TurnLabel` inside the `UI/CanvasLayer` in `Game.tscn` that `Game.gd` updates directly via `_on_turn_started()`. Once `HUD.tscn` is added to the scene, the Game.gd label should be removed.
+> **✅ Added to `Game.tscn` (2026-06-27).** The old duplicate `TurnLabel` that lived directly in `Game.tscn`'s `UI/CanvasLayer` (updated by `Game.gd._on_turn_started()`) has been removed; `Game.gd` no longer connects to `EventBus.turn_started` at all. `HUD.tscn` is now instanced as a child of `UI` and is the single source of truth for the turn display.
+
+> **Gotcha hit during setup:** `hud.gd extends Control`, but the root node of `HUD.tscn` was left as a `Node2D` (its default when first created) — Godot refuses to attach a `Control`-typed script to a `Node2D` ("Script inherits from native type 'Control', so it can't be assigned to an object of type 'Node2D'"). Fixed by changing the scene's root node type to `Control` via right-click → Change Type in the editor. Worth remembering for `ScoreBoard.tscn` too, or any future runtime-built UI scene — the root node's actual type must match whatever the script `extends`.
 
 ### `score_board.gd` (`scenes/ui/ScoreBoard.tscn`)
-**Empty stub** — `_ready()` and `_process()` both just `pass`. Not connected to anything.
+**Implemented (2026-06-27).** Was a fully empty stub (`_ready()`/`_process()` both just `pass`); now builds one row per player at runtime in `_ready()` — an `HBoxContainer` with a `▶` marker `Label` and a `"Name: score"` `Label` tinted to that player's color. Same "build everything in code, scene has only root + script" approach as `hud.gd`.
 
----
+- Listens to `EventBus.score_changed(player_index, new_score)` — **new signal, added to `EventBus.gd`** — to update a single row reactively.
+- Listens to `EventBus.turn_started` to move the `▶` marker to whoever's currently up.
+- Requires `GameManager.add_score()` to emit `EventBus.score_changed(player_index, players[player_index]["score"])` after mutating the score — this had to be added alongside the signal itself, since `add_score()` previously only mutated state silently.
+- Instanced as a child of `Game.tscn`'s `UI` layer alongside `HUD`, positioned to avoid overlapping it.
 
 ## Input Mappings
 
@@ -514,6 +562,15 @@ global_position = board_ref.get_tile_position(current_tile) + Utils.token_offset
 ### Area Size — Single Source of Truth (LangitLupa)
 Initially, each elevated-area `ColorRect`'s visual size (set by hand in the editor) and its gameplay detection radius (`AREA_RADIUS` constant in script) were two independently-edited values that could silently drift out of sync. Refactored so `AREA_RADIUS` is now derived from a single `AREA_SIZE` constant (`AREA_RADIUS := AREA_SIZE * 0.5`), and `_spawn_areas()` sets each ColorRect's `size` programmatically at spawn time rather than relying on manual editor edits. This also surfaced and fixed a related alignment bug: `ColorRect.position` is the rect's **top-left corner**, but all distance/safety-check math in the script treats `area.pos` as the **center point** — `_spawn_areas()` now offsets `rect.position = pos - rect.size / 2.0` so the visual rect is actually centered on the logical safe-zone point instead of being offset by half its width/height.
 
+### Minigame Result Handling Moved to GameManager (2026-06-27)
+**Symptom:** after any minigame, it was still the same player's turn — `current_player_index` never advanced, even though the minigame itself completed and returned to the board normally.
+
+**Root cause:** `State_TileEvent._handle_minigame()` called `SceneLoader.go_to_minigame()` and then `_wait_for_minigame_result.call_deferred()`, intending to `await EventBus.minigame_finished` and apply scores + transition to `State_EndTurn` once the minigame was done. But `go_to_minigame()` internally calls `change_scene_to_file()`, which destroys the entire `Game.tscn` tree — including the `State_TileEvent` node itself — at the next idle frame. The explicit `call_deferred()` for `_wait_for_minigame_result` gets queued *after* the scene-change's own deferred work, so by the time it would run, the node it's attached to no longer exists. The coroutine never actually starts awaiting anything; nothing ever applies the result.
+
+**Fix:** moved this responsibility to `GameManager`, since autoloads survive scene changes. `GameManager._ready()` connects directly to `EventBus.minigame_finished`; `_on_minigame_finished(scores)` applies the scores and increments `current_player_index`. Because `BaseMinigame._finish()` emits `minigame_finished` *before* calling `SceneLoader.return_to_board()`, `GameManager` is guaranteed to still be "between" the minigame ending and the board scene rebuilding — exactly the window where it needs to act. By the time the fresh `StateMachine` boots up at `State_StartTurn`, `current_player_index` has already moved on.
+
+> **Process takeaway:** any FSM/coroutine logic that needs to survive `change_scene_to_file()` has to live on an autoload, not on a node inside the scene being replaced — no matter how carefully the `await`/`call_deferred` ordering looks on paper. This is the same root category of bug as the LuksongBaka silent scene-load failure and the PlayerToken visual-reset regression: a destructive scene change quietly invalidating in-flight state with no thrown error.
+
 ### Tile Index Persistence
 `GameManager.players[i]["tile_index"]` is **no longer pre-set by `State_Moving` before the animation runs.** Earlier versions set the destination `tile_index` immediately in `State_Moving.enter()`, *before* the token actually animated — this caused `PlayerToken.move_to()` to see `current_idx == target_idx` immediately, emit `movement_finished` synchronously, before `State_Moving`'s `await` was even reached. The signal fired into the void and the FSM hung forever on every move.
 
@@ -565,6 +622,15 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 | 2026-06-24 | *(pending)* | Implemented `LangitLupa` minigame (real-time tag with elevated safe-zones) including movement input, area spawn/unsafe-flagging logic, IT-blocked-from-areas rule, and a temporary wandering-AI stub for non-local players (no LAN networking yet). Not yet added to `Constants.MINIGAMES` pending a full playtest. |
 | 2026-06-25 | *(pending)* | Cut `BatoLata` (Labay Lata) and `AgawBase` from the planned minigame roster. Two design/prototype passes on `BatoLata` (lane-based fixed-position throwing, then a free-movement WASD + AI-opponent rebuild) were completed before the decision to drop it; neither was merged. Project moves forward with the existing 3-minigame set (`LuksongBaka`, `SackRace`, `LangitLupa`). |
 | 2026-06-26 | *(pending)* | Merged the game-logic branch and the sprite/art branch. Confirmed the real asset path is `res://assets/characters/board_characs/` (and `minigame_characs/`) via the FileSystem dock, resolving the naming mismatch flagged after the merge. Also found and re-fixed a regression: the merge silently reintroduced the "PlayerToken visual reset on minigame return" bug (fixed 2026-06-24) because the sprite branch's rewritten `setup()` had forked from before that fix and Git merged the two versions of the function with no conflict. See "PlayerToken Visual Reset on Minigame Return" under Design Decisions & Gotchas. |
+| 2026-06-26 | *(pending)* | Found `langit_lupa.gd` contained `bato_lata.gd`'s content (wrong node lookups, BatoLata-specific logic) despite `LangitLupa.tscn` having the correct real scene tree — restored the correct script. |
+| 2026-06-27 | *(pending)* | Fixed `Utils` autoload/static conflict. Godot 4.6 errors on a script being both an autoload singleton and declaring a matching `class_name`. Removed `static` from all three functions in `utils.gd` instead (keeping the autoload registration as-is, per project preference) — `Utils.foo()` now works as a plain instance call on the autoload. |
+| 2026-06-27 | *(pending)* | Found and fixed a second, unrelated cause of the identical-looking "cannot call non-static function" error: `player_token.gd` had `const Utils = preload("res://scripts/utils.gd")` shadowing the global autoload within that file only. Deleted the local preload. |
+| 2026-06-27 | *(pending)* | Fixed the "still the same player's turn after a minigame" bug by moving score application + `current_player_index` advancement from `State_TileEvent` (destroyed before it can act — see Design Decisions & Gotchas) into a new `GameManager._on_minigame_finished()` handler connected to `EventBus.minigame_finished`. |
+| 2026-06-27 | *(pending)* | Implemented `HUD.tscn`/`hud.gd` and `ScoreBoard.tscn`/`score_board.gd` (previously an empty stub) — both build their UI at runtime in `_ready()`. Removed the duplicate `TurnLabel` from `Game.tscn`/`Game.gd`. Added `EventBus.score_changed` signal, emitted from `GameManager.add_score()`. |
+| 2026-06-27 | *(pending)* | Added a shared pre-round intro to `BaseMinigame.gd` — optional announcement text, then a dimmed-background 3-2-1 countdown, built entirely at runtime (`run_intro()`). Wired into `LangitLupa` (announces who is IT) and `SackRace` (countdown only). `LuksongBaka` calls it too but still has its own separate countdown running alongside it — not yet deduplicated. |
+| 2026-06-27 | *(pending)* | LangitLupa: added a dash mechanic (3× speed for 0.15s, 5s cooldown, both human and AI) with a runtime-built radial cooldown indicator per player. Added a fix so players no longer spawn already standing inside a safe elevated area. Added an early-win condition so the round ends the instant IT has tagged every other player, instead of always running the full 60s. |
+| 2026-06-27 | *(pending)* | Fixed the marker-snap-back visual bug in `LuksongBaka` — survivors' markers stayed at their previous round's end position throughout the countdown, then snapped to start the instant the sweep began, because `_start_countdown()` reset the zone/status but never the marker's position. Added the missing reset to the same loop. |
+| 2026-06-27 | *(pending)* | Reworked scoring across all three minigames to match the finalized design spec, and fixed a double-scoring bug present in **all three** (`GameManager.add_score()` called directly *and* the same scores dict passed through `_finish()`, which already applies it via the new `GameManager._on_minigame_finished()` hook — doubling every point awarded). Added `BaseMinigame.compute_placement_scores()`, a shared tie-aware placement algorithm now used by both `LuksongBaka` and `SackRace`. Rewrote `LangitLupa`'s scoring formula (IT = tagged count, survivors = survivor count each, tagged = 0) to match spec exactly. |
 
 ---
 

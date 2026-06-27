@@ -7,17 +7,10 @@ position = Vector2(1100, 100)
 script = ExtResource("1_qdqvr")
 
 [node name="Label" type="Label" parent="." unique_id=894461542]
-offset_left = -55.0
-offset_top = -26.0
-offset_right = -7.0
-offset_bottom = 22.0
+offset_left = -25.0
+offset_top = -65.0
+offset_right = 23.0
+offset_bottom = -17.0
 text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="ColorRect" type="ColorRect" parent="." unique_id=88435445]
-offset_left = -3.0
-offset_top = -58.0
-offset_right = 45.0
-offset_bottom = -10.0
-color = Color(0.2, 0.2, 0.2, 1)
