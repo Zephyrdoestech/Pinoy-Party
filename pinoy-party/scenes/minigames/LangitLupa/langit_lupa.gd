@@ -279,6 +279,7 @@ func _check_tagging() -> void:
 
 func _end_game() -> void:
 	round_active = false
+	gameplay_locked = true  # stop _process from re-entering and re-triggering this every frame
 
 	# Per design: IT scores 1 point per tagged player. Each surviving
 	# non-IT player scores 1 point per surviving non-IT player (including

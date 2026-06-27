@@ -33,7 +33,6 @@ func start_game(players: Array[int]) -> void:
 	super(players)
 	alive_players = players.duplicate()
 	_spawn_player_bars()
-	_start_countdown()
 	run_intro()
 
 func _spawn_player_bars() -> void:
