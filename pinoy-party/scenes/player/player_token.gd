@@ -1,7 +1,5 @@
 extends Node2D
 
-const Utils = preload("res://scripts/utils.gd")
-
 # Spritesheet constants matching the exported PNG format from Pixsquare.
 const FRAME_WIDTH  := 1024   # each frame is 1024×1024px
 const FRAME_HEIGHT := 1024

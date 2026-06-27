@@ -47,8 +47,13 @@ func _ready() -> void:
 			"color":      [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW][i],
 			"state":      Enums.PlayerState.IDLE,
 		})
+	EventBus.minigame_finished.connect(_on_minigame_finished)
 
-
+func _on_minigame_finished(scores: Dictionary) -> void:
+	for idx in scores:
+		players[idx]["score"] += scores[idx]
+		print("[GameManager] Player %d earned %d point(s) from minigame." % [idx, scores[idx]])
+	current_player_index = (current_player_index + 1) % Constants.MAX_PLAYERS
 # ---------------------------------------------------------------------------
 # Legacy API (kept for backward-compatibility – do not remove until Game.gd
 # no longer calls these directly).
@@ -83,6 +88,7 @@ func _advance_turn() -> void:
 
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points
+	EventBus.score_changed.emit(player_index, players[player_index]["score"])
 	if _is_game_over():
 		EventBus.game_over.emit(_get_winner())
 
