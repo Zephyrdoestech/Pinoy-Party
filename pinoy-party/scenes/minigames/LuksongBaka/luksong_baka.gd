@@ -12,7 +12,6 @@ const PLAYER_JUMP_ACTIONS := ["p1_jump", "p2_jump", "p3_jump", "p4_jump"]
 
 @onready var player_bars: Node2D = $PlayerBars
 @onready var round_label: Label = $UI/RoundLabel
-@onready var countdown_label: Label = $UI/CountdownLabel
 
 var current_round := 0
 var round_time := ROUND_TIME_START
@@ -33,7 +32,8 @@ func start_game(players: Array[int]) -> void:
 	super(players)
 	alive_players = players.duplicate()
 	_spawn_player_bars()
-	run_intro()
+	await run_intro()
+	_start_countdown()
 
 func _spawn_player_bars() -> void:
 	var spacing := 90
@@ -84,7 +84,6 @@ func _create_bar_ui(player_idx: int) -> Control:
 	return container
 
 func _start_countdown() -> void:
-	sweeping = false
 	current_round += 1
 	round_label.text = "Round %d" % current_round
 	jumped_this_round.clear()
@@ -101,15 +100,6 @@ func _start_countdown() -> void:
 		var status: Label = bars[player_idx].get_node("Status")
 		status.text = ""
 		status.modulate = Color.WHITE
-
-	var count := 3
-	while count > 0:
-		countdown_label.text = str(count)
-		await get_tree().create_timer(0.6).timeout
-		count -= 1
-	countdown_label.text = "JUMP!"
-	await get_tree().create_timer(0.2).timeout
-	countdown_label.text = ""
 
 	_begin_sweep()
 

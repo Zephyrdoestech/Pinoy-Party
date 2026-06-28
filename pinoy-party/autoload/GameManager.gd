@@ -106,3 +106,11 @@ func _get_winner() -> int:
 		if players[i]["score"] > players[best]["score"]:
 			best = i
 	return best
+
+func reset_for_new_game() -> void:
+	current_player_index = 0
+	state = Enums.GameState.WAITING
+	for p: Dictionary in players:
+		p["tile_index"] = 0
+		p["score"] = 0
+		p["state"] = Enums.PlayerState.IDLE
