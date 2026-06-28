@@ -86,6 +86,58 @@ func run_intro(announcement_text: String = "") -> void:
 	set_process_unhandled_input(true)
 	intro_finished.emit()
 
+func run_results(scores: Dictionary) -> void:
+	var canvas := CanvasLayer.new()
+	add_child(canvas)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.85)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(dim)
+
+	var label := Label.new()
+	label.set_anchors_preset(Control.PRESET_CENTER)
+	label.add_theme_font_size_override("font_size", 48)
+	canvas.add_child(label)
+
+	# Phase 1: winner announcement
+	var winner_idx := _get_winner_index(scores)
+	label.text = "Player %d Wins!" % (winner_idx + 1) if winner_idx != -1 else "It's a Tie!"
+	await get_tree().create_timer(2.0).timeout
+
+	# Phase 2: points breakdown
+	label.queue_free()
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	canvas.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "Points Earned"
+	header.add_theme_font_size_override("font_size", 36)
+	vbox.add_child(header)
+
+	for idx in scores.keys():
+		var row := Label.new()
+		row.text = "Player %d: +%d pts" % [idx + 1, scores[idx]]
+		row.add_theme_font_size_override("font_size", 28)
+		vbox.add_child(row)
+
+	await get_tree().create_timer(2.0).timeout
+	canvas.queue_free()
+
+
+func _get_winner_index(scores: Dictionary) -> int:
+	var best_idx := -1
+	var best_score := -1
+	var tied := false
+	for idx in scores.keys():
+		if scores[idx] > best_score:
+			best_score = scores[idx]
+			best_idx = idx
+			tied = false
+		elif scores[idx] == best_score:
+			tied = true
+	return -1 if tied else best_idx
 
 func _build_intro_overlay() -> void:
 	_intro_layer = CanvasLayer.new()
@@ -109,5 +161,6 @@ func _build_intro_overlay() -> void:
 ## Emits through EventBus so State_TileEvent's await catches it.
 func _finish(scores: Dictionary) -> void:
 	EventBus.minigame_finished.emit(scores)
-	await get_tree().create_timer(2.0).timeout
+	await run_results(scores)
 	SceneLoader.return_to_board()
+	
