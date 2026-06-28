@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://c2hbad6cv4qhg"]
+
+[ext_resource type="Script" uid="uid://bge4f7psh0xlf" path="res://scenes/ui/game_over_screen.gd" id="1_0pcqs"]
+
+[node name="GameOverScreen" type="Control" unique_id=818565318]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_0pcqs")
