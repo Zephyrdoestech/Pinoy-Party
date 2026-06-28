@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-06-28 (Game Over screen added, LuksongBaka start-of-game freeze fixed, LangitLupa area detection/visuals/spawning overhauled, repeat-scoring bug in LangitLupa fixed)
+**Last Updated:** 2026-06-29 (Added post-minigame winner/points results screen to BaseMinigame._finish())
 
 ---
 
@@ -353,8 +353,16 @@ static func compute_placement_scores(groups: Array) -> Dictionary  # see "Shared
 
 `_finish(scores)` flow:
 1. Emits `EventBus.minigame_finished(scores)` — caught by `GameManager._on_minigame_finished()` (an autoload, not `State_TileEvent` — see Design Decisions & Gotchas for why)
-2. Waits 2 seconds (to show results)
+2. `await run_results(scores)` — shows the results screen (see below)
 3. Calls `SceneLoader.return_to_board()`
+
+#### Results screen (added 2026-06-29)
+`run_results(scores: Dictionary)` — called from `_finish()`, after `minigame_finished` is emitted but before `return_to_board()`. Same "build everything at runtime, no scene edits" approach as `run_intro()`:
+- **Phase 1 (2s):** dimmed `CanvasLayer`/`ColorRect` (alpha `0.85`) + centered `Label` announcing the winner (`"Player N Wins!"`), or `"It's a Tie!"` if multiple players share the top score. Winner determined by `_get_winner_index(scores)`, a local helper (highest value in the `scores` dict; returns `-1` on a tie).
+- **Phase 2 (2s):** winner label is freed and replaced with a `VBoxContainer` listing every player's points earned this round (`"Player N: +X pts"`), pulled directly from the `scores` dict passed into `_finish()`.
+- Total added delay: 2s → 4s between minigame end and returning to the board (was a flat 2s with no visual before this).
+- Gameplay is already safe during this window — every minigame's `_end_game()` sets `gameplay_locked = true` before calling `_finish()`, so no input-blocking changes were needed here.
+- **Known gap:** ties for first place currently show a generic `"It's a Tie!"` rather than naming the tied players. Not yet implemented.
 
 #### Pre-round intro (added 2026-06-27)
 Every minigame gets a shared pre-round sequence for free, applying uniformly without touching each minigame's `.tscn`:
@@ -651,6 +659,7 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 | 2026-06-28 | *(pending)* | Added `GameOverScreen.tscn`/`game_over_screen.gd` — full-screen results overlay listening to `EventBus.game_over`, with a "Play Again" button that resets `GameManager` state and reloads `Game.tscn`. Confirmed `GameManager.gd` already has correct `_get_winner()` and `reset_for_new_game()` implementations. Clarified scope: this screen belongs to the board (`Game.tscn`), not to individual minigames — it's destroyed along with the rest of `Game.tscn` whenever a minigame is active, by design, same as everything else in that scene tree. |
 | 2026-06-28 | *(pending)* | Fixed the `LuksongBaka` start-of-game freeze (see "Implemented Minigame: `LuksongBaka`" above) — a side effect of an earlier attempt to dedupe its double-countdown that removed the call to `_start_countdown()` without anything left to replace it. Properly deduped this time: `run_intro()` provides the one-time pre-game countdown, `_start_countdown()` no longer has its own separate text countdown. |
 | 2026-06-28 | *(pending)* | Overhauled `LangitLupa`'s elevated-area system: detection now uses an exact square-bounds check (`_point_in_area()`) instead of a circle that didn't match the visible square's corners; unsafe areas now flash briefly then disappear instead of flashing forever; player spawning switched from random-with-rerolls to a fixed center cluster (`SPAWN_CENTER` + `SPAWN_OFFSETS`), with areas now spawned afterward and rerolled away from those known spawn points. |
+| 2026-06-29 | *(pending)* | Added a post-minigame results screen to `BaseMinigame._finish()` — previously just a blank 2s wait before returning to the board. Now shows a 2s winner announcement (`run_results()`'s phase 1) followed by a 2s per-player points breakdown (phase 2), both built at runtime in the same dimmed-overlay style as `run_intro()`. Applies to all three minigames for free since they all funnel through `_finish()`. |
 
 ---
 
