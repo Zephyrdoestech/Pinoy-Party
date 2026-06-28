@@ -3,11 +3,13 @@ extends BaseMinigame
 
 const PLAYER_SPEED := 150.0
 const TAG_RADIUS := 30.0
-const AREA_SIZE := 80.0              # visual width/height of each area (square)
-const AREA_RADIUS := AREA_SIZE * 0.5 # detection radius derived from size, not set separately
+const AREA_SIZE := 80.0              # visual width/height of each area (square) — detection now matches this exactly, see _point_in_area()
 const AREA_SAFE_DURATION := 4.0
+const AREA_FLASH_DURATION := 1.0     # how long an area flashes red before vanishing for good
 const NUM_AREAS := 6
 const ROUND_DURATION := 60.0
+const SPAWN_CENTER := Vector2(400, 250)
+const SPAWN_OFFSETS := [Vector2(-40, -40), Vector2(40, -40), Vector2(-40, 40), Vector2(40, 40)]
 
 # TODO: once LAN play is in, this should come from the network session
 # (i.e. "which player am I controlling on this device"). Hardcoded for now.
@@ -65,8 +67,8 @@ func start_game(players: Array[int]) -> void:
 	it_player = players[randi() % players.size()]
 	$UI/ItLabel.text = "Player %d is IT!" % (it_player + 1)
 	print("[LangitLupa] Player %d is IT." % it_player)
-	_spawn_areas()
 	_position_players()
+	_spawn_areas()
 	_init_ai(players)
 	for idx in players:
 		dash_cooldown_remaining[idx] = 0.0
@@ -74,37 +76,50 @@ func start_game(players: Array[int]) -> void:
 		_create_dash_ring(idx)
 	run_intro("Player %d is IT!" % (it_player + 1))
 
+## Players always spawn clustered around the arena center, far enough apart
+## (80px, well above TAG_RADIUS) that nobody starts pre-tagged. Areas are
+## spawned afterward and dodge these fixed spots — see _spawn_areas().
+func _position_players() -> void:
+	for i in participating_players.size():
+		var idx: int = participating_players[i]
+		var node := _get_player_node(idx)
+		var offset: Vector2 = SPAWN_OFFSETS[i % SPAWN_OFFSETS.size()]
+		node.position = SPAWN_CENTER + offset
+		node.color = Color.RED if idx == it_player else Color.BLUE
+
 func _spawn_areas() -> void:
 	areas.clear()
 	for i in NUM_AREAS:
-		var pos := Vector2(randf_range(60, 760), randf_range(60, 460))
-		areas.append({"pos": pos, "occupied_since": 0.0, "unsafe": false})
+		var pos := _find_area_spawn_avoiding_players()
+		areas.append({"pos": pos, "occupied_since": 0.0, "unsafe": false, "unsafe_since": -1.0})
 		var rect: ColorRect = get_node("Areas/Area%d" % i)
 		rect.size = Vector2(AREA_SIZE, AREA_SIZE)
 		rect.position = pos - rect.size / 2.0  # center the rect on the logical position
 		rect.color = Color.GREEN
 		rect.modulate.a = 1.0
+		rect.visible = true
 
-func _position_players() -> void:
-	for idx in participating_players:
-		var node := _get_player_node(idx)
-		node.position = _find_clear_spawn()
-		node.color = Color.RED if idx == it_player else Color.BLUE
-
-## Picks a random spawn point that isn't already standing inside an
-## elevated area — fixes players starting the round already "safe".
-func _find_clear_spawn() -> Vector2:
+## Rerolls a random area position (up to 30 attempts) until it isn't on top
+## of any player's spawn point — fixes areas spawning directly on a player.
+func _find_area_spawn_avoiding_players() -> Vector2:
 	var pos := Vector2.ZERO
 	for attempt in 30:
-		pos = Vector2(randf_range(100, 700), randf_range(100, 400))
+		pos = Vector2(randf_range(60, 760), randf_range(60, 460))
 		var clear := true
-		for area in areas:
-			if pos.distance_to(area.pos) < AREA_RADIUS + 20.0:
+		for idx in participating_players:
+			if pos.distance_to(_get_player_node(idx).position) < AREA_SIZE / 2.0 + 30.0:
 				clear = false
 				break
 		if clear:
 			return pos
 	return pos # fallback after 30 attempts — better than an infinite loop
+
+## True if `point` falls within the area's actual square bounds — matches
+## the visual ColorRect exactly, rather than the old circular approximation
+## that left the square's corners undetected.
+func _point_in_area(point: Vector2, area: Dictionary, margin: float = 0.0) -> bool:
+	var half: float = AREA_SIZE / 2.0 + margin
+	return absf(point.x - area.pos.x) < half and absf(point.y - area.pos.y) < half
 
 func _get_player_node(idx: int) -> ColorRect:
 	return get_node("Players/Player %d" % (idx + 1))
@@ -219,8 +234,8 @@ func _apply_move(idx: int, pos: Vector2, dir: Vector2, delta: float) -> Vector2:
 	var new_pos: Vector2 = pos + dir.normalized() * speed * delta
 	if idx == it_player:
 		for area in areas:
-			if new_pos.distance_to(area.pos) < AREA_RADIUS:
-				return pos  # blocked from elevated areas
+			if not area.unsafe and _point_in_area(new_pos, area):
+				return pos  # blocked from elevated (still-safe) areas
 	return new_pos
 
 func _update_areas(delta: float) -> void:
@@ -231,13 +246,14 @@ func _update_areas(delta: float) -> void:
 		for idx in alive_players:
 			if idx == it_player or idx in tagged_players:
 				continue
-			if _get_player_node(idx).position.distance_to(area.pos) < AREA_RADIUS:
+			if _point_in_area(_get_player_node(idx).position, area):
 				occupied = true
 				break
 		if occupied:
 			area.occupied_since += delta
 			if area.occupied_since >= AREA_SAFE_DURATION:
 				area.unsafe = true
+				area.unsafe_since = round_time
 		else:
 			area.occupied_since = 0.0
 	_update_area_visuals()
@@ -245,16 +261,23 @@ func _update_areas(delta: float) -> void:
 func _update_area_visuals() -> void:
 	for i in areas.size():
 		var rect: ColorRect = get_node("Areas/Area%d" % i)
-		if areas[i].unsafe:
-			rect.color = Color.RED
-			rect.modulate.a = 0.5 + 0.5 * sin(round_time * 10.0)
+		var area: Dictionary = areas[i]
+		if area.unsafe:
+			var elapsed: float = round_time - area.unsafe_since
+			if elapsed < AREA_FLASH_DURATION:
+				rect.visible = true
+				rect.color = Color.RED
+				rect.modulate.a = 0.5 + 0.5 * sin(round_time * 10.0)
+			else:
+				rect.visible = false
 		else:
+			rect.visible = true
 			rect.color = Color.GREEN
 			rect.modulate.a = 1.0
 
 func _is_player_safe(pos: Vector2) -> bool:
 	for area in areas:
-		if not area.unsafe and pos.distance_to(area.pos) < AREA_RADIUS:
+		if not area.unsafe and _point_in_area(pos, area):
 			return true
 	return false
 
