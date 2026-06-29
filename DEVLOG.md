@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-06-29 (Added post-minigame winner/points results screen to BaseMinigame._finish())
+**Last Updated:** 2026-06-30 (LAN multiplayer lobby implemented — hosting, UDP broadcast discovery, join-by-code; board/minigame state is NOT yet networked, see Known Issues)
 
 ---
 
@@ -12,6 +12,7 @@
 - [Project Overview](#project-overview)
 - [Repository Structure](#repository-structure)
 - [Autoloads (Singletons)](#autoloads-singletons)
+- [LAN Multiplayer Lobby](#lan-multiplayer-lobby)
 - [Scene Graph](#scene-graph)
 - [State Machine (FSM)](#state-machine-fsm)
 - [Board System](#board-system)
@@ -192,7 +193,81 @@ Utility functions, accessed as `Utils.function_name()` via the autoload.
 
 ---
 
-## Scene Graph
+## LAN Multiplayer Lobby
+
+**Added 2026-06-30.** A pre-game lobby screen now lets up to 4 players connect over LAN before `Game.tscn` ever loads. This is a separate system from the board/minigame loop — **the board and minigame state are not yet networked** (see Known Issues & TODOs below). Right now this only gets all players into the same `Game.tscn` at the same time; it does not yet sync dice rolls, movement, scores, or minigame state across clients.
+
+### `NetworkManager` (`autoload/NetworkManager.gd`)
+New autoload, registered alongside `GameManager` etc. Wraps Godot's high-level multiplayer API (`ENetMultiplayerPeer`).
+
+```gdscript
+const PORT := 7777                # ENet game connection port
+const DISCOVERY_PORT := 7778      # UDP broadcast discovery port
+const MAX_PLAYERS := 4
+
+var lobby_code: String            # 5-letter code, host-generated
+var is_host: bool
+var connected_players: Dictionary # peer_id -> {name: String}
+var discovered_lobbies: Dictionary # code -> {ip: String, last_seen: float}, joiner-side only
+```
+
+**Hosting (`host_lobby(player_name)`):** generates a 5-letter code (`_generate_code()`, excludes `I`/`O` to avoid visual confusion with `1`/`0`), calls `ENetMultiplayerPeer.create_server()` on `PORT`, registers itself as peer 1 in `connected_players`, then starts broadcasting its code over UDP via `_start_broadcasting()` (a `Timer` firing `_send_broadcast()` once a second).
+
+**Joining:** two paths exist —
+- `join_lobby_by_code(code, name)` — looks up the code in `discovered_lobbies` (populated by listening for the host's UDP broadcasts) and resolves it to an IP automatically.
+- `join_lobby(code, ip, name)` — direct IP connect, no discovery involved. `lobby_screen.gd`'s join flow uses this automatically whenever the IP field is non-empty, falling back to the by-code/discovery path otherwise — see "Manual IP fallback" below for why this exists.
+
+Once connected, the joining client calls `rpc_id(1, "_register_player", player_name, lobby_code)` to register with the host. The host's `_register_player` validates the code matches, adds the peer to `connected_players`, and calls `_broadcast_player_list()` to sync everyone's roster.
+
+**Starting the match:** host-only `start_game()` stops discovery broadcasting, then `rpc("_on_game_start")` (with `call_local`) tells every peer — including the host itself — to `change_scene_to_file("res://scenes/Game.tscn")` simultaneously.
+
+> **⚠️ Known limitation, not yet addressed:** once `_on_game_start` fires, every peer loads `Game.tscn` and runs its **own independent** `GameManager`/`StateMachine`. There is currently no RPC traffic of any kind once the match starts — dice rolls, token movement, scores, and minigame outcomes are all purely local to whichever window rolled/moved/played. Confirmed via live two-window testing (2026-06-30): both windows show different "whose turn" highlighting and don't reflect each other's rolls at all. This needs the same RPC-authority treatment the lobby got — host-authoritative state, clients request actions via RPC, host broadcasts results — applied to `dice.gd`, `State_Moving`, `State_TileEvent`, and all three minigames' input handling. Not yet started.
+
+### UDP Broadcast Discovery
+Host and joiner both run a `PacketPeerUDP`, but for different purposes — host's is dedicated to sending (`_start_broadcasting`/`_send_broadcast`), joiner's is bound for receiving (`start_listening_for_lobbies`, polled every frame in `_process()` while not `is_host`). Broadcast message format: `"PINOYPARTY|{code}"`.
+
+> **✅ Gotcha confirmed during one-machine testing (2026-06-30):** two instances on the **same machine** cannot both `bind()` `DISCOVERY_PORT` for listening — only the first call succeeds, the second fails silently with a nonzero error code (no thrown exception, just a returned `Error`). This makes broadcast discovery fundamentally untestable with two processes sharing one IP; it requires two physically separate machines on the same LAN to verify properly. **This is not a bug to fix** — it's an inherent limitation of UDP port binding, expected to work fine across real machines since each has its own IP.
+
+**Manual IP fallback (added for same-machine testing):** `lobby_screen.gd`'s `_on_join_pressed()` checks the `JoinIPInput` field — if non-empty, it calls `join_lobby()` directly with that IP instead of going through `join_lobby_by_code()`/discovery. This was added specifically so the one-laptop-two-`.exe`-instances testing flow (see Recent Bug Fixes) has a working path despite the port-binding limitation above; `127.0.0.1` as the IP is what makes single-machine testing possible at all. Kept in the shipped UI as a small "or enter IP manually" affordance even post-testing, in case discovery ever flakes on a real network (e.g. router client-isolation blocking broadcast traffic between devices).
+
+### `lobby_screen.gd` (`scenes/ui/LobbyScreen.tscn`)
+Set as the project's **Main Scene** (Project Settings → Application → Run), replacing the previous direct-to-`Game.tscn` entry point.
+
+```
+LobbyScreen (Control)              ← lobby_screen.gd
+├── HostJoinPanel (VBoxContainer)
+│   ├── NameInput (LineEdit)
+│   ├── HostButton (Button)
+│   ├── JoinCodeInput (LineEdit)
+│   ├── JoinIPInput (LineEdit)     ← optional, see "Manual IP fallback" above
+│   └── JoinButton (Button)
+├── LobbyPanel (Control)
+│   ├── CodeLabel (Label)
+│   ├── PlayerCards (HBoxContainer) ← built at runtime, one card per connected player
+│   └── StartButton (Button)        ← host-only; disabled until ≥2 players
+└── StatusLabel (Label)             ← error/status text (e.g. "No lobby found...")
+```
+
+`_ready()` explicitly sets initial panel visibility (`HostJoinPanel` visible, `LobbyPanel` hidden) and connects `HostButton`/`JoinButton`/`StartButton` press signals **in code** rather than relying on editor-side signal wiring — see the dedicated gotcha below for why.
+
+**Roster syncing:** listens to a single `NetworkManager.roster_updated` signal (not `player_joined`/`player_left` — see gotcha below) to rebuild `PlayerCards` and toggle `StartButton.visible`/`disabled` based on `is_host` and player count.
+
+> **✅ Gotcha — editor-wired signals silently missing (2026-06-29).** Initial testing found that clicking "Host" did nothing at all. Root cause: `HostButton.pressed` was never actually connected to `_on_host_pressed()` — the function existed, but nothing called it, because the signal connection was expected to be made manually in the editor's Signals tab and never was. **Fix:** connect all three buttons' `pressed` signals explicitly in `_ready()` instead of depending on editor wiring, matching how `start_button` was already connected. **Process takeaway:** when a button "does nothing" with no error at all, check whether its signal is actually connected before assuming the handler logic is broken — a disconnected signal produces zero console output, identical in symptom to a silently-failing handler.
+
+> **✅ Gotcha — `player_joined`/`player_left` only ever fire on the host (2026-06-30).** Initial roster-sync logic connected `_on_roster_changed` to `NetworkManager.player_joined` and `player_left`. Both signals are only emitted from inside `_register_player()`/`_on_peer_disconnected()`, which have an `if not is_host: return` guard — meaning **joining clients never receive either signal**, even though their own `connected_players` dictionary correctly updates via the `_sync_player_list` RPC. Symptom: the host's UI updated fine when a player joined, but the joiner's screen stayed stuck on the host/join panel forever, never flipping to show the lobby — despite the underlying data being correct on both sides. **Fix:** added a new `roster_updated` signal, emitted from inside `_sync_player_list` itself (which already runs via `@rpc("authority", "reliable", "call_local")`, so it fires on every peer including the host). `lobby_screen.gd` now listens to `roster_updated` exclusively for rebuilding the UI. **Process takeaway:** any signal meant to drive UI state needs to fire on **every peer that needs to react**, not just the one where the underlying logic happens to run — RPC call sites and signal emission sites aren't automatically the same set of machines.
+
+> **Gotcha — type inference fails on `$NodePath.property` inside `:=` assignments.** `var typed_ip := $HostJoinPanel/JoinIPInput.text.strip_edges()` threw `"Cannot infer the type of 'typed_ip' variable because the value doesn't have a set type"` for three separate variables in `_on_join_pressed()`. Fixed by declaring an explicitly-typed intermediate variable for the node reference first (`var join_ip_input: LineEdit = $HostJoinPanel/JoinIPInput`), then accessing `.text` off that typed variable rather than chaining straight off the `$Path` shorthand inside a `:=` assignment.
+
+### Testing Notes (one-laptop setup)
+No second machine available during initial development, so testing relied on running two exported `.exe` copies of the same debug build side-by-side as independent OS processes (not two editor instances — editor multi-instance runs can cause port/breakpoint conflicts). Key findings, all confirmed live:
+- Direct IP join (`127.0.0.1`) works correctly between two same-machine instances; this is the primary tested path so far.
+- Broadcast discovery cannot be validated on one machine (see UDP Broadcast Discovery section above) — needs real two-machine LAN testing before considering it verified.
+- Two hosts cannot both bind `PORT` (`7777`) on the same machine — attempting to click "Host" on a second instance after one is already hosting throws `"ERROR: Couldn't create an ENet host"` and emits `join_failed.emit("Could not create server")`. Expected behavior, not a bug — confirms `create_server()`'s error path is being surfaced correctly to the UI rather than failing silently.
+- Debug `print()` statements were added at each step of the join pipeline (`_on_join_pressed`, `join_lobby`, `_on_connected_ok`, `_register_player`) specifically to localize failures during this testing — worth keeping in place for now given how many of this project's past bugs (per Recent Bug Fixes throughout this log) have been silent-failure types with no thrown error.
+
+---
+
+
 
 ### `Game.tscn` (main scene)
 ```
@@ -529,8 +604,8 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 
 ### Architecture Decisions Pending
 - ~~**Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented~~ **RESOLVED (2026-06-28)** — see `game_over_screen.gd` under UI System.
-- **Local multiplayer input** — all 4 players share one screen/keyboard; no network/controller support
-- **LAN multiplayer (planned)** — `LangitLupa` was deliberately built around a single `local_player_index` (currently hardcoded to `0`) controlling one set of generic movement keys (`move_up/down/left/right`), anticipating that each LAN client will eventually control only its own player. This pattern is not yet wired to real networking and should be treated as the template for retrofitting movement-based minigames once LAN play exists.
+- **Local multiplayer input** — all 4 players share one screen/keyboard; no network/controller support. Unaffected by the new LAN lobby — that's a separate matchmaking layer, not a replacement for this.
+- **LAN multiplayer — lobby done, gameplay sync NOT started (2026-06-30).** Hosting/joining/roster-sync is implemented and tested (see LAN Multiplayer Lobby section). However, once `start_game()` loads `Game.tscn`, every peer runs a fully independent, unsynced copy of `GameManager`/`StateMachine` — dice rolls, movement, scores, and minigame state are not networked at all yet. `LangitLupa`'s existing `local_player_index` pattern (currently hardcoded to `0`) was built anticipating this and should be the template once dice/movement/minigame RPC sync work begins — each LAN client controlling only its own player, same as that minigame's movement input already assumes.
 - **Score display** — scores are tracked in `GameManager.players` but never shown to the user
 
 ---
@@ -660,6 +735,10 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 | 2026-06-28 | *(pending)* | Fixed the `LuksongBaka` start-of-game freeze (see "Implemented Minigame: `LuksongBaka`" above) — a side effect of an earlier attempt to dedupe its double-countdown that removed the call to `_start_countdown()` without anything left to replace it. Properly deduped this time: `run_intro()` provides the one-time pre-game countdown, `_start_countdown()` no longer has its own separate text countdown. |
 | 2026-06-28 | *(pending)* | Overhauled `LangitLupa`'s elevated-area system: detection now uses an exact square-bounds check (`_point_in_area()`) instead of a circle that didn't match the visible square's corners; unsafe areas now flash briefly then disappear instead of flashing forever; player spawning switched from random-with-rerolls to a fixed center cluster (`SPAWN_CENTER` + `SPAWN_OFFSETS`), with areas now spawned afterward and rerolled away from those known spawn points. |
 | 2026-06-29 | *(pending)* | Added a post-minigame results screen to `BaseMinigame._finish()` — previously just a blank 2s wait before returning to the board. Now shows a 2s winner announcement (`run_results()`'s phase 1) followed by a 2s per-player points breakdown (phase 2), both built at runtime in the same dimmed-overlay style as `run_intro()`. Applies to all three minigames for free since they all funnel through `_finish()`. |
+| 2026-06-30 | *(pending)* | Implemented LAN multiplayer lobby: new `NetworkManager` autoload (ENet hosting/joining, 5-letter code generation, UDP broadcast discovery on a separate port from the game connection) and `lobby_screen.gd`/`LobbyScreen.tscn`, set as the new Main Scene. See full "LAN Multiplayer Lobby" section above. |
+| 2026-06-30 | *(pending)* | Fixed Host/Join buttons doing nothing on click — their `pressed` signals were never connected to anything; editor-side wiring was assumed but never actually done. Connected all three lobby buttons explicitly in `_ready()` instead. |
+| 2026-06-30 | *(pending)* | Fixed joining clients never seeing the lobby roster update (host's UI updated fine, joiner's stayed frozen on the host/join panel). Root cause: UI was listening to `player_joined`/`player_left`, both gated `if not is_host: return` and therefore never emitted on the joiner's own instance. Added a new `roster_updated` signal emitted from `_sync_player_list` (already `call_local`, fires on every peer) and switched `lobby_screen.gd` to listen to that instead. |
+| 2026-06-30 | *(pending)* | Confirmed via live one-machine testing that two instances can't both bind the UDP discovery port, making broadcast discovery untestable without a second physical machine; added a manual-IP fallback path (`join_lobby()` directly, bypassing discovery, whenever the IP field is filled in) specifically to unblock same-machine testing of the core connection/registration logic. |
 
 ---
 
