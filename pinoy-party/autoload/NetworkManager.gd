@@ -238,6 +238,33 @@ func _launch_minigame(minigame_id: String, participating_players: Array) -> void
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
 
+# --- SackRace hop sync ---
+# Same shape as dice rolls: a client requests a hop for the player it
+# controls, the host validates it, then broadcasts so every peer's copy of
+# the minigame advances that player's progress identically and at the same
+# moment. Host calls process_sack_race_hop() directly (self-targeted RPCs
+# aren't allowed — see the dice roll gotcha), clients go through the RPC.
+@rpc("any_peer", "reliable")
+func request_sack_race_hop(player_idx: int) -> void:
+	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	var sender_player_idx: int = peer_to_player_index.get(sender_id, -1)
+	if sender_player_idx != player_idx:
+		return  # client tried to hop for a player it doesn't control — ignore
+	process_sack_race_hop(player_idx)
+
+func process_sack_race_hop(player_idx: int) -> void:
+	rpc("_apply_sack_race_hop", player_idx)
+
+@rpc("authority", "reliable", "call_local")
+func _apply_sack_race_hop(player_idx: int) -> void:
+	var scene := get_tree().current_scene
+	if scene is SackRace:
+		scene.apply_hop(player_idx)
+
 func _generate_code() -> String:
 	const CHARS := "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I/O to avoid confusion
 	var code := ""
