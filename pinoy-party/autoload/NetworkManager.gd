@@ -154,12 +154,89 @@ func start_game() -> void:
 	if not is_host:
 		return
 	stop_discovery()
+	_build_player_index_map()
 	rpc("_on_game_start")
 
 @rpc("authority", "reliable", "call_local")
 func _on_game_start() -> void:
 	game_starting.emit()
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+
+# --- Player index <-> peer id mapping ---
+# Built once on the host when the match starts, then broadcast to everyone.
+# Index order = ascending peer id, so it's deterministic without extra negotiation.
+var player_index_to_peer: Dictionary = {}  # int -> peer_id
+var peer_to_player_index: Dictionary = {}  # peer_id -> int
+
+func _build_player_index_map() -> void:
+	player_index_to_peer.clear()
+	peer_to_player_index.clear()
+	var sorted_peers := connected_players.keys()
+	sorted_peers.sort()
+	for i in sorted_peers.size():
+		player_index_to_peer[i] = sorted_peers[i]
+		peer_to_player_index[sorted_peers[i]] = i
+	rpc("_sync_player_index_map", player_index_to_peer, sorted_peers.size())
+
+@rpc("authority", "reliable", "call_local")
+func _sync_player_index_map(mapping: Dictionary, player_count: int) -> void:
+	player_index_to_peer = mapping
+	peer_to_player_index.clear()
+	for idx in mapping:
+		peer_to_player_index[mapping[idx]] = idx
+	GameManager.active_player_count = player_count
+	GameManager._setup_players()
+
+func get_my_player_index() -> int:
+	var my_peer := multiplayer.get_unique_id()
+	if peer_to_player_index.has(my_peer):
+		return peer_to_player_index[my_peer]
+	return -1
+
+# --- Dice roll sync ---
+# Any client can request a roll; only the host actually generates the result
+# and broadcasts it, so every peer sees the identical outcome.
+@rpc("any_peer", "reliable")
+func request_roll() -> void:
+	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	print("request_roll received, raw sender_id=", sender_id)
+	if sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	_process_roll_request(sender_id)
+
+func _process_roll_request(sender_id: int) -> void:
+	var sender_player_idx: int = peer_to_player_index.get(sender_id, -1)
+	print("Resolved sender_id=", sender_id, " to player_idx=", sender_player_idx, " (current turn=", GameManager.current_player_index, ")")
+	if sender_player_idx != GameManager.current_player_index:
+		print("Rejected roll — not this peer's turn")
+		return
+	var result := randi_range(1, Constants.DICE_FACES)
+	print("Rolled: ", result, " — broadcasting to all peers")
+	rpc("_apply_roll_result", result)
+
+@rpc("authority", "reliable", "call_local")
+func _apply_roll_result(result: int) -> void:
+	print("_apply_roll_result received: ", result)
+	GameManager.on_dice_rolled(result)
+
+# --- Minigame launch sync ---
+# Only the host picks the random minigame ID (so all clients agree), then
+# broadcasts the choice. Every peer (including the host, via call_local)
+# loads the scene from this single shared call instead of each client
+# independently calling Utils.random_minigame()/SceneLoader.go_to_minigame().
+func start_minigame_synced(participating_players: Array[int]) -> void:
+	if not is_host:
+		return
+	var minigame_id: String = Utils.random_minigame()
+	rpc("_launch_minigame", minigame_id, participating_players)
+
+@rpc("authority", "reliable", "call_local")
+func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
+	print("Launching synced minigame: ", minigame_id)
+	EventBus.minigame_started.emit(minigame_id)
+	SceneLoader.go_to_minigame(minigame_id, participating_players)
 
 func _generate_code() -> String:
 	const CHARS := "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I/O to avoid confusion

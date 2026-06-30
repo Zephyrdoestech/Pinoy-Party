@@ -30,7 +30,7 @@ func _ready() -> void:
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
 
 func _spawn_tokens() -> void:
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		var token: Node2D = player_token_scene.instantiate()
 		add_child(token)
 
