@@ -12,4 +12,4 @@ const MOVE_STEP_DURATION := 0.2  # seconds per tile hop
 const DICE_ROLL_TICKS   := 15
 
 # Mini-game IDs — matches folder names under scenes/minigames/
-const MINIGAMES := ["LangitLupa"]
+const MINIGAMES := ["LangitLupa", "SackRace", "LuksongBaka"]
