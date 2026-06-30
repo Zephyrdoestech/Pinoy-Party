@@ -308,6 +308,59 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 	if scene is LuksongBaka:
 		scene.apply_round_end(auto_eliminated)
 
+# --- LangitLupa sync ---
+
+# Host broadcasts it_player and area positions once at match start.
+@rpc("authority", "reliable", "call_local")
+func sync_langitlupa_start(it_player: int, area_positions: Array) -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		scene.apply_langitlupa_start(it_player, area_positions)
+
+# Client sends its position to host each sync tick.
+# Host calls process_langitlupa_position() directly (avoids self-RPC throw).
+@rpc("any_peer", "unreliable")  # unreliable is fine — positions update at 20Hz anyway
+func send_langitlupa_position(player_idx: int, pos: Vector2) -> void:
+	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if peer_to_player_index.get(sender_id, -1) != player_idx:
+		return  # client tried to move a player it doesn't control
+	process_langitlupa_position(player_idx, pos)
+
+# Host receives a position update and broadcasts it to all peers.
+func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
+	rpc("_apply_langitlupa_position", player_idx, pos)
+
+@rpc("authority", "unreliable", "call_local")
+func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		# Don't overwrite local player's position — they own it locally
+		if player_idx != scene.local_player_index:
+			scene._get_player_node(player_idx).position = pos
+
+# Host detected a tag — broadcast to all peers.
+@rpc("authority", "reliable", "call_local")
+func sync_langitlupa_tag(player_idx: int) -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		scene.apply_tag(player_idx)
+
+# Host detected an area going unsafe — broadcast to all peers.
+@rpc("authority", "reliable", "call_local")
+func sync_langitlupa_area_unsafe(area_idx: int) -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		scene.apply_area_unsafe(area_idx)
+
+# Host decided the round is over — broadcast to all peers.
+@rpc("authority", "reliable", "call_local")
+func sync_langitlupa_end() -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		scene.apply_end()
+
 func _generate_code() -> String:
 	const CHARS := "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I/O to avoid confusion
 	var code := ""

@@ -11,9 +11,9 @@ const ROUND_DURATION := 60.0
 const SPAWN_CENTER := Vector2(400, 250)
 const SPAWN_OFFSETS := [Vector2(-40, -40), Vector2(40, -40), Vector2(-40, 40), Vector2(40, 40)]
 
-# TODO: once LAN play is in, this should come from the network session
-# (i.e. "which player am I controlling on this device"). Hardcoded for now.
-var local_player_index := 0
+# Set from NetworkManager.get_my_player_index() at start_game() — replaces
+# the old hardcoded 0, which assumed the host was always Player 0.
+var local_player_index := -1
 
 var areas: Array = []
 var it_player: int = -1
@@ -21,6 +21,11 @@ var alive_players: Array[int] = []
 var tagged_players: Array[int] = []
 var round_time := 0.0
 var round_active := false
+
+# Position sync — each client broadcasts their position at SYNC_HZ rate.
+# Host collects all positions and rebroadcasts to everyone.
+const POSITION_SYNC_HZ := 20.0
+var _position_sync_timer := 0.0
 
 var ai_directions: Dictionary = {}   # idx -> Vector2
 var ai_change_timer: Dictionary = {} # idx -> float
@@ -60,21 +65,58 @@ func set_progress(p: float) -> void:
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
+	local_player_index = NetworkManager.get_my_player_index()
 	alive_players = players.duplicate()
 	tagged_players.clear()
 	round_time = 0.0
 	round_active = false
-	it_player = players[randi() % players.size()]
-	$UI/ItLabel.text = "Player %d is IT!" % (it_player + 1)
-	print("[LangitLupa] Player %d is IT." % it_player)
 	_position_players()
-	_spawn_areas()
-	_init_ai(players)
 	for idx in players:
 		dash_cooldown_remaining[idx] = 0.0
 		dash_time_remaining[idx] = 0.0
 		_create_dash_ring(idx)
+	# Host picks the random values and broadcasts — non-host clients wait
+	# for _apply_langitlupa_start() to arrive before spawning areas/intro.
+	if NetworkManager.is_host:
+		var picked_it: int = players[randi() % players.size()]
+		var area_positions: Array = _generate_area_positions()
+		NetworkManager.sync_langitlupa_start.rpc(picked_it, area_positions)
+
+## Generates NUM_AREAS spawn positions avoiding player spawn points.
+## Only called on the host — results are broadcast via sync_langitlupa_start.
+func _generate_area_positions() -> Array:
+	var positions: Array = []
+	for i in NUM_AREAS:
+		positions.append(_find_area_spawn_avoiding_players())
+	return positions
+
+## Called on every peer (including host, via call_local) once the host has
+## chosen it_player and area positions. Finishes setting up the scene.
+func apply_langitlupa_start(picked_it: int, area_positions: Array) -> void:
+	it_player = picked_it
+	$UI/ItLabel.text = "Player %d is IT!" % (it_player + 1)
+	print("[LangitLupa] Player %d is IT." % it_player)
+	_show_it_arrow(it_player)
+	_spawn_areas_at(area_positions)
+	_init_ai(participating_players)
 	run_intro("Player %d is IT!" % (it_player + 1))
+
+## Adds a red downward arrow above the IT player's node so they're clearly
+## identifiable without relying on color. Built at runtime — no scene edits needed.
+func _show_it_arrow(idx: int) -> void:
+	var node := _get_player_node(idx)
+	# Remove any existing arrow first (safety in case this is called again)
+	var existing := node.get_node_or_null("ItArrow")
+	if existing:
+		existing.queue_free()
+	var arrow := Label.new()
+	arrow.name = "ItArrow"
+	arrow.text = "▼"
+	arrow.add_theme_color_override("font_color", Color.RED)
+	arrow.add_theme_font_size_override("font_size", 22)
+	# Center the arrow above the player node (ColorRect is AREA_SIZE×AREA_SIZE)
+	arrow.position = Vector2(-2, -28)
+	node.add_child(arrow)
 
 ## Players always spawn clustered around the arena center, far enough apart
 ## (80px, well above TAG_RADIUS) that nobody starts pre-tagged. Areas are
@@ -85,16 +127,18 @@ func _position_players() -> void:
 		var node := _get_player_node(idx)
 		var offset: Vector2 = SPAWN_OFFSETS[i % SPAWN_OFFSETS.size()]
 		node.position = SPAWN_CENTER + offset
-		node.color = Color.RED if idx == it_player else Color.BLUE
+		node.color = Color.BLUE  # all players same color — IT is shown via arrow instead
 
-func _spawn_areas() -> void:
+## Places areas at the positions chosen by the host and broadcast via RPC.
+## Replaces the old _spawn_areas() which ran randf_range() independently per client.
+func _spawn_areas_at(area_positions: Array) -> void:
 	areas.clear()
-	for i in NUM_AREAS:
-		var pos := _find_area_spawn_avoiding_players()
+	for i in area_positions.size():
+		var pos: Vector2 = area_positions[i]
 		areas.append({"pos": pos, "occupied_since": 0.0, "unsafe": false, "unsafe_since": -1.0})
 		var rect: ColorRect = get_node("Areas/Area%d" % i)
 		rect.size = Vector2(AREA_SIZE, AREA_SIZE)
-		rect.position = pos - rect.size / 2.0  # center the rect on the logical position
+		rect.position = pos - rect.size / 2.0
 		rect.color = Color.GREEN
 		rect.modulate.a = 1.0
 		rect.visible = true
@@ -134,13 +178,29 @@ func _process(delta: float) -> void:
 
 	round_time += delta
 	$UI/TimerLabel.text = "Time: %.1f" % max(ROUND_DURATION - round_time, 0.0)
-	if round_time >= ROUND_DURATION:
-		_end_game()
-		return
+
 	_update_dash_timers(delta)
 	_handle_movement(delta)
-	_update_areas(delta)
-	_check_tagging()
+	_update_area_visuals()
+
+	# Position sync — local client sends its position to host at POSITION_SYNC_HZ.
+	_position_sync_timer += delta
+	if _position_sync_timer >= 1.0 / POSITION_SYNC_HZ:
+		_position_sync_timer = 0.0
+		if local_player_index != -1:
+			var my_pos: Vector2 = _get_player_node(local_player_index).position
+			if NetworkManager.is_host:
+				NetworkManager.process_langitlupa_position(local_player_index, my_pos)
+			else:
+				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
+
+	# Authoritative game logic runs on host only — results broadcast to all peers.
+	if NetworkManager.is_host:
+		if round_time >= ROUND_DURATION:
+			NetworkManager.sync_langitlupa_end.rpc()
+			return
+		_update_areas(delta)
+		_check_tagging()
 
 func _get_local_input_dir() -> Vector2:
 	var dir := Vector2.ZERO
@@ -202,17 +262,22 @@ func _random_direction() -> Vector2:
 	return dir.normalized() if dir.length() > 0.01 else Vector2.RIGHT
 
 func _handle_movement(delta: float) -> void:
-	# Local player
-	if local_player_index not in tagged_players:
+	# Local player — always move from keyboard input
+	if local_player_index != -1 and local_player_index not in tagged_players:
 		var node := _get_player_node(local_player_index)
 		var dir := _get_local_input_dir()
 		if dir != Vector2.ZERO:
 			node.position = _apply_move(local_player_index, node.position, dir, delta)
 
-	# AI-controlled players
+	# AI players — only host simulates them, and only for player indices that
+	# have no real LAN peer assigned (i.e. not in NetworkManager.player_index_to_peer).
+	if not NetworkManager.is_host:
+		return
 	for idx in alive_players:
 		if idx == local_player_index or idx in tagged_players:
 			continue
+		if NetworkManager.player_index_to_peer.has(idx):
+			continue  # this player is controlled by a real LAN peer — don't AI them
 		ai_change_timer[idx] += delta
 		if ai_change_timer[idx] >= AI_DIRECTION_CHANGE_INTERVAL:
 			ai_directions[idx] = _random_direction()
@@ -221,7 +286,6 @@ func _handle_movement(delta: float) -> void:
 				_try_dash(idx)
 		var node := _get_player_node(idx)
 		node.position = _apply_move(idx, node.position, ai_directions[idx], delta)
-		# bounce off walls so they don't wander off-screen forever
 		if node.position.x < 30 or node.position.x > 770:
 			ai_directions[idx].x *= -1
 		if node.position.y < 30 or node.position.y > 470:
@@ -239,7 +303,9 @@ func _apply_move(idx: int, pos: Vector2, dir: Vector2, delta: float) -> Vector2:
 	return new_pos
 
 func _update_areas(delta: float) -> void:
-	for area in areas:
+	# Only called on host (see _process). Broadcasts area state changes.
+	for i in areas.size():
+		var area: Dictionary = areas[i]
 		if area.unsafe:
 			continue
 		var occupied := false
@@ -252,11 +318,16 @@ func _update_areas(delta: float) -> void:
 		if occupied:
 			area.occupied_since += delta
 			if area.occupied_since >= AREA_SAFE_DURATION:
-				area.unsafe = true
-				area.unsafe_since = round_time
+				NetworkManager.sync_langitlupa_area_unsafe.rpc(i)
 		else:
 			area.occupied_since = 0.0
-	_update_area_visuals()
+
+## Called on every peer by NetworkManager when an area becomes permanently unsafe.
+func apply_area_unsafe(area_idx: int) -> void:
+	if area_idx >= areas.size():
+		return
+	areas[area_idx].unsafe = true
+	areas[area_idx].unsafe_since = round_time
 
 func _update_area_visuals() -> void:
 	for i in areas.size():
@@ -282,6 +353,7 @@ func _is_player_safe(pos: Vector2) -> bool:
 	return false
 
 func _check_tagging() -> void:
+	# Only called on host (see _process). Broadcasts tag events to all peers.
 	var it_pos: Vector2 = _get_player_node(it_player).position
 	for idx in alive_players:
 		if idx == it_player or idx in tagged_players:
@@ -290,15 +362,25 @@ func _check_tagging() -> void:
 		if _is_player_safe(node.position):
 			continue
 		if node.position.distance_to(it_pos) < TAG_RADIUS:
-			tagged_players.append(idx)
-			node.modulate.a = 0.3
-			print("[LangitLupa] Player %d tagged!" % idx)
+			NetworkManager.sync_langitlupa_tag.rpc(idx)
 
-	# IT wins outright once every other player has been tagged — no need
-	# to wait out the rest of the round timer.
 	if tagged_players.size() >= alive_players.size() - 1:
 		print("[LangitLupa] All players tagged — ending round early.")
-		_end_game()
+		NetworkManager.sync_langitlupa_end.rpc()
+
+## Called on every peer by NetworkManager when a tag event is broadcast.
+func apply_tag(player_idx: int) -> void:
+	if player_idx in tagged_players:
+		return  # already tagged — RPC may arrive more than once before host re-checks
+	tagged_players.append(player_idx)
+	_get_player_node(player_idx).modulate.a = 0.3
+	print("[LangitLupa] Player %d tagged!" % player_idx)
+
+## Called on every peer by NetworkManager.sync_langitlupa_end RPC.
+func apply_end() -> void:
+	if gameplay_locked:
+		return  # already ended — RPC may arrive more than once
+	_end_game()
 
 func _end_game() -> void:
 	round_active = false
