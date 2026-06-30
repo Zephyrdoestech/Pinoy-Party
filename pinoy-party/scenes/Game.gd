@@ -5,7 +5,6 @@ extends Node2D
 @onready var board: Node2D = $Board
 @onready var dice: Node2D = $Dice
 @onready var roll_button: Button = $UI/RollButton
-@onready var turn_label: Label = $UI/TurnLabel
 @onready var state_machine: StateMachine = $StateMachine
 
 var tokens: Array[Node2D] = []
@@ -27,7 +26,6 @@ func _ready() -> void:
 	GameManager.board_ref = board
 	_spawn_tokens()
 	roll_button.pressed.connect(_on_roll_pressed)
-	EventBus.turn_started.connect(_on_turn_started)
 	EventBus.player_moved.connect(_on_player_moved)
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
 
@@ -55,10 +53,6 @@ func _on_roll_pressed() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
 		_on_roll_pressed()
-
-func _on_turn_started(player_index: int) -> void:
-	var player_name: String = GameManager.players[player_index]["name"]
-	turn_label.text = "%s's turn — roll the dice!" % player_name
 
 func _on_player_moved(player_index: int, new_tile_index: int) -> void:
 	# Tell the token to animate to its new tile.

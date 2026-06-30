@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://dbfm3smj58raw"]
+
+[ext_resource type="Script" uid="uid://cwkpf155ser33" path="res://scenes/ui/lobby_screen.gd" id="1_3dmo6"]
+
+[node name="LobbyScreen" type="Control" unique_id=797514953]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_3dmo6")
+
+[node name="HostJoinPanel" type="VBoxContainer" parent="." unique_id=1246908335]
+layout_mode = 1
+offset_left = 500.0
+offset_top = 100.0
+offset_right = 801.0
+offset_bottom = 271.0
+
+[node name="NameInput" type="LineEdit" parent="HostJoinPanel" unique_id=927161110]
+layout_mode = 2
+placeholder_text = "Your Name"
+
+[node name="HostButton" type="Button" parent="HostJoinPanel" unique_id=841486670]
+layout_mode = 2
+text = "Host"
+
+[node name="JoinCodeInput" type="LineEdit" parent="HostJoinPanel" unique_id=1177639380]
+layout_mode = 2
+placeholder_text = "Code"
+
+[node name="JoinIPInput" type="LineEdit" parent="HostJoinPanel" unique_id=439305146]
+layout_mode = 2
+placeholder_text = "IP (optional)"
+
+[node name="JoinButton" type="Button" parent="HostJoinPanel" unique_id=312165117]
+layout_mode = 2
+text = "Join"
+
+[node name="LobbyPanel" type="Control" parent="." unique_id=176445436]
+anchors_preset = 0
+offset_left = 650.0
+offset_top = 300.0
+offset_right = 690.0
+offset_bottom = 340.0
+
+[node name="CodeLabel" type="Label" parent="LobbyPanel" unique_id=1175620813]
+layout_mode = 0
+offset_left = 50.0
+offset_right = 90.0
+offset_bottom = 23.0
+
+[node name="PlayerCards" type="HBoxContainer" parent="LobbyPanel" unique_id=260652977]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="StartButton" type="Button" parent="LobbyPanel" unique_id=1144353135]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Start"
+
+[node name="StatusLabel" type="Label" parent="." unique_id=1481709683]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
