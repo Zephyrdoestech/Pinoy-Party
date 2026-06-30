@@ -74,7 +74,7 @@ func start_game(players: Array[int]) -> void:
 		dash_cooldown_remaining[idx] = 0.0
 		dash_time_remaining[idx] = 0.0
 		_create_dash_ring(idx)
-	run_intro("Player %d is IT!" % (it_player + 1))
+	await run_intro("Player %d is IT!" % (it_player + 1))
 
 ## Players always spawn clustered around the arena center, far enough apart
 ## (80px, well above TAG_RADIUS) that nobody starts pre-tagged. Areas are

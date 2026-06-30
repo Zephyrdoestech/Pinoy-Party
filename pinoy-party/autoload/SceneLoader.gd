@@ -12,6 +12,9 @@ func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
 
 func _start_minigame_deferred(players: Array[int]) -> void:
 	print("[SceneLoader] _start_minigame_deferred called!")
+	# Two frames: the first lets the scene tree swap the root node,
+	# the second lets the new scene's _ready() complete before we call into it.
+	await get_tree().process_frame
 	await get_tree().process_frame
 	var minigame := get_tree().current_scene
 	print("[SceneLoader] current_scene after deferred wait: ", minigame)

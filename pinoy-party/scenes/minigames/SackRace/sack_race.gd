@@ -15,7 +15,7 @@ func _get_track_rect(player_idx: int) -> ColorRect:
 	return get_node("Tracks/Player %d" % (player_idx + 1))
 
 func start_game(players: Array[int]) -> void:
-	participating_players = players
+	super.start_game(players)
 	for idx in players:
 		progress[idx] = 0.0
 		var rect := _get_track_rect(idx)

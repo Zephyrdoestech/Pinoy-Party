@@ -64,8 +64,6 @@ func _update_ui(_gm: GameManager, _player_idx: int) -> void:
 
 
 func _check_game_over(gm: GameManager) -> bool:
-	# Mirror of the existing GameManager._is_game_over() logic.
-	for p: Dictionary in gm.players:
-		if p["tile_index"] >= Constants.TOTAL_TILES - 1:
-			return true
-	return false
+	# Delegate to the single source of truth on GameManager — avoids
+	# the win-condition logic being duplicated in two places.
+	return gm._is_game_over()

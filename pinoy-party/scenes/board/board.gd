@@ -33,6 +33,4 @@ func get_tile_position(index: int) -> Vector2:
 
 func get_tile_type(index: int) -> int:
 	var clamped: int = clamp(index, 0, tiles.size() - 1)
-	print("[Board] get_tile_type(%d) → clamped=%d, returning %s"
-		% [index, clamped, Enums.TileType.keys()[tiles[clamped].tile_type]])
 	return tiles[clamped].tile_type
