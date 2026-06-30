@@ -35,7 +35,7 @@ func enter() -> void:
 		return
 
 	# 4. Advance the player index (wrap around with modulo).
-	gm.current_player_index = (player_idx + 1) % Constants.MAX_PLAYERS
+	gm.current_player_index = (player_idx + 1) % gm.active_player_count
 
 	print("[EndTurn] Next player: %d." % gm.current_player_index)
 
