@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-06-27 (post-merge regression fixes, GameManager-driven turn advancement, BaseMinigame intro/countdown system, HUD + ScoreBoard implementation, LangitLupa dash mechanic, full scoring-system rework across all 3 minigames)
+**Last Updated:** 2026-06-30 (LAN multiplayer lobby implemented — hosting, UDP broadcast discovery, join-by-code; board/minigame state is NOT yet networked, see Known Issues)
 
 ---
 
@@ -12,6 +12,7 @@
 - [Project Overview](#project-overview)
 - [Repository Structure](#repository-structure)
 - [Autoloads (Singletons)](#autoloads-singletons)
+- [LAN Multiplayer Lobby](#lan-multiplayer-lobby)
 - [Scene Graph](#scene-graph)
 - [State Machine (FSM)](#state-machine-fsm)
 - [Board System](#board-system)
@@ -192,7 +193,81 @@ Utility functions, accessed as `Utils.function_name()` via the autoload.
 
 ---
 
-## Scene Graph
+## LAN Multiplayer Lobby
+
+**Added 2026-06-30.** A pre-game lobby screen now lets up to 4 players connect over LAN before `Game.tscn` ever loads. This is a separate system from the board/minigame loop — **the board and minigame state are not yet networked** (see Known Issues & TODOs below). Right now this only gets all players into the same `Game.tscn` at the same time; it does not yet sync dice rolls, movement, scores, or minigame state across clients.
+
+### `NetworkManager` (`autoload/NetworkManager.gd`)
+New autoload, registered alongside `GameManager` etc. Wraps Godot's high-level multiplayer API (`ENetMultiplayerPeer`).
+
+```gdscript
+const PORT := 7777                # ENet game connection port
+const DISCOVERY_PORT := 7778      # UDP broadcast discovery port
+const MAX_PLAYERS := 4
+
+var lobby_code: String            # 5-letter code, host-generated
+var is_host: bool
+var connected_players: Dictionary # peer_id -> {name: String}
+var discovered_lobbies: Dictionary # code -> {ip: String, last_seen: float}, joiner-side only
+```
+
+**Hosting (`host_lobby(player_name)`):** generates a 5-letter code (`_generate_code()`, excludes `I`/`O` to avoid visual confusion with `1`/`0`), calls `ENetMultiplayerPeer.create_server()` on `PORT`, registers itself as peer 1 in `connected_players`, then starts broadcasting its code over UDP via `_start_broadcasting()` (a `Timer` firing `_send_broadcast()` once a second).
+
+**Joining:** two paths exist —
+- `join_lobby_by_code(code, name)` — looks up the code in `discovered_lobbies` (populated by listening for the host's UDP broadcasts) and resolves it to an IP automatically.
+- `join_lobby(code, ip, name)` — direct IP connect, no discovery involved. `lobby_screen.gd`'s join flow uses this automatically whenever the IP field is non-empty, falling back to the by-code/discovery path otherwise — see "Manual IP fallback" below for why this exists.
+
+Once connected, the joining client calls `rpc_id(1, "_register_player", player_name, lobby_code)` to register with the host. The host's `_register_player` validates the code matches, adds the peer to `connected_players`, and calls `_broadcast_player_list()` to sync everyone's roster.
+
+**Starting the match:** host-only `start_game()` stops discovery broadcasting, then `rpc("_on_game_start")` (with `call_local`) tells every peer — including the host itself — to `change_scene_to_file("res://scenes/Game.tscn")` simultaneously.
+
+> **⚠️ Known limitation, not yet addressed:** once `_on_game_start` fires, every peer loads `Game.tscn` and runs its **own independent** `GameManager`/`StateMachine`. There is currently no RPC traffic of any kind once the match starts — dice rolls, token movement, scores, and minigame outcomes are all purely local to whichever window rolled/moved/played. Confirmed via live two-window testing (2026-06-30): both windows show different "whose turn" highlighting and don't reflect each other's rolls at all. This needs the same RPC-authority treatment the lobby got — host-authoritative state, clients request actions via RPC, host broadcasts results — applied to `dice.gd`, `State_Moving`, `State_TileEvent`, and all three minigames' input handling. Not yet started.
+
+### UDP Broadcast Discovery
+Host and joiner both run a `PacketPeerUDP`, but for different purposes — host's is dedicated to sending (`_start_broadcasting`/`_send_broadcast`), joiner's is bound for receiving (`start_listening_for_lobbies`, polled every frame in `_process()` while not `is_host`). Broadcast message format: `"PINOYPARTY|{code}"`.
+
+> **✅ Gotcha confirmed during one-machine testing (2026-06-30):** two instances on the **same machine** cannot both `bind()` `DISCOVERY_PORT` for listening — only the first call succeeds, the second fails silently with a nonzero error code (no thrown exception, just a returned `Error`). This makes broadcast discovery fundamentally untestable with two processes sharing one IP; it requires two physically separate machines on the same LAN to verify properly. **This is not a bug to fix** — it's an inherent limitation of UDP port binding, expected to work fine across real machines since each has its own IP.
+
+**Manual IP fallback (added for same-machine testing):** `lobby_screen.gd`'s `_on_join_pressed()` checks the `JoinIPInput` field — if non-empty, it calls `join_lobby()` directly with that IP instead of going through `join_lobby_by_code()`/discovery. This was added specifically so the one-laptop-two-`.exe`-instances testing flow (see Recent Bug Fixes) has a working path despite the port-binding limitation above; `127.0.0.1` as the IP is what makes single-machine testing possible at all. Kept in the shipped UI as a small "or enter IP manually" affordance even post-testing, in case discovery ever flakes on a real network (e.g. router client-isolation blocking broadcast traffic between devices).
+
+### `lobby_screen.gd` (`scenes/ui/LobbyScreen.tscn`)
+Set as the project's **Main Scene** (Project Settings → Application → Run), replacing the previous direct-to-`Game.tscn` entry point.
+
+```
+LobbyScreen (Control)              ← lobby_screen.gd
+├── HostJoinPanel (VBoxContainer)
+│   ├── NameInput (LineEdit)
+│   ├── HostButton (Button)
+│   ├── JoinCodeInput (LineEdit)
+│   ├── JoinIPInput (LineEdit)     ← optional, see "Manual IP fallback" above
+│   └── JoinButton (Button)
+├── LobbyPanel (Control)
+│   ├── CodeLabel (Label)
+│   ├── PlayerCards (HBoxContainer) ← built at runtime, one card per connected player
+│   └── StartButton (Button)        ← host-only; disabled until ≥2 players
+└── StatusLabel (Label)             ← error/status text (e.g. "No lobby found...")
+```
+
+`_ready()` explicitly sets initial panel visibility (`HostJoinPanel` visible, `LobbyPanel` hidden) and connects `HostButton`/`JoinButton`/`StartButton` press signals **in code** rather than relying on editor-side signal wiring — see the dedicated gotcha below for why.
+
+**Roster syncing:** listens to a single `NetworkManager.roster_updated` signal (not `player_joined`/`player_left` — see gotcha below) to rebuild `PlayerCards` and toggle `StartButton.visible`/`disabled` based on `is_host` and player count.
+
+> **✅ Gotcha — editor-wired signals silently missing (2026-06-29).** Initial testing found that clicking "Host" did nothing at all. Root cause: `HostButton.pressed` was never actually connected to `_on_host_pressed()` — the function existed, but nothing called it, because the signal connection was expected to be made manually in the editor's Signals tab and never was. **Fix:** connect all three buttons' `pressed` signals explicitly in `_ready()` instead of depending on editor wiring, matching how `start_button` was already connected. **Process takeaway:** when a button "does nothing" with no error at all, check whether its signal is actually connected before assuming the handler logic is broken — a disconnected signal produces zero console output, identical in symptom to a silently-failing handler.
+
+> **✅ Gotcha — `player_joined`/`player_left` only ever fire on the host (2026-06-30).** Initial roster-sync logic connected `_on_roster_changed` to `NetworkManager.player_joined` and `player_left`. Both signals are only emitted from inside `_register_player()`/`_on_peer_disconnected()`, which have an `if not is_host: return` guard — meaning **joining clients never receive either signal**, even though their own `connected_players` dictionary correctly updates via the `_sync_player_list` RPC. Symptom: the host's UI updated fine when a player joined, but the joiner's screen stayed stuck on the host/join panel forever, never flipping to show the lobby — despite the underlying data being correct on both sides. **Fix:** added a new `roster_updated` signal, emitted from inside `_sync_player_list` itself (which already runs via `@rpc("authority", "reliable", "call_local")`, so it fires on every peer including the host). `lobby_screen.gd` now listens to `roster_updated` exclusively for rebuilding the UI. **Process takeaway:** any signal meant to drive UI state needs to fire on **every peer that needs to react**, not just the one where the underlying logic happens to run — RPC call sites and signal emission sites aren't automatically the same set of machines.
+
+> **Gotcha — type inference fails on `$NodePath.property` inside `:=` assignments.** `var typed_ip := $HostJoinPanel/JoinIPInput.text.strip_edges()` threw `"Cannot infer the type of 'typed_ip' variable because the value doesn't have a set type"` for three separate variables in `_on_join_pressed()`. Fixed by declaring an explicitly-typed intermediate variable for the node reference first (`var join_ip_input: LineEdit = $HostJoinPanel/JoinIPInput`), then accessing `.text` off that typed variable rather than chaining straight off the `$Path` shorthand inside a `:=` assignment.
+
+### Testing Notes (one-laptop setup)
+No second machine available during initial development, so testing relied on running two exported `.exe` copies of the same debug build side-by-side as independent OS processes (not two editor instances — editor multi-instance runs can cause port/breakpoint conflicts). Key findings, all confirmed live:
+- Direct IP join (`127.0.0.1`) works correctly between two same-machine instances; this is the primary tested path so far.
+- Broadcast discovery cannot be validated on one machine (see UDP Broadcast Discovery section above) — needs real two-machine LAN testing before considering it verified.
+- Two hosts cannot both bind `PORT` (`7777`) on the same machine — attempting to click "Host" on a second instance after one is already hosting throws `"ERROR: Couldn't create an ENet host"` and emits `join_failed.emit("Could not create server")`. Expected behavior, not a bug — confirms `create_server()`'s error path is being surfaced correctly to the UI rather than failing silently.
+- Debug `print()` statements were added at each step of the join pipeline (`_on_join_pressed`, `join_lobby`, `_on_connected_ok`, `_register_player`) specifically to localize failures during this testing — worth keeping in place for now given how many of this project's past bugs (per Recent Bug Fixes throughout this log) have been silent-failure types with no thrown error.
+
+---
+
+
 
 ### `Game.tscn` (main scene)
 ```
@@ -353,8 +428,16 @@ static func compute_placement_scores(groups: Array) -> Dictionary  # see "Shared
 
 `_finish(scores)` flow:
 1. Emits `EventBus.minigame_finished(scores)` — caught by `GameManager._on_minigame_finished()` (an autoload, not `State_TileEvent` — see Design Decisions & Gotchas for why)
-2. Waits 2 seconds (to show results)
+2. `await run_results(scores)` — shows the results screen (see below)
 3. Calls `SceneLoader.return_to_board()`
+
+#### Results screen (added 2026-06-29)
+`run_results(scores: Dictionary)` — called from `_finish()`, after `minigame_finished` is emitted but before `return_to_board()`. Same "build everything at runtime, no scene edits" approach as `run_intro()`:
+- **Phase 1 (2s):** dimmed `CanvasLayer`/`ColorRect` (alpha `0.85`) + centered `Label` announcing the winner (`"Player N Wins!"`), or `"It's a Tie!"` if multiple players share the top score. Winner determined by `_get_winner_index(scores)`, a local helper (highest value in the `scores` dict; returns `-1` on a tie).
+- **Phase 2 (2s):** winner label is freed and replaced with a `VBoxContainer` listing every player's points earned this round (`"Player N: +X pts"`), pulled directly from the `scores` dict passed into `_finish()`.
+- Total added delay: 2s → 4s between minigame end and returning to the board (was a flat 2s with no visual before this).
+- Gameplay is already safe during this window — every minigame's `_end_game()` sets `gameplay_locked = true` before calling `_finish()`, so no input-blocking changes were needed here.
+- **Known gap:** ties for first place currently show a generic `"It's a Tie!"` rather than naming the tied players. Not yet implemented.
 
 #### Pre-round intro (added 2026-06-27)
 Every minigame gets a shared pre-round sequence for free, applying uniformly without touching each minigame's `.tscn`:
@@ -397,15 +480,16 @@ A rhythm-based timing minigame (jump-the-rope).
 - A marker sweeps across each player's bar from left to right
 - A green "safe zone" appears at a random position on the bar
 - Players press their jump button (`p1_jump`=1, `p2_jump`=2, `p3_jump`=3, `p4_jump`=4) to jump
-- Jumping while the marker is in the zone → "Cleared!" (+1 score via `GameManager.add_score`)
+- Jumping while the marker is in the zone → "Cleared!" (no longer scores live — see Scoring below)
 - Jumping outside the zone or not jumping → "Caught!" (eliminated from this round)
-- Last player standing gets +3 bonus points
 - Each round speeds up (`ROUND_SPEEDUP = 0.85×`) and shrinks the zone (`ZONE_SHRINK = 0.92×`)
 - Game ends when ≤1 player remains alive
 
 ~~**Known bug in `_unhandled_input`:** always called `_try_jump(0)` regardless of which player pressed.~~ **FIXED (2026-06-24):** The stray unconditional `_try_jump(0)` line (a leftover from a partial merge — see `Recent Bug Fixes`) has been deleted. The per-player loop (`for player_idx in alive_players: ... if event.is_action_pressed(action): _try_jump(player_idx)`) is now the only call path and has been verified correct via live testing.
 
 > **✅ Marker visual reset bug — FIXED (2026-06-27).** Surviving players' markers visually stayed at their previous round's end position throughout the next round's 3-2-1 countdown, then snapped to the start the instant the sweep began. Cause: `_start_countdown()` reset the zone and status label each round but never reset `marker_rect.position.x` — the marker is only ever moved inside `_process()`, which returns immediately while `sweeping` is false (i.e. for the entire countdown). Fixed by adding `marker_rect.position.x = 0.0` to the same per-player reset loop that already resets the zone/status.
+
+> **✅ Start-of-game freeze — FIXED (2026-06-28).** After deduping the redundant double-countdown (see below), `start_game()` was left calling `run_intro()` but never calling `_start_countdown()` afterward — so `_begin_sweep()` (the only place that sets `sweeping = true`) never ran, and `_process()`'s `if not sweeping: return` guard silently stopped everything forever. No error, scene loaded fine, UI rendered, nothing ever moved. **Fix + proper dedupe:** `start_game()` now does `await run_intro()` then calls `_start_countdown()`. `_start_countdown()` itself no longer runs its own separate `3, 2, 1, JUMP!` text loop (that was the original duplicate-countdown issue) — it just does the per-round bar/zone/marker reset and goes straight into `_begin_sweep()`. Net effect: the shared dimmed countdown overlay now plays once, before round 1 only; later rounds get the existing 1-second pause (from `_check_game_over()`) without re-darkening the screen. The now-unused `countdown_label`/`$UI/CountdownLabel` reference was removed from the script (the node itself can be deleted from the scene if desired, it's just inert now).
 
 **Scoring (reworked 2026-06-27):** No more live per-jump points. Score is now placement-only, computed once at `_end_game()` via `BaseMinigame.compute_placement_scores()`. Each round's simultaneous eliminations (both immediate "Caught!" misses via `_try_jump` and end-of-round auto-eliminations for anyone who never jumped) are collected into `eliminated_this_round` and pushed onto `elimination_order` as one tie-group. At game end, the placement groups are built as: the lone survivor (if `alive_players.size() == 1`) first, then `elimination_order` reversed (most recently eliminated = better placement) — fed straight into `compute_placement_scores()`. See that function's doc above for the exact tie-breaking rule and worked examples.
 
@@ -428,18 +512,25 @@ A real-time tag minigame — meaningfully different from the other two since it 
 
 **Mechanics:**
 - One random participating player is designated "IT" (`it_player`), shown via a distinct color and `ItLabel`
-- `NUM_AREAS` (6) "elevated areas" spawn at random positions each round; non-IT players are safe from tagging while standing inside one
-- An area becomes permanently `unsafe` (flagged, flashes red, does not refresh) once any non-IT player has continuously occupied it for `AREA_SAFE_DURATION` (4s)
-- IT is blocked from ever stepping inside an area (checked in movement resolution)
+- `NUM_AREAS` (6) "elevated areas" spawn each round; non-IT players are safe from tagging while standing inside one
+- An area becomes permanently `unsafe` once any non-IT player has continuously occupied it for `AREA_SAFE_DURATION` (4s) — see "Area visuals" below for exactly what happens on screen when this triggers
+- IT is blocked from ever stepping inside a still-safe area (checked in movement resolution)
 - IT tags any non-elevated, non-safe player within `TAG_RADIUS` via proximity check each frame
 - Round ends after `ROUND_DURATION` (60s), **or immediately once IT has tagged every other player** (added 2026-06-27 — see `_check_tagging()`, no need to wait out the rest of the timer)
 - Pre-round sequence now goes through the shared `BaseMinigame.run_intro()` (announces "Player X is IT!" for 2s, then a dimmed 3-2-1) instead of its own local countdown — see `BaseMinigame.gd` above
 
 **Dash mechanic (added 2026-06-27):** every player — human and AI — can dash for a 3× speed burst (`DASH_SPEED_MULTIPLIER`) lasting `DASH_DURATION` (0.15s), on a per-player `DASH_COOLDOWN` (5s). Human triggers it via the `dash` input action (bound to Shift); AI rolls a 30% chance (`AI_DASH_CHANCE`) to dash whenever it picks a new wander direction, only if off cooldown. Dash still respects the "IT can't enter elevated areas" rule since both normal movement and dash bursts flow through the same `_apply_move()`. Each player has a small radial cooldown ring — a `Node2D` with a script built **at runtime** via `GDScript.new()`/`set_source_code()` (no new scene file needed) drawing a shrinking wedge with `draw_arc()`; full circle = just dashed, shrinks to nothing as the cooldown clears.
 
-> **✅ Players spawning inside safe zones — FIXED (2026-06-27).** Player spawn positions were fully random within the arena bounds, with no check against the elevated areas — so a player could (and often would) start the round already standing safely inside one. Fixed via `_find_clear_spawn()`: rerolls the candidate spawn point (up to 30 attempts) if it lands within `AREA_RADIUS + 20px` of any area, falling back to the last attempt if it somehow never finds a clear spot (better than an infinite loop).
+**Area detection + visuals overhaul (2026-06-28):** three related issues, all in how "elevated areas" are sized, detected, and rendered, fixed together:
+- **Detection didn't match the visual.** Areas were checked with `pos.distance_to(area.pos) < AREA_RADIUS` (a circle) while the visible `ColorRect` was an 80×80 square — so the corners of the visible safe zone weren't actually safe, and the circle's "radius" didn't read as matching what was on screen at all. Replaced with `_point_in_area(point, area, margin)`, an exact square-bounds check using half of `AREA_SIZE` — used consistently everywhere an area is checked (`_apply_move`'s IT-blocking, `_update_areas`'s occupancy check, `_is_player_safe`). `AREA_RADIUS` no longer exists in this file.
+- **"Permanently unsafe" used to flash red forever** (`modulate.a = 0.5 + 0.5 * sin(round_time * 10.0)`, looping indefinitely) instead of disappearing — this was actually matching the original spec wording ("flashes red, does not refresh") but wasn't the desired final behavior. Now: each area stores `unsafe_since` (the `round_time` it tripped), flashes for `AREA_FLASH_DURATION` (1s) as a brief "this just became unsafe" cue, then sets `visible = false` for good.
+- **Players could spawn already standing inside a safe area**, and **areas could spawn directly on top of a player's spawn point** — both fixed together, see "Fixed spawn cluster" below.
+
+**Fixed spawn cluster (2026-06-28):** player spawning was reworked from "fully random, with a 30-attempt reroll to avoid areas" to a fixed, predictable layout — all 4 players now spawn at a constant `SPAWN_CENTER` (`Vector2(400, 250)`) offset by one of four small diagonal `SPAWN_OFFSETS` (±40, ±40), so they're always clustered together but never overlapping (80px between diagonal neighbors, well above `TAG_RADIUS`). `_spawn_areas()` now runs *after* `_position_players()` and calls `_find_area_spawn_avoiding_players()`, rerolling a candidate area position (up to 30 attempts) if it lands within `AREA_SIZE/2 + 30px` of any player's now-known spawn point. Order matters here: areas need players already positioned to check against.
 
 > **✅ Scoring formula was wrong AND double-counted — FIXED (2026-06-27).** Old `_end_game()` gave IT `tagged_count * 2` and every survivor a flat `2` regardless of how many survived, **and** called `GameManager.add_score()` directly while also passing the same dict through `_finish()` — doubling every point awarded. Correct formula per design: IT scores 1 point per tagged player; each surviving non-IT player scores 1 point per surviving non-IT player (so with 4 total players and exactly 1 tagged, IT gets 1 and each of the 2 survivors gets 2). Tagged players get no entry in the scores dict at all (defaults to 0). Scoring now flows through `_finish()` exactly once.
+
+> **✅ Repeat-scoring on round end — FIXED (2026-06-27).** Independently of the formula bug above, scores were being applied dozens of times per round-end instead of once. `_end_game()` only set `round_active = false`, but `_process()`'s only early-return guard was `if gameplay_locked: return` — and `round_active` being false just made the very next frame's `if not round_active: round_active = true` quietly re-arm itself and fall through to `_check_tagging()` again, which still saw the win condition as true and called `_end_game()` again. Since `_finish()` has a 2-second `await` before the scene actually changes, this repeated ~60 times/sec for that whole window, with `GameManager._on_minigame_finished()` adding the score block every single time — producing wildly inflated, framerate-dependent totals with zero errors thrown. **Fix:** `_end_game()` now also sets `gameplay_locked = true` immediately, reusing the same flag that already blocks input during the intro, so `_process()` stops cold the very next frame. (`SackRace` and `LuksongBaka` were checked and don't have this bug — both already use a clean `if not race_active/sweeping: return` instead of a re-arming pattern.)
 
 **Folder/naming:** `res://scenes/minigames/LangitLupa/langit_lupa.gd` + `LangitLupa.tscn` (root node named `LangitLupa`).
 
@@ -465,6 +556,17 @@ Connects to `EventBus.turn_started`. Builds its own `Label` at runtime in `_read
 - Listens to `EventBus.turn_started` to move the `▶` marker to whoever's currently up.
 - Requires `GameManager.add_score()` to emit `EventBus.score_changed(player_index, players[player_index]["score"])` after mutating the score — this had to be added alongside the signal itself, since `add_score()` previously only mutated state silently.
 - Instanced as a child of `Game.tscn`'s `UI` layer alongside `HUD`, positioned to avoid overlapping it.
+
+### `game_over_screen.gd` (`scenes/ui/GameOverScreen.tscn`)
+**Added (2026-06-28).** Same "build everything at runtime" approach as `hud.gd`/`score_board.gd` — root `Control` + script only, no manually-placed children.
+
+- `_ready()`: builds a full-screen dim `ColorRect` (alpha `0.85`), a centered `VBoxContainer` with a headline `Label`, one score row per player (reusing the same row style as `ScoreBoard`, winner's row rendered larger), and a "Play Again" `Button`. Starts `visible = false` and `mouse_filter = MOUSE_FILTER_STOP` (so it can't block clicks while hidden, but does once shown).
+- Connects to `EventBus.game_over(winner_index)` — sets the headline to `"%s Wins!"` colored to match the winner, populates every player's final score, then sets `visible = true`.
+- "Play Again" calls `GameManager.reset_for_new_game()` then `get_tree().change_scene_to_file("res://scenes/Game.tscn")` — a full scene reload rather than an in-place reset, to avoid any chance of leftover token positions/sprites carrying over from the finished game.
+- **Scope clarification:** this is the *board's* game-over screen, not a per-minigame results screen. `EventBus.game_over` is only ever emitted from `State_EndTurn.gd` (or redundantly from `GameManager.add_score()` — see below) when a player's token reaches the final board tile — never from inside a minigame. Since `SceneLoader.go_to_minigame()` fully destroys `Game.tscn` (and everything instanced inside it, including this screen) while a minigame is active, it is expected and correct that this screen cannot appear during a minigame; it only exists again once `SceneLoader.return_to_board()` rebuilds the board scene.
+- Must be instanced as a child of `Game.tscn`'s `UI` layer (same as `HUD`/`ScoreBoard`) for `_ready()` to ever run and connect to the signal — confirmed `GameManager.gd` already has working `_get_winner()` and `reset_for_new_game()` implementations as of 2026-06-28, so if the screen still isn't appearing after a normal full game, the instancing step is the first thing to check.
+
+> **Known redundancy (not yet cleaned up):** `GameManager.add_score()` independently re-checks `_is_game_over()`/emits `game_over` itself, duplicating what `State_EndTurn.gd` already does correctly via the FSM. Harmless today since both paths compute the same winner the same way, but it's a second, less-controlled trigger path that's worth removing once someone's looking at `GameManager.gd` for other reasons — having only one place that can ever emit `game_over` would be safer long-term.
 
 ## Input Mappings
 
@@ -493,20 +595,17 @@ The standard Godot `ui_accept` (Space/Enter) triggers dice roll in both `dice.gd
 ### Stubs / Unimplemented
 - `State_EndTurn._save_state()` — TODO: persistence layer
 - `State_EndTurn._update_ui()` — TODO: scoreboard refresh signal
-- `score_board.gd` — empty stub
 - `player.gd` — empty stub
 - `TilePath.gd` — empty stub
-- `ScoreBoard.tscn` — not connected to game scene
-- `HUD.tscn` — exists but not added to `Game.tscn`
 - Minigames: `LangitLupa` — not yet in active rotation, pending playtest. `BatoLata` and `AgawBase` are **cut from the project** (2026-06-25), see Planned Minigames.
 - `Enums.TileType.SARI_SARI` — defined but never assigned to any tile
 - Board character sprites — **wired in (2026-06-24).** See "Player Token System" for the AnimatedSprite2D/`_build_frames()` implementation. Note the on-disk asset folder path needs verification — see the flagged mismatch in that section.
 - Minigame character assets — present but not yet wired into any minigame scene
 
 ### Architecture Decisions Pending
-- **Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented
-- **Local multiplayer input** — all 4 players share one screen/keyboard; no network/controller support
-- **LAN multiplayer (planned)** — `LangitLupa` was deliberately built around a single `local_player_index` (currently hardcoded to `0`) controlling one set of generic movement keys (`move_up/down/left/right`), anticipating that each LAN client will eventually control only its own player. This pattern is not yet wired to real networking and should be treated as the template for retrofitting movement-based minigames once LAN play exists.
+- ~~**Game Over screen** — FSM halts at `State_EndTurn` on game over; no UI or transition is implemented~~ **RESOLVED (2026-06-28)** — see `game_over_screen.gd` under UI System.
+- **Local multiplayer input** — all 4 players share one screen/keyboard; no network/controller support. Unaffected by the new LAN lobby — that's a separate matchmaking layer, not a replacement for this.
+- **LAN multiplayer — lobby done, gameplay sync NOT started (2026-06-30).** Hosting/joining/roster-sync is implemented and tested (see LAN Multiplayer Lobby section). However, once `start_game()` loads `Game.tscn`, every peer runs a fully independent, unsynced copy of `GameManager`/`StateMachine` — dice rolls, movement, scores, and minigame state are not networked at all yet. `LangitLupa`'s existing `local_player_index` pattern (currently hardcoded to `0`) was built anticipating this and should be the template once dice/movement/minigame RPC sync work begins — each LAN client controlling only its own player, same as that minigame's movement input already assumes.
 - **Score display** — scores are tracked in `GameManager.players` but never shown to the user
 
 ---
@@ -631,6 +730,15 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 | 2026-06-27 | *(pending)* | LangitLupa: added a dash mechanic (3× speed for 0.15s, 5s cooldown, both human and AI) with a runtime-built radial cooldown indicator per player. Added a fix so players no longer spawn already standing inside a safe elevated area. Added an early-win condition so the round ends the instant IT has tagged every other player, instead of always running the full 60s. |
 | 2026-06-27 | *(pending)* | Fixed the marker-snap-back visual bug in `LuksongBaka` — survivors' markers stayed at their previous round's end position throughout the countdown, then snapped to start the instant the sweep began, because `_start_countdown()` reset the zone/status but never the marker's position. Added the missing reset to the same loop. |
 | 2026-06-27 | *(pending)* | Reworked scoring across all three minigames to match the finalized design spec, and fixed a double-scoring bug present in **all three** (`GameManager.add_score()` called directly *and* the same scores dict passed through `_finish()`, which already applies it via the new `GameManager._on_minigame_finished()` hook — doubling every point awarded). Added `BaseMinigame.compute_placement_scores()`, a shared tie-aware placement algorithm now used by both `LuksongBaka` and `SackRace`. Rewrote `LangitLupa`'s scoring formula (IT = tagged count, survivors = survivor count each, tagged = 0) to match spec exactly. |
+| 2026-06-27 | *(pending)* | Fixed a repeat-scoring bug in `LangitLupa` distinct from the formula bug above: `_end_game()` wasn't setting `gameplay_locked`, so `_process()` re-armed itself every frame for the full 2-second `_finish()` delay and kept re-triggering `_end_game()` (and therefore re-emitting `minigame_finished`) dozens of times per round-end, producing wildly inflated scores with no errors thrown. Fixed by having `_end_game()` set `gameplay_locked = true` immediately. Confirmed `SackRace` and `LuksongBaka` don't share this bug — both already guard cleanly. |
+| 2026-06-28 | *(pending)* | Added `GameOverScreen.tscn`/`game_over_screen.gd` — full-screen results overlay listening to `EventBus.game_over`, with a "Play Again" button that resets `GameManager` state and reloads `Game.tscn`. Confirmed `GameManager.gd` already has correct `_get_winner()` and `reset_for_new_game()` implementations. Clarified scope: this screen belongs to the board (`Game.tscn`), not to individual minigames — it's destroyed along with the rest of `Game.tscn` whenever a minigame is active, by design, same as everything else in that scene tree. |
+| 2026-06-28 | *(pending)* | Fixed the `LuksongBaka` start-of-game freeze (see "Implemented Minigame: `LuksongBaka`" above) — a side effect of an earlier attempt to dedupe its double-countdown that removed the call to `_start_countdown()` without anything left to replace it. Properly deduped this time: `run_intro()` provides the one-time pre-game countdown, `_start_countdown()` no longer has its own separate text countdown. |
+| 2026-06-28 | *(pending)* | Overhauled `LangitLupa`'s elevated-area system: detection now uses an exact square-bounds check (`_point_in_area()`) instead of a circle that didn't match the visible square's corners; unsafe areas now flash briefly then disappear instead of flashing forever; player spawning switched from random-with-rerolls to a fixed center cluster (`SPAWN_CENTER` + `SPAWN_OFFSETS`), with areas now spawned afterward and rerolled away from those known spawn points. |
+| 2026-06-29 | *(pending)* | Added a post-minigame results screen to `BaseMinigame._finish()` — previously just a blank 2s wait before returning to the board. Now shows a 2s winner announcement (`run_results()`'s phase 1) followed by a 2s per-player points breakdown (phase 2), both built at runtime in the same dimmed-overlay style as `run_intro()`. Applies to all three minigames for free since they all funnel through `_finish()`. |
+| 2026-06-30 | *(pending)* | Implemented LAN multiplayer lobby: new `NetworkManager` autoload (ENet hosting/joining, 5-letter code generation, UDP broadcast discovery on a separate port from the game connection) and `lobby_screen.gd`/`LobbyScreen.tscn`, set as the new Main Scene. See full "LAN Multiplayer Lobby" section above. |
+| 2026-06-30 | *(pending)* | Fixed Host/Join buttons doing nothing on click — their `pressed` signals were never connected to anything; editor-side wiring was assumed but never actually done. Connected all three lobby buttons explicitly in `_ready()` instead. |
+| 2026-06-30 | *(pending)* | Fixed joining clients never seeing the lobby roster update (host's UI updated fine, joiner's stayed frozen on the host/join panel). Root cause: UI was listening to `player_joined`/`player_left`, both gated `if not is_host: return` and therefore never emitted on the joiner's own instance. Added a new `roster_updated` signal emitted from `_sync_player_list` (already `call_local`, fires on every peer) and switched `lobby_screen.gd` to listen to that instead. |
+| 2026-06-30 | *(pending)* | Confirmed via live one-machine testing that two instances can't both bind the UDP discovery port, making broadcast discovery untestable without a second physical machine; added a manual-IP fallback path (`join_lobby()` directly, bypassing discovery, whenever the IP field is filled in) specifically to unblock same-machine testing of the core connection/registration logic. |
 
 ---
 

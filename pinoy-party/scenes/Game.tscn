@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://bn08v1ospija" path="res://scripts/state_machine/states/State_EndTurn.gd" id="9_7ua8r"]
 [ext_resource type="PackedScene" uid="uid://b27tfag0jsw3q" path="res://scenes/ui/HUD.tscn" id="10_qy1jj"]
 [ext_resource type="PackedScene" uid="uid://05p1lmwlynfu" path="res://scenes/ui/ScoreBoard.tscn" id="11_3xj3m"]
+[ext_resource type="PackedScene" uid="uid://c2hbad6cv4qhg" path="res://scenes/ui/GameOverScreen.tscn" id="12_mcffj"]
 
 [node name="Game" type="Node2D" unique_id=1768686812]
 script = ExtResource("1")
@@ -58,3 +59,5 @@ offset_top = 0.0
 offset_right = 324.0
 offset_bottom = 0.0
 grow_horizontal = 2
+
+[node name="GameOverScreen" parent="UI" unique_id=818565318 instance=ExtResource("12_mcffj")]

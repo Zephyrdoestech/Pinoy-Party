@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="PinoyParty"
-run/main_scene="res://scenes/Game.tscn"
+run/main_scene="uid://dbfm3smj58raw"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -27,6 +27,7 @@ SceneLoader="*uid://cby8svdvll7t"
 Constants="*uid://cgltxikm7foap"
 Enums="*uid://btrgc223d7l4y"
 Utils="*uid://kq72ldfg6dn8"
+NetworkManager="*uid://dh16yfljr5wd7"
 
 [editor_plugins]
 
