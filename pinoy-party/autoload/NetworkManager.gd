@@ -265,6 +265,49 @@ func _apply_sack_race_hop(player_idx: int) -> void:
 	if scene is SackRace:
 		scene.apply_hop(player_idx)
 
+# --- LuksongBaka sync ---
+@rpc("any_peer", "reliable")
+func request_luksong_jump(player_idx: int, client_marker_t: float) -> void:
+	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	if peer_to_player_index.get(sender_id, -1) != player_idx:
+		return  # client tried to jump for a player it doesn't control
+	process_luksong_jump(player_idx, client_marker_t)
+
+func process_luksong_jump(player_idx: int, client_marker_t: float) -> void:
+	var scene := get_tree().current_scene
+	if not scene is LuksongBaka:
+		return
+	# Host evaluates using its own marker_t, not the client's, so the
+	# in_zone decision is always authoritative — client_marker_t is only
+	# used as a fallback if the host scene somehow has no marker state.
+	var host_marker_t: float = scene.marker_t
+	var zone_start: float = scene.zone_start
+	var zone_width: float = scene.zone_width
+	var in_zone: bool = host_marker_t >= zone_start and host_marker_t <= (zone_start + zone_width)
+	rpc("_apply_luksong_jump", player_idx, in_zone)
+
+@rpc("authority", "reliable", "call_local")
+func _apply_luksong_jump(player_idx: int, in_zone: bool) -> void:
+	var scene := get_tree().current_scene
+	if scene is LuksongBaka:
+		scene.apply_jump_result(player_idx, in_zone)
+
+@rpc("authority", "reliable", "call_local")
+func sync_luksong_round(zone_start: float) -> void:
+	var scene := get_tree().current_scene
+	if scene is LuksongBaka:
+		scene._begin_round(zone_start)
+
+@rpc("authority", "reliable", "call_local")
+func sync_luksong_round_end(auto_eliminated: Array) -> void:
+	var scene := get_tree().current_scene
+	if scene is LuksongBaka:
+		scene.apply_round_end(auto_eliminated)
+
 func _generate_code() -> String:
 	const CHARS := "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I/O to avoid confusion
 	var code := ""
