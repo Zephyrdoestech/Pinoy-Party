@@ -10,8 +10,38 @@ const ZONE_SHRINK := 0.92          # multiply zone width by this each round
 const BAR_WIDTH := 400.0
 const PLAYER_JUMP_ACTIONS := ["p1_jump", "p2_jump", "p3_jump", "p4_jump"]
 
+# ---------------------------------------------------------------------------
+# Visual constants
+# ---------------------------------------------------------------------------
+const BUILDING_TEXTURES: Array[String] = [
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building1.png",
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building2.png",
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building3.png",
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building4.png",
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building5.png",
+	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building6.png",
+]
+const BUILDING_SCROLL_SPEED: float = 80.0  # pixels/sec at round 1
+const BUILDING_Y: float = 400.0            # y position of building sprites
+const BUILDING_SCALE: float = 4.0          # 160px × 4 = 640px wide per building
+const BUILDING_NATIVE_W: int = 160         # source PNG width in pixels
+const BUILDING_COUNT: int = 10             # sprites to spawn (fills 1280 + overflow)
+
+# Character spritesheets: 4096×1024 (walk, 4 frames) / 2048×1024 (jump, 2 frames)
+const CHAR_FRAME_W: int = 1024
+const CHAR_FRAME_H: int = 1024
+const CHAR_WALK_FRAMES: int = 4
+const CHAR_JUMP_FRAMES: int = 2
+const CHAR_WALK_FPS: float = 8.0
+const CHAR_JUMP_FPS: float = 8.0
+const CHAR_SCALE: float = 0.12            # 1024px × 0.12 ≈ 123px tall on screen
+const CHAR_Y: float = 500.0               # vertical position of character sprites
+
 @onready var player_bars: Node2D = $PlayerBars
 @onready var round_label: Label = $UI/RoundLabel
+@onready var countdown_label: Label = $UI/CountdownLabel
+@onready var buildings_node: Node2D = $Buildings
+@onready var characters_node: Node2D = $Characters
 
 var current_round := 0
 var round_time := ROUND_TIME_START
@@ -28,12 +58,23 @@ var elimination_order: Array = []  # Array of Array[int], chronological (earlies
 
 var bars: Dictionary = {}  # player_index -> bar UI nodes
 
+# Visual state
+var building_sprites: Array[Sprite2D] = []
+var building_textures_cache: Array[Texture2D] = []
+var char_sprites: Dictionary = {}  # player_index -> AnimatedSprite2D
+
 func start_game(players: Array[int]) -> void:
 	super(players)
 	alive_players = players.duplicate()
+	_spawn_buildings()
+	_spawn_character_sprites()
 	_spawn_player_bars()
 	await run_intro()
 	_start_countdown()
+
+# ---------------------------------------------------------------------------
+# Existing gameplay functions — UNTOUCHED
+# ---------------------------------------------------------------------------
 
 func _spawn_player_bars() -> void:
 	var spacing := 90
@@ -111,7 +152,10 @@ func _process(delta: float) -> void:
 	if gameplay_locked:
 		return
 	if not sweeping:
+		_scroll_buildings(delta)
 		return
+
+	_scroll_buildings(delta)
 
 	marker_t += delta / round_time
 	if marker_t >= 1.0:
@@ -143,9 +187,23 @@ func _try_jump(player_idx: int) -> void:
 	if in_zone:
 		status.text = "Cleared!"
 		status.modulate = Color(0.3, 0.9, 0.4)
+		GameManager.add_score(player_idx, 1)
+		# Visual: play jump animation once, then return to walk
+		if char_sprites.has(player_idx):
+			var spr: AnimatedSprite2D = char_sprites[player_idx]
+			spr.play("jump")
+			spr.animation_finished.connect(func():
+				if is_instance_valid(spr) and alive_players.has(player_idx):
+					spr.play("walk")
+			, CONNECT_ONE_SHOT)
 	else:
 		status.text = "Caught!"
 		status.modulate = Color(0.9, 0.3, 0.3)
+		# Visual: grey out eliminated player
+		if char_sprites.has(player_idx):
+			var spr: AnimatedSprite2D = char_sprites[player_idx]
+			spr.stop()
+			spr.modulate = Color(0.4, 0.4, 0.4)
 		_eliminate(player_idx)
 
 func _end_round_sweep() -> void:
@@ -156,6 +214,11 @@ func _end_round_sweep() -> void:
 			var status: Label = bars[player_idx].get_node("Status")
 			status.text = "Caught!"
 			status.modulate = Color(0.9, 0.3, 0.3)
+			# Visual: grey out auto-eliminated player
+			if char_sprites.has(player_idx):
+				var spr: AnimatedSprite2D = char_sprites[player_idx]
+				spr.stop()
+				spr.modulate = Color(0.4, 0.4, 0.4)
 			_eliminate(player_idx)
 
 	if eliminated_this_round.size() > 0:
@@ -192,3 +255,104 @@ func _end_game() -> void:
 
 	var scores: Dictionary = compute_placement_scores(groups)
 	_finish(scores)
+
+# ---------------------------------------------------------------------------
+# Visual helpers — no gameplay logic here
+# ---------------------------------------------------------------------------
+
+## Spawn 10 building Sprite2Ds across the screen, filling from x=0 to ~1600.
+func _spawn_buildings() -> void:
+	# Pre-load all 6 building textures.
+	for path in BUILDING_TEXTURES:
+		building_textures_cache.append(load(path) as Texture2D)
+
+	var scaled_w: float = BUILDING_NATIVE_W * BUILDING_SCALE
+	for i in BUILDING_COUNT:
+		var spr := Sprite2D.new()
+		spr.texture = building_textures_cache[randi() % building_textures_cache.size()]
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# Sprite2D origin is center; offset so bottom-left aligns with position.
+		spr.centered = false
+		spr.scale = Vector2(BUILDING_SCALE, BUILDING_SCALE)
+		spr.position = Vector2(i * scaled_w, BUILDING_Y)
+		buildings_node.add_child(spr)
+		building_sprites.append(spr)
+
+## Move all building sprites left each frame. When one exits left, wrap it right.
+func _scroll_buildings(delta: float) -> void:
+	if building_sprites.is_empty():
+		return
+
+	# Current speed scales with ROUND_SPEEDUP (faster each round).
+	# round_time shrinks each round; speed is inversely proportional.
+	var speed_mult: float = ROUND_TIME_START / max(round_time, ROUND_TIME_MIN)
+	var speed: float = BUILDING_SCROLL_SPEED * speed_mult
+	var scaled_w: float = BUILDING_NATIVE_W * BUILDING_SCALE
+
+	# Find current rightmost x for wrapping.
+	var max_x: float = -INF
+	for spr in building_sprites:
+		if spr.position.x > max_x:
+			max_x = spr.position.x
+
+	for spr: Sprite2D in building_sprites:
+		spr.position.x -= speed * delta
+		if spr.position.x < -scaled_w:
+			# Teleport to right of the pack with random extra gap.
+			spr.position.x = max_x + randf_range(10.0, 60.0)
+			spr.texture = building_textures_cache[randi() % building_textures_cache.size()]
+			# Recalculate max_x after moving this sprite.
+			max_x = spr.position.x
+
+## Build a SpriteFrames for a minigame character at runtime (no .tres bake).
+## walk: 4096×1024 → 4 frames. jump: 2048×1024 → 2 frames.
+func _build_char_frames(charac_num: int) -> SpriteFrames:
+	var base := "res://assets/characters/minigame_characs/mg_c%d/mg_charac%d_" % [charac_num, charac_num]
+	var walk_tex: Texture2D = load(base + "walkRight.PNG")
+	var jump_tex: Texture2D = load(base + "jumpRight.PNG")
+
+	var frames := SpriteFrames.new()
+	frames.remove_animation("default")
+
+	# "walk" — 4 frames, looping
+	frames.add_animation("walk")
+	frames.set_animation_loop("walk", true)
+	frames.set_animation_speed("walk", CHAR_WALK_FPS)
+	for i in CHAR_WALK_FRAMES:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = walk_tex
+		atlas.region = Rect2(i * CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H)
+		frames.add_frame("walk", atlas)
+
+	# "jump" — 2 frames, non-looping (plays once then stops)
+	frames.add_animation("jump")
+	frames.set_animation_loop("jump", false)
+	frames.set_animation_speed("jump", CHAR_JUMP_FPS)
+	for i in CHAR_JUMP_FRAMES:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = jump_tex
+		atlas.region = Rect2(i * CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H)
+		frames.add_frame("jump", atlas)
+
+	return frames
+
+## Spawn one AnimatedSprite2D per player, spread horizontally near bottom of screen.
+func _spawn_character_sprites() -> void:
+	var count: int = participating_players.size()
+	var x_positions: Array[float] = []
+	for i in count:
+		x_positions.append(100.0 + (1000.0 / max(count - 1, 1)) * i)
+
+	for i in count:
+		var player_idx: int = participating_players[i]
+		var charac_num: int = player_idx + 1  # player 0 → charac1, etc.
+
+		var spr := AnimatedSprite2D.new()
+		spr.sprite_frames = _build_char_frames(charac_num)
+		spr.scale = Vector2(CHAR_SCALE, CHAR_SCALE)
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		spr.position = Vector2(x_positions[i], CHAR_Y)
+		spr.play("walk")
+
+		characters_node.add_child(spr)
+		char_sprites[player_idx] = spr
