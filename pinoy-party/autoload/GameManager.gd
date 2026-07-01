@@ -19,6 +19,12 @@ var state: Enums.GameState = Enums.GameState.WAITING
 ## Index of the player whose turn it currently is (0-based).
 var current_player_index := 0
 
+## How many real players are actually in this match. Defaults to
+## Constants.MAX_PLAYERS for the offline/local-only case, but is overwritten
+## by NetworkManager (via _sync_player_index_map) before Game.tscn loads
+## whenever a LAN match starts with fewer than the max players.
+var active_player_count: int = Constants.MAX_PLAYERS
+
 ## Player data array.  Each element is a Dictionary:
 ##   {
 ##     "name":       String,
@@ -39,7 +45,17 @@ var board_ref: Node2D = null
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
-	for i in Constants.MAX_PLAYERS:
+	_setup_players()
+	EventBus.minigame_finished.connect(_on_minigame_finished)
+
+## Builds the players array from active_player_count. Called once at
+## autoload _ready() with the default count (4, for local/offline play),
+## and called again by NetworkManager once the real LAN player count is
+## known — _ready() runs before the lobby exists, so it can't know that
+## count up front.
+func _setup_players() -> void:
+	players.clear()
+	for i in active_player_count:
 		players.append({
 			"name":       "Player %d" % (i + 1),
 			"tile_index": 0,
@@ -47,7 +63,6 @@ func _ready() -> void:
 			"color":      [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW][i],
 			"state":      Enums.PlayerState.IDLE,
 		})
-	EventBus.minigame_finished.connect(_on_minigame_finished)
 
 func _on_minigame_finished(scores: Dictionary) -> void:
 	for idx in scores:
@@ -58,7 +73,7 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 			continue
 		players[idx]["score"] += scores[idx]
 		print("[GameManager] Player %d earned %d point(s) from minigame." % [idx, scores[idx]])
-	current_player_index = (current_player_index + 1) % Constants.MAX_PLAYERS
+	current_player_index = (current_player_index + 1) % active_player_count
 # ---------------------------------------------------------------------------
 # Legacy API — methods still used by dice.gd and Game.gd during FSM migration.
 # on_minigame_finished() and _advance_turn() have been removed: the FSM
@@ -80,6 +95,17 @@ func on_move_complete() -> void:
 	var tile_idx: int = players[current_player_index]["tile_index"]
 	EventBus.player_moved.emit(current_player_index, tile_idx)
 
+
+func on_minigame_finished(scores: Dictionary) -> void:
+	for idx: int in scores:
+		players[idx]["score"] += scores[idx]
+	state = Enums.GameState.ROLLING
+	_advance_turn()
+
+
+func _advance_turn() -> void:
+	current_player_index = (current_player_index + 1) % active_player_count
+	start_turn()
 
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points

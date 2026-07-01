@@ -1,4 +1,5 @@
 # scenes/minigames/LuksongBaka/luksong_baka.gd
+class_name LuksongBaka
 extends BaseMinigame
 
 const ROUND_TIME_START := 2.2      # seconds for marker to sweep bar at round 1
@@ -8,7 +9,6 @@ const ZONE_WIDTH_START := 0.30     # green zone width as % of bar (round 1)
 const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ever get
 const ZONE_SHRINK := 0.92          # multiply zone width by this each round
 const BAR_WIDTH := 400.0
-const PLAYER_JUMP_ACTIONS := ["p1_jump", "p2_jump", "p3_jump", "p4_jump"]
 
 # ---------------------------------------------------------------------------
 # Visual constants
@@ -130,8 +130,18 @@ func _start_countdown() -> void:
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
 
-	# Randomize zone position each round
-	zone_start = randf_range(0.0, 1.0 - zone_width)
+	# Only the host picks the zone position — avoids each client randomizing
+	# independently and disagreeing on where the safe zone actually is.
+	if NetworkManager.is_host:
+		var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
+		NetworkManager.sync_luksong_round.rpc(picked_zone_start)
+	# Non-host clients wait for _apply_luksong_round() to call _begin_round()
+	# via the broadcast — don't call _begin_round() here directly on clients.
+
+## Called on every peer once the host has broadcast the zone position for
+## this round. Does the actual bar/zone/marker reset and starts the sweep.
+func _begin_round(synced_zone_start: float) -> void:
+	zone_start = synced_zone_start
 	for player_idx in alive_players:
 		var zone_rect: ColorRect = bars[player_idx].get_node("Track/Zone")
 		zone_rect.position.x = BAR_WIDTH * zone_start
@@ -141,7 +151,6 @@ func _start_countdown() -> void:
 		var status: Label = bars[player_idx].get_node("Status")
 		status.text = ""
 		status.modulate = Color.WHITE
-
 	_begin_sweep()
 
 func _begin_sweep() -> void:
@@ -171,10 +180,17 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not sweeping:
 		return
-	for player_idx in alive_players:
-		var action: String = PLAYER_JUMP_ACTIONS[player_idx]
-		if event.is_action_pressed(action):
-			_try_jump(player_idx)
+	if not event.is_action_pressed("jump"):
+		return
+	var my_idx: int = NetworkManager.get_my_player_index()
+	if my_idx == -1 or not alive_players.has(my_idx):
+		return
+	if jumped_this_round.has(my_idx):
+		return
+	if NetworkManager.is_host:
+		NetworkManager.process_luksong_jump(my_idx, marker_t)
+	else:
+		NetworkManager.request_luksong_jump.rpc_id(1, my_idx, marker_t)
 
 func _try_jump(player_idx: int) -> void:
 	if not alive_players.has(player_idx) or jumped_this_round.has(player_idx):
@@ -208,18 +224,41 @@ func _try_jump(player_idx: int) -> void:
 
 func _end_round_sweep() -> void:
 	sweeping = false
-	# Anyone who never pressed space this round is auto-eliminated
+	if not NetworkManager.is_host:
+		return  # only host drives round-end logic; results arrive via RPC
+
+	# Find anyone who never jumped — auto-eliminated this round
+	var auto_eliminated: Array[int] = []
 	for player_idx in alive_players.duplicate():
 		if not jumped_this_round.has(player_idx):
-			var status: Label = bars[player_idx].get_node("Status")
-			status.text = "Caught!"
-			status.modulate = Color(0.9, 0.3, 0.3)
-			# Visual: grey out auto-eliminated player
-			if char_sprites.has(player_idx):
-				var spr: AnimatedSprite2D = char_sprites[player_idx]
-				spr.stop()
-				spr.modulate = Color(0.4, 0.4, 0.4)
-			_eliminate(player_idx)
+		auto_eliminated.append(player_idx)
+
+	NetworkManager.sync_luksong_round_end.rpc(auto_eliminated)
+
+## Called on every peer by NetworkManager._apply_luksong_jump().
+## in_zone was evaluated by the host using its authoritative marker_t.
+func apply_jump_result(player_idx: int, in_zone: bool) -> void:
+	if not alive_players.has(player_idx):
+		return
+	jumped_this_round[player_idx] = true
+	var status: Label = bars[player_idx].get_node("Status")
+	if in_zone:
+		status.text = "Cleared!"
+		status.modulate = Color(0.3, 0.9, 0.4)
+	else:
+		status.text = "Caught!"
+		status.modulate = Color(0.9, 0.3, 0.3)
+		_eliminate(player_idx)
+
+## Called on every peer by NetworkManager._apply_luksong_round_end().
+## auto_eliminated contains players who never jumped before the sweep finished.
+func apply_round_end(auto_eliminated: Array) -> void:
+	for player_idx in auto_eliminated:
+		var status: Label = bars[player_idx].get_node("Status")
+		status.text = "Caught!"
+		status.modulate = Color(0.9, 0.3, 0.3)
+		_eliminate(player_idx)
+
 
 	if eliminated_this_round.size() > 0:
 		elimination_order.append(eliminated_this_round.duplicate())

@@ -44,14 +44,15 @@ func _handle_blank() -> void:
 	# Nothing happens – go straight to EndTurn.
 	request_transition(&"State_EndTurn")
 func _handle_minigame() -> void:
-	var minigame_id: String = Utils.random_minigame()
-	print("[TileEvent] Triggering mini-game: %s" % minigame_id)
 	# All 4 players compete simultaneously (per design decision)
 	var all_players: Array[int] = []
 	for i in GameManager.players.size():
 		all_players.append(i)
-	EventBus.minigame_started.emit(minigame_id)
-	SceneLoader.go_to_minigame(minigame_id, all_players)
+	# Every client calls this, but only the host's instance actually picks
+	# the minigame ID and broadcasts it — see NetworkManager.start_minigame_synced().
+	# This replaces calling Utils.random_minigame() + SceneLoader.go_to_minigame()
+	# directly, which let each client pick a different minigame independently.
+	NetworkManager.start_minigame_synced(all_players)
 	# Deliberately NOT awaiting EventBus.minigame_finished here — this node
 	# is destroyed by the scene change above before the signal can fire.
 	# GameManager._on_minigame_finished() (autoload, survives the scene

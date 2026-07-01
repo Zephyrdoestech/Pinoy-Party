@@ -43,12 +43,30 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not race_active:
 		return
-	for player_idx in participating_players:
-		if player_idx in finished_order:
-			continue  # already done, ignore further input
-		var action := "p%d_jump" % (player_idx + 1)
-		if event.is_action_pressed(action):
-			_advance(player_idx)
+	if not event.is_action_pressed("jump"):
+		return
+	var my_idx: int = NetworkManager.get_my_player_index()
+	if my_idx == -1 or my_idx not in participating_players:
+		return  # not a participant in this race (or no LAN match active)
+	if my_idx in finished_order:
+		return  # already finished, ignore further presses
+	# Route through the host so every client's progress stays in sync —
+	# same request -> host-broadcast pattern used for dice rolls.
+	if NetworkManager.is_host:
+		NetworkManager.process_sack_race_hop(my_idx)
+	else:
+		NetworkManager.request_sack_race_hop.rpc_id(1, my_idx)
+
+## Called by NetworkManager._apply_sack_race_hop() on every peer once the
+## host has validated and broadcast the hop. This is the only place
+## progress should be advanced from now — local input no longer calls
+## _advance() directly, it just requests a hop via NetworkManager.
+func apply_hop(player_idx: int) -> void:
+	if not race_active:
+		return
+	if player_idx in finished_order:
+		return
+	_advance(player_idx)
 
 func _advance(player_idx: int) -> void:
 	progress[player_idx] += HOP_DISTANCE
