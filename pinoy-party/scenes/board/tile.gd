@@ -16,7 +16,9 @@ func _update_visual() -> void:
 		return
 	match tile_type:
 		Enums.TileType.GAME_TRIGGER:
-			color_rect.color = Color(0.9, 0.3, 0.3)  # red
+			color_rect.color = Color.WEB_MAROON  # red
+		Enums.TileType.TRIVIA:
+			color_rect.color = Color.GOLDENROD
 		_:
 			color_rect.color = Color(0.7, 0.7, 0.7)  # gray
 	if label:

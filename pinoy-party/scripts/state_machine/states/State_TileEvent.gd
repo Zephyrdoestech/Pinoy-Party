@@ -33,6 +33,8 @@ func enter() -> void:
 			_handle_blank()
 		Enums.TileType.GAME_TRIGGER:
 			_handle_minigame()
+		Enums.TileType.TRIVIA:
+			_handle_trivia()
 		_:
 			# Unknown tile type – treat as blank to avoid softlocking.
 			push_warning("[TileEvent] Unhandled tile type %d – defaulting to BLANK." % tile_type)
@@ -60,6 +62,17 @@ func _handle_minigame() -> void:
 	# The board scene that rebuilds after the minigame starts a brand-new
 	# StateMachine at State_StartTurn, which reads the now-already-advanced
 	# current_player_index — so the turn correctly moves to the next player.
+func _handle_trivia() -> void:
+	# All active players answer simultaneously, same participant scope as
+	# minigames. No SceneLoader involved — trivia plays as an overlay on
+	# top of the board, so unlike _handle_minigame() this node is NOT
+	# destroyed while it's running.
+	NetworkManager.start_trivia_synced()
+	# Still deliberately not awaiting here, even though this node survives:
+	# keeps the same "autoload owns the result" shape as _handle_minigame(),
+	# so there's only one pattern to reason about for both tile types.
+	# GameManager._on_trivia_finished() (connected to EventBus.trivia_finished)
+	# applies scores and advances current_player_index.
 # ---------------------------------------------------------------------------
 # Tile type resolution
 # ---------------------------------------------------------------------------

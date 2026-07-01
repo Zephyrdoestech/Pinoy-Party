@@ -25,6 +25,9 @@ func _determine_tile_type(index: int) -> int:
 	if index % 4 == 0:
 		print("[Board] tile %d generated as GAME_TRIGGER" % index)
 		return Enums.TileType.GAME_TRIGGER
+	if index % 2 == 0 :
+		print("[Board] tile %d generated as TRIVIA" % index)
+		return Enums.TileType.TRIVIA
 	return Enums.TileType.BLANK
 
 func get_tile_position(index: int) -> Vector2:

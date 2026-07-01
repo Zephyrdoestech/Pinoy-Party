@@ -47,6 +47,7 @@ var board_ref: Node2D = null
 func _ready() -> void:
 	_setup_players()
 	EventBus.minigame_finished.connect(_on_minigame_finished)
+	EventBus.trivia_finished.connect(_on_trivia_finished)
 
 ## Builds the players array from active_player_count. Called once at
 ## autoload _ready() with the default count (4, for local/offline play),
@@ -69,6 +70,12 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 		players[idx]["score"] += scores[idx]
 		print("[GameManager] Player %d earned %d point(s) from minigame." % [idx, scores[idx]])
 	current_player_index = (current_player_index + 1) % active_player_count
+
+func _on_trivia_finished(scores: Dictionary) -> void:
+	for idx in scores:
+		add_score(idx, scores[idx])
+	_advance_turn()
+
 # ---------------------------------------------------------------------------
 # Legacy API (kept for backward-compatibility – do not remove until Game.gd
 # no longer calls these directly).
