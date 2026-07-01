@@ -104,8 +104,6 @@ func _advance_turn() -> void:
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points
 	EventBus.score_changed.emit(player_index, players[player_index]["score"])
-	if _is_game_over():
-		EventBus.game_over.emit(_get_winner())
 
 
 func _is_game_over() -> bool:

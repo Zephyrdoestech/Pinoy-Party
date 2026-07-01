@@ -32,15 +32,26 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 			done[0] = true
 	EventBus.movement_finished.connect(_handler, CONNECT_ONE_SHOT)
 
-	# Poll each frame until our specific player's token finishes.
-	while not done[0]:
+	# Poll each frame until our specific player's token finishes, or until
+	# MOVEMENT_TIMEOUT_SEC elapses. Without this cap, a dropped/never-fired
+	# movement_finished (packet loss, a token that failed to spawn, etc.)
+	# hangs the FSM forever with no error — force-completing trades a
+	# possible visual snap for the game never getting permanently stuck.
+	var elapsed := 0.0
+	while not done[0] and elapsed < Constants.MOVEMENT_TIMEOUT_SEC:
 		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+
+	if not done[0]:
+		push_warning("[State_Moving] movement_finished timed out for player %d — forcing completion." % player_idx)
 
 	# Safety: disconnect if still connected (e.g. signal never fired).
 	if EventBus.movement_finished.is_connected(_handler):
 		EventBus.movement_finished.disconnect(_handler)
 
 	# Persist the final tile position so State_TileEvent reads it correctly.
+	# Also covers the timeout case: GameManager's authoritative position is
+	# correct even if the token visually fell short of new_tile.
 	gm.players[player_idx]["tile_index"] = new_tile
 	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
 	request_transition(&"State_TileEvent")
