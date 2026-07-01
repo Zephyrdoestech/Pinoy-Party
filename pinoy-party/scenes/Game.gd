@@ -27,6 +27,8 @@ func _ready() -> void:
 	_spawn_tokens()
 	roll_button.pressed.connect(_on_roll_pressed)
 	EventBus.player_moved.connect(_on_player_moved)
+	NetworkManager.host_left.connect(_on_match_ended.bind("Host disconnected."))
+	NetworkManager.player_left_mid_match.connect(_on_player_left_mid_match)
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
 
 func _spawn_tokens() -> void:
@@ -57,3 +59,33 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_player_moved(player_index: int, new_tile_index: int) -> void:
 	# Tell the token to animate to its new tile.
 	tokens[player_index].move_to(new_tile_index)
+
+func _on_player_left_mid_match(_peer_id: int, player_name: String) -> void:
+	_on_match_ended("%s disconnected — match ended." % player_name)
+
+func _on_match_ended(message: String) -> void:
+	# Same "build at runtime" approach as GameOverScreen — no scene edits.
+	var overlay := CanvasLayer.new()
+	add_child(overlay)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.85)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	overlay.add_child(vbox)
+
+	var label := Label.new()
+	label.text = message
+	label.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(label)
+
+	var back_button := Button.new()
+	back_button.text = "Back to Lobby"
+	back_button.pressed.connect(func():
+		multiplayer.multiplayer_peer = null
+		get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
+	)
+	vbox.add_child(back_button)
