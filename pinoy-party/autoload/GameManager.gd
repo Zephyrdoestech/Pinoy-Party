@@ -58,7 +58,7 @@ func _setup_players() -> void:
 	players.clear()
 	for i in active_player_count:
 		players.append({
-			"name":       "Player %d" % (i + 1),
+			"name":       NetworkManager.get_player_name(i, "Player %d" % (i + 1)),
 			"tile_index": 0,
 			"score":      0,
 			"color":      [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW][i],
@@ -74,7 +74,6 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 func _on_trivia_finished(scores: Dictionary) -> void:
 	for idx in scores:
 		add_score(idx, scores[idx])
-	_advance_turn()
 
 # ---------------------------------------------------------------------------
 # Legacy API (kept for backward-compatibility – do not remove until Game.gd

@@ -63,16 +63,15 @@ func _handle_minigame() -> void:
 	# StateMachine at State_StartTurn, which reads the now-already-advanced
 	# current_player_index — so the turn correctly moves to the next player.
 func _handle_trivia() -> void:
-	# All active players answer simultaneously, same participant scope as
-	# minigames. No SceneLoader involved — trivia plays as an overlay on
-	# top of the board, so unlike _handle_minigame() this node is NOT
-	# destroyed while it's running.
-	NetworkManager.start_trivia_synced()
-	# Still deliberately not awaiting here, even though this node survives:
-	# keeps the same "autoload owns the result" shape as _handle_minigame(),
-	# so there's only one pattern to reason about for both tile types.
-	# GameManager._on_trivia_finished() (connected to EventBus.trivia_finished)
-	# applies scores and advances current_player_index.
+	NetworkManager.start_trivia_synced(GameManager.current_player_index)
+	# Unlike _handle_minigame(), this node is NOT destroyed while trivia
+	# runs (no scene change involved) — so it's safe to just await the
+	# result directly here, instead of relying on GameManager to advance
+	# the turn in the background. Only one trivia round is ever active at
+	# a time (by design — only the landing player answers), so a plain
+	# await is safe with no signal-filtering needed.
+	await EventBus.trivia_finished
+	request_transition(&"State_EndTurn")
 # ---------------------------------------------------------------------------
 # Tile type resolution
 # ---------------------------------------------------------------------------

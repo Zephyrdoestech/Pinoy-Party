@@ -8,6 +8,7 @@ var _option_buttons: Array[Button] = []
 var _option_rows: Array[Label] = []   # the arrow label for each row
 var _current_selection: int = 0
 var _has_submitted: bool = false
+var _answering_player_idx: int = -1
 
 
 func _ready() -> void:
@@ -15,8 +16,9 @@ func _ready() -> void:
 	layer = 100  # draw above everything
 	visible = false
 
-func _on_trivia_started(question: String, options: Array) -> void:
+func _on_trivia_started(question: String, options: Array, answering_player_idx: int) -> void:
 	_submitted_answers.clear()
+	_answering_player_idx = answering_player_idx
 	_build_overlay(question, options)
 	visible = true
 
@@ -76,6 +78,18 @@ func _build_overlay(question: String, options: Array) -> void:
 		_option_buttons.append(btn)
 
 	_update_selector()
+	var my_idx: int = NetworkManager.get_my_player_index()
+	if my_idx != _answering_player_idx:
+		_has_submitted = true  # reuse the existing lock — blocks input and _on_option_pressed
+		for b in _option_buttons:
+			b.disabled = true
+			b.modulate = Color(1, 1, 1, 0.5)  # dim to signal "not yours"
+
+		var waiting_label := Label.new()
+		waiting_label.text = "%s is answering..." % GameManager.players[_answering_player_idx]["name"]
+		waiting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		waiting_label.add_theme_font_size_override("font_size", 18)
+		panel.add_child(waiting_label)
 
 func _on_option_pressed(option_idx: int) -> void:
 	var my_idx: int = NetworkManager.get_my_player_index()
@@ -118,21 +132,16 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 		_option_buttons[correct_index].modulate = Color.GREEN
 
 	var results_label := Label.new()
-	results_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	results_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	results_label.add_theme_font_size_override("font_size", 20)
 
-	var lines: Array[String] = []
-	for idx in GameManager.active_player_count:
-		var player_name: String = GameManager.players[idx]["name"]
-		if scores.has(idx):
-			lines.append("%s got it right! +%d pt" % [player_name, scores[idx]])
-		else:
-			lines.append("%s did not score." % player_name)
-	results_label.text = "\n".join(lines)
+	var player_name: String = GameManager.players[_answering_player_idx]["name"]
+	if scores.has(_answering_player_idx):
+		results_label.text = "%s got it right! +%d pt" % [player_name, scores[_answering_player_idx]]
+	else:
+		results_label.text = "%s did not get it." % player_name
 
 	if _overlay and _overlay.get_child_count() > 1:
-		# panel is the second child of _overlay (index 1), after `dim`
 		var panel: Control = _overlay.get_child(1)
 		panel.add_child(results_label)
 
