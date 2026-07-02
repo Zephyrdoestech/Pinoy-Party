@@ -6,6 +6,8 @@ signal player_left(peer_id: int)
 signal join_failed(reason: String)
 signal game_starting
 signal roster_updated
+signal host_left
+signal player_left_mid_match(peer_id: int, player_name: String)
 
 const PORT := 7777
 const MAX_PLAYERS := 4
@@ -16,13 +18,24 @@ var _broadcast_timer: Timer
 var discovered_lobbies: Dictionary = {}  # code -> {ip: String, last_seen: float}
 var lobby_code: String = ""
 var is_host: bool = false
+var match_in_progress: bool = false
 var connected_players: Dictionary = {}  # peer_id -> {name: String}
+var _trivia_answering_player: int = -1
+var _trivia_round_id: int = 0
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_ok)
 	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+func _on_server_disconnected() -> void:
+	# Only clients ever receive this (the host has no "server" to lose).
+	print("[NetworkManager] Lost connection to host.")
+	match_in_progress = false
+	multiplayer.multiplayer_peer = null
+	host_left.emit()
 
 func host_lobby(player_name: String) -> void:
 	lobby_code = _generate_code()
@@ -145,10 +158,23 @@ func _on_peer_connected(id: int) -> void:
 
 func _on_peer_disconnected(id: int) -> void:
 	if connected_players.has(id):
+		var leaving_name: String = connected_players[id].get("name", "Player")
 		connected_players.erase(id)
-		if is_host:
+		if is_host and match_in_progress:
+			# A player dropped mid-match. We don't try to keep the game
+			# running without them (their turn/minigame slot would hang
+			# forever, same failure shape as every other silent-freeze bug
+			# in this project) — tell every remaining peer and let the
+			# scene decide how to end gracefully.
+			rpc("_notify_player_left_mid_match", id, leaving_name)
+		elif is_host:
 			_broadcast_player_list()
 		player_left.emit(id)
+
+@rpc("authority", "reliable", "call_local")
+func _notify_player_left_mid_match(peer_id: int, player_name: String) -> void:
+	match_in_progress = false
+	player_left_mid_match.emit(peer_id, player_name)
 
 func start_game() -> void:
 	if not is_host:
@@ -159,6 +185,7 @@ func start_game() -> void:
 
 @rpc("authority", "reliable", "call_local")
 func _on_game_start() -> void:
+	match_in_progress = true
 	game_starting.emit()
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")
 
@@ -193,6 +220,11 @@ func get_my_player_index() -> int:
 		return peer_to_player_index[my_peer]
 	return -1
 
+func get_player_name(player_index: int, fallback: String) -> String:
+	if player_index_to_peer.has(player_index):
+		var peer_id: int = player_index_to_peer[player_index]
+		return connected_players.get(peer_id, {}).get("name", fallback)
+	return fallback
 # --- Dice roll sync ---
 # Any client can request a roll; only the host actually generates the result
 # and broadcasts it, so every peer sees the identical outcome.
@@ -360,6 +392,88 @@ func sync_langitlupa_end() -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
 		scene.apply_end()
+
+# --- Trivia sync ---
+var _trivia_questions: Array = []
+var _current_trivia: Dictionary = {}
+var _trivia_answers: Dictionary = {}  # player_idx -> option_index
+
+func _load_trivia_questions() -> void:
+	if not _trivia_questions.is_empty():
+		return
+	var f := FileAccess.open(Constants.TRIVIA_QUESTIONS_PATH, FileAccess.READ)
+	if f == null:
+		push_error("Could not load trivia questions file")
+		return
+	var parsed = JSON.parse_string(f.get_as_text())
+	_trivia_questions = parsed if parsed is Array else []
+
+func start_trivia_synced(answering_player_idx: int) -> void:
+	if not is_host:
+		return
+	_load_trivia_questions()
+	if _trivia_questions.is_empty():
+		return
+	_current_trivia = _trivia_questions[randi() % _trivia_questions.size()]
+	_trivia_answers.clear()
+	_trivia_answering_player = answering_player_idx
+	_trivia_round_id += 1
+	var this_round_id: int = _trivia_round_id
+	rpc("_apply_trivia_start", _current_trivia["question"], _current_trivia["options"], answering_player_idx)
+
+	# Auto-reveal after the answer window, regardless of whether everyone
+	# answered — mirrors SackRace's RACE_TIMEOUT pattern (don't let one
+	# silent/AFK client hang the round forever).
+	await get_tree().create_timer(Constants.TRIVIA_ANSWER_TIME_SEC).timeout
+	# Only reveal if this is still the current round. If a new round already
+	# started before this timer fired, this timer belongs to a round that's
+	# already over — firing it now would force-end the NEW round early,
+	# before the player even got to answer. Same stale-coroutine shape as
+	# State_Moving's signal theft — a leftover async call from an earlier
+	# round bleeding into a later one.
+	if this_round_id == _trivia_round_id:
+		_reveal_trivia_results()
+
+@rpc("authority", "reliable", "call_local")
+func _apply_trivia_start(question: String, options: Array, answering_player_idx: int) -> void:
+	EventBus.trivia_started.emit(question, options, answering_player_idx)
+
+@rpc("any_peer", "reliable")
+func request_trivia_answer(player_idx: int, option_idx: int) -> void:
+	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	if peer_to_player_index.get(sender_id, -1) != player_idx:
+		return  # client tried to answer for a player it doesn't control
+	if player_idx != _trivia_answering_player:
+		return  # not the player who landed on the tile
+	process_trivia_answer(player_idx, option_idx)
+
+func process_trivia_answer(player_idx: int, option_idx: int) -> void:
+	if player_idx != _trivia_answering_player:
+		return  # stale answer for a round that's already moved on
+	if _trivia_answers.has(player_idx):
+		return  # already answered, ignore duplicate/late submissions
+	_trivia_answers[player_idx] = option_idx
+	_reveal_trivia_results()  # only one player answers now — reveal right away
+
+func _reveal_trivia_results() -> void:
+	if _current_trivia.is_empty():
+		return  # already revealed this round (timer + early-reveal race)
+	var correct_idx: int = _current_trivia["correct_index"]
+	var scores: Dictionary = {}
+	for idx in _trivia_answers:
+		if _trivia_answers[idx] == correct_idx:
+			scores[idx] = Constants.TRIVIA_POINTS
+	rpc("_apply_trivia_reveal", scores, correct_idx)
+	_current_trivia = {}  # guard against double-reveal
+
+@rpc("authority", "reliable", "call_local")
+func _apply_trivia_reveal(scores: Dictionary, correct_idx: int) -> void:
+	TriviaController.show_results(scores, correct_idx)
+	EventBus.trivia_finished.emit(scores)
 
 func _generate_code() -> String:
 	const CHARS := "ABCDEFGHJKLMNPQRSTUVWXYZ"  # no I/O to avoid confusion

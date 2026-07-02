@@ -1,0 +1,12 @@
+[
+  {
+	"question": "Which historical artifact can you find in the men's room of a Las Vegas casino?",
+	"options": ["Real moon rocks", "A piece of the Berlin Wall", "Lincoln's top hat", "A chunk of Stonehenge"],
+	"correct_index": 0
+  },
+  {
+	"question": "What is the national fruit of the Philippines?",
+	"options": ["Mango", "Durian", "Banana", "Pineapple"],
+	"correct_index": 0
+  }
+]
