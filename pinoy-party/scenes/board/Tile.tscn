@@ -1,18 +1,21 @@
 [gd_scene format=3 uid="uid://cph0668ds8x15"]
 
 [ext_resource type="Script" uid="uid://b2igwgwut1rhf" path="res://scenes/board/tile.gd" id="1_ts3a1"]
+[ext_resource type="Texture2D" uid="uid://cwv4jvmxktfrv" path="res://assets/board_assets/Tiles/Tile.png" id="2_cy2v4"]
+[ext_resource type="Texture2D" uid="uid://dmyaf0qasbybj" path="res://assets/board_assets/Tiles/Sari-Sari_Tile.png" id="3_1jgwq"]
+[ext_resource type="Texture2D" uid="uid://chnk1yfwjmio" path="res://assets/board_assets/Tiles/Minigame_Tile.png" id="4_4kjxs"]
 
 [node name="Tile" type="Node2D" unique_id=684484247]
 script = ExtResource("1_ts3a1")
+texture_blank = ExtResource("2_cy2v4")
+texture_trivia = ExtResource("3_1jgwq")
+texture_game = ExtResource("4_4kjxs")
 
-[node name="ColorRect" type="ColorRect" parent="."]
-offset_left = -30.0
-offset_top = -30.0
-offset_right = 30.0
-offset_bottom = 30.0
-color = Color(0.7, 0.7, 0.7, 1)
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1845199437]
+scale = Vector2(2, 2)
+texture = ExtResource("2_cy2v4")
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Label" parent="." unique_id=1527301350]
 offset_left = -30.0
 offset_top = -30.0
 offset_right = 30.0

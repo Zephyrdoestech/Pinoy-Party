@@ -5,19 +5,26 @@ extends Node2D
 var tiles: Array[Node2D] = []
 
 func _ready() -> void:	
-	generate_board()
-
-func generate_board() -> void:
-	for child in get_children():
-		child.queue_free()
 	tiles.clear()
+	for child in get_children():
+		if child is Node2D:
+			tiles.append(child)
+			
+	for i in range(tiles.size()):
+		tiles[i].tile_index = i
+		tiles[i]._update_visual()
 
-	for i in range(Constants.TOTAL_TILES):
-		var tile_instance: Node2D = tile_scene.instantiate()
-		add_child(tile_instance)
-		tile_instance.position = Utils.tile_position(i)
-		tile_instance.setup(i, _determine_tile_type(i))
-		tiles.append(tile_instance)
+#func generate_board() -> void:
+	#for child in get_children():
+		#child.queue_free()
+	#tiles.clear()
+#
+	#for i in range(Constants.TOTAL_TILES):
+		#var tile_instance: Node2D = tile_scene.instantiate()
+		#add_child(tile_instance)
+		#tile_instance.position = Utils.tile_position(i)
+		#tile_instance.setup(i, _determine_tile_type(i))
+		#tiles.append(tile_instance)
 
 func _determine_tile_type(index: int) -> int:
 	if index == 0 or index == Constants.TOTAL_TILES - 1:
