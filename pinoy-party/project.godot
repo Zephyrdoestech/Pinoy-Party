@@ -32,13 +32,8 @@ TriviaController="*uid://bsqfygbc7nlo3"
 
 [display]
 
-<<<<<<< Updated upstream
 window/size/viewport_width=1280
 window/size/viewport_height=720
-=======
-window/size/viewport_width=300
-window/size/viewport_height=100
->>>>>>> Stashed changes
 
 [editor_plugins]
 
