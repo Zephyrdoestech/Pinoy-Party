@@ -75,8 +75,6 @@ func start_game(players: Array[int]) -> void:
 		dash_cooldown_remaining[idx] = 0.0
 		dash_time_remaining[idx] = 0.0
 		_create_dash_ring(idx)
-	# Host picks the random values and broadcasts — non-host clients wait
-	# for _apply_langitlupa_start() to arrive before spawning areas/intro.
 	if NetworkManager.is_host:
 		var picked_it: int = players[randi() % players.size()]
 		var area_positions: Array = _generate_area_positions()
@@ -99,7 +97,8 @@ func apply_langitlupa_start(picked_it: int, area_positions: Array) -> void:
 	_show_it_arrow(it_player)
 	_spawn_areas_at(area_positions)
 	_init_ai(participating_players)
-	run_intro("Player %d is IT!" % (it_player + 1))
+	await run_intro("Player %d is IT!" % (it_player + 1))
+
 
 ## Adds a red downward arrow above the IT player's node so they're clearly
 ## identifiable without relying on color. Built at runtime — no scene edits needed.

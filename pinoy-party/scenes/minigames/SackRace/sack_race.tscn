@@ -1,36 +1,124 @@
 [gd_scene format=3 uid="uid://cll00chcsrh7b"]
 
 [ext_resource type="Script" uid="uid://bqnh43oeiwec6" path="res://scenes/minigames/SackRace/sack_race.gd" id="1_wmqyi"]
+[ext_resource type="Texture2D" uid="uid://c3oc3nk34cfmu" path="res://assets/minigame_assets/sack_race_assets/sack_race_complete_bg.png" id="2_f5ddq"]
+[ext_resource type="Texture2D" uid="uid://d0nx107qgaaai" path="res://assets/png versions/minigame_characs/sack_race/sack_charac1_jumpLeft.png" id="3_1cf04"]
+[ext_resource type="Texture2D" uid="uid://i7sodimvelex" path="res://assets/png versions/minigame_characs/sack_race/sack_charac2_jumpLeft.png" id="4_qion6"]
+[ext_resource type="Texture2D" uid="uid://bst2pn6v5ddq3" path="res://assets/png versions/minigame_characs/sack_race/sack_charac3_jumpLeft.png" id="5_kv2lf"]
+[ext_resource type="Texture2D" uid="uid://kis1vlvvj3x4" path="res://assets/png versions/minigame_characs/sack_race/sack_charac4_jumpLeft.png" id="6_am5k4"]
+
+[sub_resource type="Animation" id="Animation_u5dnl"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_4uprx"]
+resource_name = "jump"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.033333335, 0.033333335, 0.13333334),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [0, 1, 0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_bdxkt"]
+_data = {
+&"RESET": SubResource("Animation_u5dnl"),
+&"jump": SubResource("Animation_4uprx")
+}
 
 [node name="SackRace" type="Node2D" unique_id=1414252881]
 script = ExtResource("1_wmqyi")
 
 [node name="Tracks" type="Node2D" parent="." unique_id=963667019]
 
-[node name="Player 1" type="ColorRect" parent="Tracks" unique_id=154553668]
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="TrackBG" type="Sprite2D" parent="Tracks" unique_id=1552923511]
+position = Vector2(800, 96)
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
 
-[node name="Player 2" type="ColorRect" parent="Tracks" unique_id=1264256216]
-offset_top = 200.0
-offset_right = 40.0
-offset_bottom = 240.0
+[node name="TrackBG2" type="Sprite2D" parent="Tracks" unique_id=1999474751]
+position = Vector2(800, 288)
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
 
-[node name="Player 3" type="ColorRect" parent="Tracks" unique_id=2050587001]
-offset_top = 400.0
-offset_right = 40.0
-offset_bottom = 440.0
+[node name="TrackBG3" type="Sprite2D" parent="Tracks" unique_id=2001423330]
+position = Vector2(800, 488)
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
 
-[node name="Player 4" type="ColorRect" parent="Tracks" unique_id=668938210]
-offset_left = 1.0
-offset_top = 600.0
-offset_right = 41.0
-offset_bottom = 645.0
+[node name="TrackBG4" type="Sprite2D" parent="Tracks" unique_id=1880032420]
+position = Vector2(801, 668)
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
+
+[node name="Player 1" type="Node2D" parent="Tracks" unique_id=860089277]
+
+[node name="Player 1" type="Sprite2D" parent="Tracks/Player 1" unique_id=1539332623]
+position = Vector2(56.00003, 136)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("3_1cf04")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 1/Player 1" unique_id=854568078]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Player 2" type="Node2D" parent="Tracks" unique_id=164475728]
+
+[node name="Player 1" type="Sprite2D" parent="Tracks/Player 2" unique_id=400235518]
+position = Vector2(56, 336)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("4_qion6")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 2/Player 1" unique_id=490500870]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Player 3" type="Node2D" parent="Tracks" unique_id=1054960584]
+
+[node name="Player 1" type="Sprite2D" parent="Tracks/Player 3" unique_id=1043000245]
+position = Vector2(56, 528)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("5_kv2lf")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 3/Player 1" unique_id=1849764316]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Player 4" type="Node2D" parent="Tracks" unique_id=1919804307]
+position = Vector2(24, 512)
+
+[node name="Player 1" type="Sprite2D" parent="Tracks/Player 4" unique_id=646839155]
+position = Vector2(24, 192)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("6_am5k4")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 4/Player 1" unique_id=1592318641]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
 
 [node name="Finish Line" type="ColorRect" parent="." unique_id=997488694]
-offset_left = 900.0
-offset_right = 942.0
-offset_bottom = 649.0
+offset_left = 1432.0
+offset_top = 8.0
+offset_right = 1474.0
+offset_bottom = 760.0
 color = Color(0, 0, 0, 1)
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=1526385548]
@@ -46,3 +134,13 @@ offset_top = 2.0
 offset_right = 1061.0
 offset_bottom = 79.0
 theme_override_font_sizes/font_size = 36
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=1456303643]
+offset_right = 40.0
+offset_bottom = 40.0
+columns = 2
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="GridContainer" unique_id=478213312]
+custom_minimum_size = Vector2(1920, 180)
+layout_mode = 2
+stretch = true

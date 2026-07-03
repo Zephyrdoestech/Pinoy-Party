@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfm8bgvr1e3hu"
-path="res://.godot/imported/luskong_baka_building3.png-d35b6f796669de9647a7433bf2bccc79.ctex"
+uid="uid://dpkep0g5r3vgx"
+path="res://.godot/imported/Disabled_Plus_Tile.png-9838fbfe679ef7f135911426af0268d5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/minigame_assets/luksong_baka_assets/luskong_baka_building3.png"
-dest_files=["res://.godot/imported/luskong_baka_building3.png-d35b6f796669de9647a7433bf2bccc79.ctex"]
+source_file="res://assets/board_assets/Tiles/Disabled_Plus_Tile.png"
+dest_files=["res://.godot/imported/Disabled_Plus_Tile.png-9838fbfe679ef7f135911426af0268d5.ctex"]
 
 [params]
 

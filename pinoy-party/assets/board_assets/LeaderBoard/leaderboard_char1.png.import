@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1hfpanojsaeq"
-path="res://.godot/imported/luskong_baka_building6.png-5b31406594e41dfad86eaf200e59c7c2.ctex"
+uid="uid://2kujg18jxjay"
+path="res://.godot/imported/leaderboard_char1.png-9df2cd5953510a11e30f0652a0bea017.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/minigame_assets/luksong_baka_assets/luskong_baka_building6.png"
-dest_files=["res://.godot/imported/luskong_baka_building6.png-5b31406594e41dfad86eaf200e59c7c2.ctex"]
+source_file="res://assets/board_assets/LeaderBoard/leaderboard_char1.png"
+dest_files=["res://.godot/imported/leaderboard_char1.png-9df2cd5953510a11e30f0652a0bea017.ctex"]
 
 [params]
 

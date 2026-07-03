@@ -15,6 +15,7 @@ const DISCOVERY_PORT := 7778
 
 var _discovery_socket: PacketPeerUDP
 var _broadcast_timer: Timer
+var _pending_name: String = ""
 var discovered_lobbies: Dictionary = {}  # code -> {ip: String, last_seen: float}
 var lobby_code: String = ""
 var is_host: bool = false
@@ -115,8 +116,6 @@ func join_lobby(code: String, ip: String, player_name: String) -> void:
 		join_failed.emit("Could not reach host")
 		return
 	multiplayer.multiplayer_peer = peer
-
-var _pending_name: String = ""
 
 func _on_connected_ok() -> void:
 	print("Connected to host, registering as: ", _pending_name)
