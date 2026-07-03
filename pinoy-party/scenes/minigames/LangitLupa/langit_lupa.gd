@@ -1,171 +1,161 @@
 class_name LangitLupa
 extends BaseMinigame
 
-const PLAYER_SPEED := 150.0
-const TAG_RADIUS := 30.0
-const AREA_SIZE := 80.0              # visual width/height of each area (square) — detection now matches this exactly, see _point_in_area()
-const AREA_SAFE_DURATION := 4.0
-const AREA_FLASH_DURATION := 1.0     # how long an area flashes red before vanishing for good
-const NUM_AREAS := 6
-const ROUND_DURATION := 60.0
-const SPAWN_CENTER := Vector2(400, 250)
-const SPAWN_OFFSETS := [Vector2(-40, -40), Vector2(40, -40), Vector2(-40, 40), Vector2(40, 40)]
+const MOVE_SPEED := 300.0
+const JUMP_VELOCITY := -600.0
+const GRAVITY := 1400.0
+const NUM_LAYERS := 5
+const FLOOD_RISE_SPEED := 15.0   # px/sec, tune to taste
+const PLATFORMS_PER_LAYER_MIN := 5
+const PLATFORMS_PER_LAYER_MAX := 8
+const LAYER_HEIGHT := 90.0
+const MAX_JUMP_DX := 150.0        # max horizontal reach between two connected platforms
+const COYOTE_TIME := 0.15
+const PLATFORM_WIDTH := 100.0
+const SCREEN_MARGIN := 150.0
 
 # Set from NetworkManager.get_my_player_index() at start_game() — replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
 
-var areas: Array = []
-var it_player: int = -1
 var alive_players: Array[int] = []
-var tagged_players: Array[int] = []
-var round_time := 0.0
-var round_active := false
+var elimination_order: Array = []      # Array[Array[int]] — tie-groups, in elimination order
+var flood_start_y: float
+var round_start_msec: int
+var round_active: bool = false
+var _platform_rng := RandomNumberGenerator.new()
+var _coyote_timer: float = 0.0
 
 # Position sync — each client broadcasts their position at SYNC_HZ rate.
 # Host collects all positions and rebroadcasts to everyone.
 const POSITION_SYNC_HZ := 20.0
 var _position_sync_timer := 0.0
-
-var ai_directions: Dictionary = {}   # idx -> Vector2
-var ai_change_timer: Dictionary = {} # idx -> float
-const AI_DIRECTION_CHANGE_INTERVAL := 1.5
-
-# --- Dash mechanic ---
-const DASH_SPEED_MULTIPLIER := 3.0
-const DASH_DURATION := 0.15   # seconds the speed boost lasts
-const DASH_COOLDOWN := 5.0    # seconds before that player can dash again
-const AI_DASH_CHANCE := 0.3   # chance an AI dashes whenever it picks a new direction
-
-var dash_cooldown_remaining: Dictionary = {} # idx -> float
-var dash_time_remaining: Dictionary = {}     # idx -> float, >0 while a dash burst is active
-var dash_rings: Dictionary = {}              # idx -> Node2D (radial cooldown indicator)
-
-# A tiny custom-drawn Node2D for the radial dash-cooldown indicator, built at
-# runtime so no new scene/script file is needed. Draws a shrinking wedge —
-# full circle = just dashed, nothing drawn = ready to dash again.
-const _DASH_RING_SOURCE := """
-extends Node2D
-
-var progress := 0.0
-var ring_radius := 22.0
-var ring_color := Color(1, 1, 1, 0.9)
-
-func _draw() -> void:
-	if progress <= 0.0:
-		return
-	var start_angle := -PI / 2.0
-	var end_angle := start_angle + TAU * progress
-	draw_arc(Vector2.ZERO, ring_radius, start_angle, end_angle, 32, ring_color, 3.0, true)
-
-func set_progress(p: float) -> void:
-	progress = clamp(p, 0.0, 1.0)
-	queue_redraw()
-"""
+	
+func start_round_synced() -> void:
+	round_start_msec = Time.get_ticks_msec()
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
 	local_player_index = NetworkManager.get_my_player_index()
 	alive_players = players.duplicate()
-	tagged_players.clear()
-	round_time = 0.0
-	round_active = false
+	elimination_order.clear()
+	_auto_position_spawn_and_goal()
 	_position_players()
-	for idx in players:
-		dash_cooldown_remaining[idx] = 0.0
-		dash_time_remaining[idx] = 0.0
-		_create_dash_ring(idx)
-	# Host picks the random values and broadcasts — non-host clients wait
-	# for _apply_langitlupa_start() to arrive before spawning areas/intro.
+	_hide_inactive_players()
+	flood_start_y = $Flood.position.y
+	await run_intro("")
 	if NetworkManager.is_host:
-		var picked_it: int = players[randi() % players.size()]
-		var area_positions: Array = _generate_area_positions()
-		NetworkManager.sync_langitlupa_start.rpc(picked_it, area_positions)
+		var seed_value: int = randi()
+		NetworkManager.sync_langitlupa_platforms.rpc(seed_value)
 
-## Generates NUM_AREAS spawn positions avoiding player spawn points.
-## Only called on the host — results are broadcast via sync_langitlupa_start.
-func _generate_area_positions() -> Array:
-	var positions: Array = []
-	for i in NUM_AREAS:
-		positions.append(_find_area_spawn_avoiding_players())
-	return positions
-
-## Called on every peer (including host, via call_local) once the host has
-## chosen it_player and area positions. Finishes setting up the scene.
-func apply_langitlupa_start(picked_it: int, area_positions: Array) -> void:
-	it_player = picked_it
-	$UI/ItLabel.text = "Player %d is IT!" % (it_player + 1)
-	print("[LangitLupa] Player %d is IT." % it_player)
-	_show_it_arrow(it_player)
-	_spawn_areas_at(area_positions)
-	_init_ai(participating_players)
-	run_intro("Player %d is IT!" % (it_player + 1))
-
-## Adds a red downward arrow above the IT player's node so they're clearly
-## identifiable without relying on color. Built at runtime — no scene edits needed.
-func _show_it_arrow(idx: int) -> void:
-	var node := _get_player_node(idx)
-	# Remove any existing arrow first (safety in case this is called again)
-	var existing := node.get_node_or_null("ItArrow")
-	if existing:
-		existing.queue_free()
-	var arrow := Label.new()
-	arrow.name = "ItArrow"
-	arrow.text = "▼"
-	arrow.add_theme_color_override("font_color", Color.RED)
-	arrow.add_theme_font_size_override("font_size", 22)
-	# Center the arrow above the player node (ColorRect is AREA_SIZE×AREA_SIZE)
-	arrow.position = Vector2(-2, -28)
-	node.add_child(arrow)
-
-## Players always spawn clustered around the arena center, far enough apart
-## (80px, well above TAG_RADIUS) that nobody starts pre-tagged. Areas are
-## spawned afterward and dodge these fixed spots — see _spawn_areas().
 func _position_players() -> void:
+	var spawn_pos: Vector2 = $Platforms/SpawnPlatform.position
 	for i in participating_players.size():
 		var idx: int = participating_players[i]
 		var node := _get_player_node(idx)
-		var offset: Vector2 = SPAWN_OFFSETS[i % SPAWN_OFFSETS.size()]
-		node.position = SPAWN_CENTER + offset
-		node.color = Color.BLUE  # all players same color — IT is shown via arrow instead
+		node.position = spawn_pos + Vector2(i * 40.0 - 60.0, -30.0)
 
-## Places areas at the positions chosen by the host and broadcast via RPC.
-## Replaces the old _spawn_areas() which ran randf_range() independently per client.
-func _spawn_areas_at(area_positions: Array) -> void:
-	areas.clear()
-	for i in area_positions.size():
-		var pos: Vector2 = area_positions[i]
-		areas.append({"pos": pos, "occupied_since": 0.0, "unsafe": false, "unsafe_since": -1.0})
-		var rect: ColorRect = get_node("Areas/Area%d" % i)
-		rect.size = Vector2(AREA_SIZE, AREA_SIZE)
-		rect.position = pos - rect.size / 2.0
-		rect.color = Color.GREEN
-		rect.modulate.a = 1.0
-		rect.visible = true
+func _hide_inactive_players() -> void:
+	for i in Constants.MAX_PLAYERS:
+		var node := _get_player_node(i)
+		var active := participating_players.has(i)
+		node.visible = active
+		node.set_physics_process(active)
 
-## Rerolls a random area position (up to 30 attempts) until it isn't on top
-## of any player's spawn point — fixes areas spawning directly on a player.
-func _find_area_spawn_avoiding_players() -> Vector2:
-	var pos := Vector2.ZERO
-	for attempt in 30:
-		pos = Vector2(randf_range(60, 760), randf_range(60, 460))
-		var clear := true
-		for idx in participating_players:
-			if pos.distance_to(_get_player_node(idx).position) < AREA_SIZE / 2.0 + 30.0:
-				clear = false
-				break
-		if clear:
-			return pos
-	return pos # fallback after 30 attempts — better than an infinite loop
+func _auto_position_spawn_and_goal() -> void:
+	var viewport_size: Vector2 = get_viewport_rect().size
+	$Platforms/SpawnPlatform.position = Vector2(SCREEN_MARGIN, viewport_size.y - SCREEN_MARGIN)
+	$Platforms/GoalPlatform.position = Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN)
 
-## True if `point` falls within the area's actual square bounds — matches
-## the visual ColorRect exactly, rather than the old circular approximation
-## that left the square's corners undetected.
-func _point_in_area(point: Vector2, area: Dictionary, margin: float = 0.0) -> bool:
-	var half: float = AREA_SIZE / 2.0 + margin
-	return absf(point.x - area.pos.x) < half and absf(point.y - area.pos.y) < half
+func _generate_platforms(seed_value: int) -> void:
+	print("[LangitLupa] Generating platforms with seed ", seed_value)
+	_platform_rng.seed = seed_value
 
-func _get_player_node(idx: int) -> ColorRect:
+	var spawn_pos: Vector2 = $Platforms/SpawnPlatform.position
+	var goal_pos: Vector2 = $Platforms/GoalPlatform.position
+	print("[LangitLupa] spawn_pos=%s goal_pos=%s $Platforms.global_position=%s" % [spawn_pos, goal_pos, $Platforms.global_position])
+
+	var total_height: float = abs(spawn_pos.y - goal_pos.y)
+	var num_layers: int = clamp(int(total_height / LAYER_HEIGHT) - 1, 1, NUM_LAYERS)
+
+	var prev_layer_x: Array[float] = [spawn_pos.x]
+	var two_layers_ago_x: Array[float] = []
+	var current_y: float = spawn_pos.y - LAYER_HEIGHT
+
+	for layer in num_layers:
+		var count: int = _platform_rng.randi_range(PLATFORMS_PER_LAYER_MIN, PLATFORMS_PER_LAYER_MAX)
+		var new_layer_x: Array[float] = []
+
+		for i in count:
+			var anchor_x: float = prev_layer_x[_platform_rng.randi_range(0, prev_layer_x.size() - 1)]
+			var viewport_size: Vector2 = get_viewport_rect().size
+			var min_x: float = SCREEN_MARGIN
+			var max_x: float = viewport_size.x - SCREEN_MARGIN
+
+			var x: float = 0.0
+			var attempts := 0
+			while attempts < 10:
+				var offset: float = _platform_rng.randf_range(-MAX_JUMP_DX, MAX_JUMP_DX)
+				x = clamp(anchor_x + offset, min_x, max_x)
+				var blocked := false
+				for old_x in two_layers_ago_x:
+					if abs(x - old_x) < PLATFORM_WIDTH:
+						blocked = true
+						break
+				if not blocked:
+					break
+				attempts += 1
+
+			new_layer_x.append(x)
+			_spawn_platform_node(Vector2(x, current_y), layer, i)
+
+		two_layers_ago_x = prev_layer_x
+		prev_layer_x = new_layer_x
+		current_y -= LAYER_HEIGHT
+
+	# Guaranteed connector platform directly bridging the last layer to the goal.
+	var closest_x: float = prev_layer_x[0]
+	var closest_dist: float = abs(closest_x - goal_pos.x)
+	for px in prev_layer_x:
+		if abs(px - goal_pos.x) < closest_dist:
+			closest_x = px
+			closest_dist = abs(px - goal_pos.x)
+
+	var connector_x: float = closest_x
+	var connector_y: float = current_y
+	var connector_id: int = 0
+	while abs(connector_y - goal_pos.y) > LAYER_HEIGHT:
+		connector_y -= LAYER_HEIGHT
+		connector_x += clamp(goal_pos.x - connector_x, -MAX_JUMP_DX, MAX_JUMP_DX)
+		_spawn_platform_node(Vector2(connector_x, connector_y), 999, connector_id)
+		connector_id += 1
+
+func _spawn_platform_node(pos: Vector2, layer: int, index: int) -> void:
+	var plat := StaticBody2D.new()
+	plat.name = "GenPlatform_%d_%d" % [layer, index]
+	plat.position = pos
+
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(PLATFORM_WIDTH, 20.0)
+	shape.shape = rect
+	plat.add_child(shape)
+
+	var visual := ColorRect.new()
+	visual.size = Vector2(PLATFORM_WIDTH, 20.0)
+	visual.color = Color(0.6, 0.4, 0.2)   
+	visual.position = -visual.size / 2.0
+	plat.add_child(visual)
+
+	$Platforms.add_child(plat)
+	print("[LangitLupa] Platform '%s' at %s" % [plat.name, plat.global_position])
+
+func _clear_generated_platforms() -> void:
+	for child in $Platforms.get_children():
+		if child.name.begins_with("GenPlatform_"):
+			child.queue_free()
+
+func _get_player_node(idx: int) -> CharacterBody2D:
 	return get_node("Players/Player %d" % (idx + 1))
 
 func _process(delta: float) -> void:
@@ -175,13 +165,6 @@ func _process(delta: float) -> void:
 	if not round_active:
 		round_active = true
 		print("[LangitLupa] Round started.")
-
-	round_time += delta
-	$UI/TimerLabel.text = "Time: %.1f" % max(ROUND_DURATION - round_time, 0.0)
-
-	_update_dash_timers(delta)
-	_handle_movement(delta)
-	_update_area_visuals()
 
 	# Position sync — local client sends its position to host at POSITION_SYNC_HZ.
 	_position_sync_timer += delta
@@ -194,211 +177,85 @@ func _process(delta: float) -> void:
 			else:
 				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
 
-	# Authoritative game logic runs on host only — results broadcast to all peers.
+	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
+	$Flood.position.y = _get_flood_y()
+
+	# Authoritative elimination check runs on host only.
 	if NetworkManager.is_host:
-		if round_time >= ROUND_DURATION:
-			NetworkManager.sync_langitlupa_end.rpc()
-			return
-		_update_areas(delta)
-		_check_tagging()
-
-func _get_local_input_dir() -> Vector2:
-	var dir := Vector2.ZERO
-	if Input.is_action_pressed("move_up"): dir.y -= 1
-	if Input.is_action_pressed("move_down"): dir.y += 1
-	if Input.is_action_pressed("move_left"): dir.x -= 1
-	if Input.is_action_pressed("move_right"): dir.x += 1
-	return dir
-
-func _unhandled_input(event: InputEvent) -> void:
+		_check_flood()
+func _physics_process(delta: float) -> void:
 	if gameplay_locked:
+		print("[LangitLupa] blocked: gameplay_locked")
 		return
-	if local_player_index in participating_players and event.is_action_pressed("dash"):
-		_try_dash(local_player_index)
-
-## Starts a dash burst for `idx` if they're not tagged out and their
-## cooldown has fully elapsed. Direction comes from whatever they're
-## currently moving in — applied inside _apply_move via the speed multiplier.
-func _try_dash(idx: int) -> void:
-	if idx in tagged_players:
+	if local_player_index == -1 or not alive_players.has(local_player_index):
+		print("[LangitLupa] blocked: local_player_index=%s alive=%s" % [local_player_index, alive_players])
 		return
-	if dash_cooldown_remaining.get(idx, 0.0) > 0.0:
-		return
-	dash_time_remaining[idx] = DASH_DURATION
-	dash_cooldown_remaining[idx] = DASH_COOLDOWN
 
-## Builds and attaches a radial cooldown indicator as a child of the given
-## player's node — follows them automatically since it's a local-space child.
-func _create_dash_ring(idx: int) -> void:
-	var ring := Node2D.new()
-	var script := GDScript.new()
-	script.source_code = _DASH_RING_SOURCE
-	script.reload()
-	ring.set_script(script)
-	_get_player_node(idx).add_child(ring)
-	dash_rings[idx] = ring
+	var player := _get_player_node(local_player_index)
+	print("[LangitLupa] pos=%s left=%s right=%s jump=%s on_floor=%s" % [
+		player.global_position, Input.is_action_pressed("move_left"), Input.is_action_pressed("move_right"),
+		Input.is_action_just_pressed("jump"), player.is_on_floor()
+	])
+	player.velocity.y += GRAVITY * delta
 
-func _update_dash_timers(delta: float) -> void:
-	for idx in participating_players:
-		if dash_cooldown_remaining.get(idx, 0.0) > 0.0:
-			dash_cooldown_remaining[idx] = max(0.0, dash_cooldown_remaining[idx] - delta)
-		if dash_time_remaining.get(idx, 0.0) > 0.0:
-			dash_time_remaining[idx] = max(0.0, dash_time_remaining[idx] - delta)
-		if dash_rings.has(idx):
-			var ratio: float = dash_cooldown_remaining.get(idx, 0.0) / DASH_COOLDOWN
-			dash_rings[idx].set_progress(ratio)
+	if player.is_on_floor():
+		_coyote_timer = COYOTE_TIME
+	else:
+		_coyote_timer -= delta
 
-func _init_ai(players: Array[int]) -> void:
-	ai_directions.clear()
-	ai_change_timer.clear()
-	for idx in players:
-		if idx == local_player_index:
-			continue
-		ai_directions[idx] = _random_direction()
-		ai_change_timer[idx] = 0.0
+	var direction := 0.0
+	if Input.is_action_pressed("move_left"):
+		direction -= 1.0
+	if Input.is_action_pressed("move_right"):
+		direction += 1.0
+	player.velocity.x = direction * MOVE_SPEED
 
-func _random_direction() -> Vector2:
-	var dir := Vector2(randf_range(-1, 1), randf_range(-1, 1))
-	return dir.normalized() if dir.length() > 0.01 else Vector2.RIGHT
+	if Input.is_action_just_pressed("jump") and _coyote_timer > 0.0:
+		player.velocity.y = JUMP_VELOCITY
+		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
 
-func _handle_movement(delta: float) -> void:
-	# Local player — always move from keyboard input
-	if local_player_index != -1 and local_player_index not in tagged_players:
-		var node := _get_player_node(local_player_index)
-		var dir := _get_local_input_dir()
-		if dir != Vector2.ZERO:
-			node.position = _apply_move(local_player_index, node.position, dir, delta)
+	player.move_and_slide()
 
-	# AI players — only host simulates them, and only for player indices that
-	# have no real LAN peer assigned (i.e. not in NetworkManager.player_index_to_peer).
-	if not NetworkManager.is_host:
-		return
-	for idx in alive_players:
-		if idx == local_player_index or idx in tagged_players:
-			continue
-		if NetworkManager.player_index_to_peer.has(idx):
-			continue  # this player is controlled by a real LAN peer — don't AI them
-		ai_change_timer[idx] += delta
-		if ai_change_timer[idx] >= AI_DIRECTION_CHANGE_INTERVAL:
-			ai_directions[idx] = _random_direction()
-			ai_change_timer[idx] = 0.0
-			if dash_cooldown_remaining.get(idx, 0.0) <= 0.0 and randf() < AI_DASH_CHANCE:
-				_try_dash(idx)
-		var node := _get_player_node(idx)
-		node.position = _apply_move(idx, node.position, ai_directions[idx], delta)
-		if node.position.x < 30 or node.position.x > 770:
-			ai_directions[idx].x *= -1
-		if node.position.y < 30 or node.position.y > 470:
-			ai_directions[idx].y *= -1
+func _get_flood_y() -> float:
+	var elapsed_sec := (Time.get_ticks_msec() - round_start_msec) / 1000.0
+	return flood_start_y - FLOOD_RISE_SPEED * elapsed_sec
 
-func _apply_move(idx: int, pos: Vector2, dir: Vector2, delta: float) -> Vector2:
-	var speed := PLAYER_SPEED
-	if dash_time_remaining.get(idx, 0.0) > 0.0:
-		speed *= DASH_SPEED_MULTIPLIER
-	var new_pos: Vector2 = pos + dir.normalized() * speed * delta
-	if idx == it_player:
-		for area in areas:
-			if not area.unsafe and _point_in_area(new_pos, area):
-				return pos  # blocked from elevated (still-safe) areas
-	return new_pos
+## Host-only. Checks every alive player against the current flood line.
+func _check_flood() -> void:
+	var current_flood_y := _get_flood_y()
+	for idx in alive_players.duplicate():
+		var p := _get_player_node(idx)
+		if is_instance_valid(p) and p.global_position.y >= current_flood_y:
+			_eliminate_player(idx)
 
-func _update_areas(delta: float) -> void:
-	# Only called on host (see _process). Broadcasts area state changes.
-	for i in areas.size():
-		var area: Dictionary = areas[i]
-		if area.unsafe:
-			continue
-		var occupied := false
-		for idx in alive_players:
-			if idx == it_player or idx in tagged_players:
-				continue
-			if _point_in_area(_get_player_node(idx).position, area):
-				occupied = true
-				break
-		if occupied:
-			area.occupied_since += delta
-			if area.occupied_since >= AREA_SAFE_DURATION:
-				NetworkManager.sync_langitlupa_area_unsafe.rpc(i)
-		else:
-			area.occupied_since = 0.0
+## Host-only. Removes a player, broadcasts it, ends the round if ≤1 remain.
+func _eliminate_player(idx: int) -> void:
+	if not alive_players.has(idx):
+		return  # guard against double-fire in the same frame
+	alive_players.erase(idx)
+	elimination_order.append([idx])
+	NetworkManager.broadcast_langitlupa_elimination.rpc(idx)
+	if alive_players.size() <= 1:
+		NetworkManager.sync_langitlupa_end.rpc(_compute_final_scores())
 
-## Called on every peer by NetworkManager when an area becomes permanently unsafe.
-func apply_area_unsafe(area_idx: int) -> void:
-	if area_idx >= areas.size():
-		return
-	areas[area_idx].unsafe = true
-	areas[area_idx].unsafe_since = round_time
-
-func _update_area_visuals() -> void:
-	for i in areas.size():
-		var rect: ColorRect = get_node("Areas/Area%d" % i)
-		var area: Dictionary = areas[i]
-		if area.unsafe:
-			var elapsed: float = round_time - area.unsafe_since
-			if elapsed < AREA_FLASH_DURATION:
-				rect.visible = true
-				rect.color = Color.RED
-				rect.modulate.a = 0.5 + 0.5 * sin(round_time * 10.0)
-			else:
-				rect.visible = false
-		else:
-			rect.visible = true
-			rect.color = Color.GREEN
-			rect.modulate.a = 1.0
-
-func _is_player_safe(pos: Vector2) -> bool:
-	for area in areas:
-		if not area.unsafe and _point_in_area(pos, area):
-			return true
-	return false
-
-func _check_tagging() -> void:
-	# Only called on host (see _process). Broadcasts tag events to all peers.
-	var it_pos: Vector2 = _get_player_node(it_player).position
-	for idx in alive_players:
-		if idx == it_player or idx in tagged_players:
-			continue
-		var node := _get_player_node(idx)
-		if _is_player_safe(node.position):
-			continue
-		if node.position.distance_to(it_pos) < TAG_RADIUS:
-			NetworkManager.sync_langitlupa_tag.rpc(idx)
-
-	if tagged_players.size() >= alive_players.size() - 1:
-		print("[LangitLupa] All players tagged — ending round early.")
-		NetworkManager.sync_langitlupa_end.rpc()
-
-## Called on every peer by NetworkManager when a tag event is broadcast.
-func apply_tag(player_idx: int) -> void:
-	if player_idx in tagged_players:
-		return  # already tagged — RPC may arrive more than once before host re-checks
-	tagged_players.append(player_idx)
+## Called on every peer (including host) when NetworkManager broadcasts an elimination.
+func apply_elimination(player_idx: int) -> void:
 	_get_player_node(player_idx).modulate.a = 0.3
-	print("[LangitLupa] Player %d tagged!" % player_idx)
+	print("[LangitLupa] Player %d caught by the flood!" % player_idx)
 
-## Called on every peer by NetworkManager.sync_langitlupa_end RPC.
-func apply_end() -> void:
-	if gameplay_locked:
-		return  # already ended — RPC may arrive more than once
-	_end_game()
+func _compute_final_scores() -> Dictionary:
+	var groups: Array = []
+	if alive_players.size() == 1:
+		groups.append([alive_players[0]])
+	var reversed_eliminations: Array = elimination_order.duplicate()
+	reversed_eliminations.reverse()
+	groups.append_array(reversed_eliminations)
+	return BaseMinigame.compute_placement_scores(groups)
 
-func _end_game() -> void:
+func _end_game(scores: Dictionary) -> void:
 	round_active = false
-	gameplay_locked = true  # stop _process from re-entering and re-triggering this every frame
+	gameplay_locked = true
+	_clear_generated_platforms()
 
-	# Per design: IT scores 1 point per tagged player. Each surviving
-	# non-IT player scores 1 point per surviving non-IT player (including
-	# themselves). Tagged players score 0 — they simply get no entry below.
-	var total_others: int = alive_players.size() - 1  # everyone except IT
-	var tagged_count: int = tagged_players.size()
-	var survivor_count: int = total_others - tagged_count
-
-	var scores: Dictionary = {}
-	scores[it_player] = tagged_count
-	for idx in alive_players:
-		if idx == it_player or idx in tagged_players:
-			continue
-		scores[idx] = survivor_count
-
-	print("[LangitLupa] Round over. Tagged: %s" % [tagged_players])
+	print("[LangitLupa] Round over. Elimination order: %s" % [elimination_order])
 	_finish(scores)
