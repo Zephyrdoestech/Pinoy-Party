@@ -4,7 +4,7 @@ extends Node2D
 
 @onready var board: Node2D = $Board
 @onready var dice: Node2D = $Dice
-@onready var roll_button: Button = $UI/RollButton
+@onready var roll_button: TextureButton = $UI/RollButton
 @onready var state_machine: StateMachine = $StateMachine
 
 var tokens: Array[Node2D] = []

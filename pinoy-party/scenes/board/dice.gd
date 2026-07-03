@@ -10,12 +10,12 @@ const FACE_TEXTURE_PATHS := [
 	"res://assets/board_assets/Dice/3d/dice_3d_static_6.png",
 ]
 const ROLLING_TEXTURE_PATH := "res://assets/board_assets/Dice/3d/rolling_dice-sheet.png"
-const ROLLING_FRAME_SIZE := Vector2i(30, 29)
-const ROLLING_COLUMNS := 5
-const ROLLING_FRAME_COUNT := 25
+const ROLLING_FRAME_SIZE := Vector2i(25, 29)
+const ROLLING_COLUMNS := 6
+const ROLLING_FRAME_COUNT := 28
 
 @onready var label: Label = $Label
-@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var sprite: AnimatedSprite2D = _find_animated_sprite()
 
 var is_rolling: bool = false
 var current_face: int = 1
@@ -71,11 +71,31 @@ func _setup_sprite_frames() -> void:
 	_add_rolling_animation(frames)
 	sprite.sprite_frames = frames
 
+func _find_animated_sprite() -> AnimatedSprite2D:
+	for child in find_children("*", "AnimatedSprite2D", true, false):
+		var animated_child := child as AnimatedSprite2D
+		if _sprite_has_required_animations(animated_child):
+			return animated_child
+
+	var direct_sprite := get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if direct_sprite != null:
+		return direct_sprite
+
+	var sprite_node := AnimatedSprite2D.new()
+	sprite_node.name = "AnimatedSprite2D"
+	add_child(sprite_node)
+	return sprite_node
+
 func _has_required_animations() -> bool:
-	if sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(&"rolling"):
+	return _sprite_has_required_animations(sprite)
+
+func _sprite_has_required_animations(animated_sprite: AnimatedSprite2D) -> bool:
+	if animated_sprite == null:
+		return false
+	if animated_sprite.sprite_frames == null or not animated_sprite.sprite_frames.has_animation(&"rolling"):
 		return false
 	for face in Constants.DICE_FACES:
-		if not sprite.sprite_frames.has_animation(StringName("face_%d" % (face + 1))):
+		if not animated_sprite.sprite_frames.has_animation(StringName("face_%d" % (face + 1))):
 			return false
 	return true
 
