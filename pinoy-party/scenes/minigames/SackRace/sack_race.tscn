@@ -47,80 +47,6 @@ _data = {
 [node name="SackRace" type="Node2D" unique_id=1414252881]
 script = ExtResource("1_wmqyi")
 
-[node name="Tracks" type="Node2D" parent="." unique_id=963667019]
-
-[node name="TrackBG" type="Sprite2D" parent="Tracks" unique_id=1552923511]
-position = Vector2(800, 96)
-scale = Vector2(2, 2)
-texture = ExtResource("2_f5ddq")
-
-[node name="TrackBG2" type="Sprite2D" parent="Tracks" unique_id=1999474751]
-position = Vector2(800, 288)
-scale = Vector2(2, 2)
-texture = ExtResource("2_f5ddq")
-
-[node name="TrackBG3" type="Sprite2D" parent="Tracks" unique_id=2001423330]
-position = Vector2(800, 488)
-scale = Vector2(2, 2)
-texture = ExtResource("2_f5ddq")
-
-[node name="TrackBG4" type="Sprite2D" parent="Tracks" unique_id=1880032420]
-position = Vector2(801, 668)
-scale = Vector2(2, 2)
-texture = ExtResource("2_f5ddq")
-
-[node name="Player 1" type="Node2D" parent="Tracks" unique_id=860089277]
-
-[node name="Player 1" type="Sprite2D" parent="Tracks/Player 1" unique_id=1539332623]
-position = Vector2(56.00003, 136)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("3_1cf04")
-hframes = 2
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 1/Player 1" unique_id=854568078]
-libraries/ = SubResource("AnimationLibrary_bdxkt")
-
-[node name="Player 2" type="Node2D" parent="Tracks" unique_id=164475728]
-
-[node name="Player 1" type="Sprite2D" parent="Tracks/Player 2" unique_id=400235518]
-position = Vector2(56, 336)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("4_qion6")
-hframes = 2
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 2/Player 1" unique_id=490500870]
-libraries/ = SubResource("AnimationLibrary_bdxkt")
-
-[node name="Player 3" type="Node2D" parent="Tracks" unique_id=1054960584]
-
-[node name="Player 1" type="Sprite2D" parent="Tracks/Player 3" unique_id=1043000245]
-position = Vector2(56, 528)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("5_kv2lf")
-hframes = 2
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 3/Player 1" unique_id=1849764316]
-libraries/ = SubResource("AnimationLibrary_bdxkt")
-
-[node name="Player 4" type="Node2D" parent="Tracks" unique_id=1919804307]
-position = Vector2(24, 512)
-
-[node name="Player 1" type="Sprite2D" parent="Tracks/Player 4" unique_id=646839155]
-position = Vector2(24, 192)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("6_am5k4")
-hframes = 2
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Tracks/Player 4/Player 1" unique_id=1592318641]
-libraries/ = SubResource("AnimationLibrary_bdxkt")
-
-[node name="Finish Line" type="ColorRect" parent="." unique_id=997488694]
-offset_left = 1432.0
-offset_top = 8.0
-offset_right = 1474.0
-offset_bottom = 760.0
-color = Color(0, 0, 0, 1)
-
 [node name="UI" type="CanvasLayer" parent="." unique_id=1526385548]
 
 [node name="StatusLabel" type="Label" parent="UI" unique_id=973152409]
@@ -135,12 +61,162 @@ offset_right = 1061.0
 offset_bottom = 79.0
 theme_override_font_sizes/font_size = 36
 
-[node name="GridContainer" type="GridContainer" parent="." unique_id=1456303643]
-offset_right = 40.0
-offset_bottom = 40.0
-columns = 2
+[node name="SplitScreenContainer" type="VBoxContainer" parent="." unique_id=3153789]
+self_modulate = Color(0.8227731, 0.23483154, 0.28677925, 1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1280.0
+offset_bottom = 720.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="GridContainer" unique_id=478213312]
-custom_minimum_size = Vector2(1920, 180)
+[node name="P1_Container" type="SubViewportContainer" parent="SplitScreenContainer" unique_id=460854995]
+custom_minimum_size = Vector2(1280, 180)
 layout_mode = 2
+size_flags_vertical = 3
 stretch = true
+
+[node name="Viewport1" type="SubViewport" parent="SplitScreenContainer/P1_Container" unique_id=768587769]
+handle_input_locally = false
+size = Vector2i(1280, 180)
+render_target_update_mode = 4
+
+[node name="Track1" type="Node2D" parent="SplitScreenContainer/P1_Container/Viewport1" unique_id=272806868]
+
+[node name="TrackBG" type="Sprite2D" parent="SplitScreenContainer/P1_Container/Viewport1/Track1" unique_id=771929606]
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
+centered = false
+
+[node name="Player1" type="Node2D" parent="SplitScreenContainer/P1_Container/Viewport1/Track1" unique_id=860089277]
+position = Vector2(0, -8)
+
+[node name="Player1" type="Sprite2D" parent="SplitScreenContainer/P1_Container/Viewport1/Track1/Player1" unique_id=1539332623]
+position = Vector2(48.000004, 128)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("3_1cf04")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="SplitScreenContainer/P1_Container/Viewport1/Track1/Player1/Player1" unique_id=854568078]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Camera2D" type="Camera2D" parent="SplitScreenContainer/P1_Container/Viewport1/Track1/Player1/Player1" unique_id=914035444]
+position = Vector2(-999.9999, -899.99994)
+scale = Vector2(9.999998, 9.999998)
+limit_left = 0
+limit_top = 0
+limit_right = 1600
+limit_bottom = 180
+
+[node name="P2_Container" type="SubViewportContainer" parent="SplitScreenContainer" unique_id=932016455]
+custom_minimum_size = Vector2(1280, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Viewport2" type="SubViewport" parent="SplitScreenContainer/P2_Container" unique_id=1842369768]
+handle_input_locally = false
+size = Vector2i(1280, 180)
+render_target_update_mode = 4
+
+[node name="Track2" type="Node2D" parent="SplitScreenContainer/P2_Container/Viewport2" unique_id=1175525173]
+
+[node name="TrackBG" type="Sprite2D" parent="SplitScreenContainer/P2_Container/Viewport2/Track2" unique_id=2127830931]
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
+centered = false
+
+[node name="Player2" type="Node2D" parent="SplitScreenContainer/P2_Container/Viewport2/Track2" unique_id=1813822172]
+position = Vector2(0, -8)
+
+[node name="Player2" type="Sprite2D" parent="SplitScreenContainer/P2_Container/Viewport2/Track2/Player2" unique_id=315353661]
+position = Vector2(48, 128)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("4_qion6")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="SplitScreenContainer/P2_Container/Viewport2/Track2/Player2/Player2" unique_id=1629907266]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Camera2D2" type="Camera2D" parent="SplitScreenContainer/P2_Container/Viewport2/Track2/Player2/Player2" unique_id=820507897]
+position = Vector2(-999.9999, -899.99994)
+scale = Vector2(9.999998, 9.999998)
+limit_left = 0
+limit_top = 0
+limit_right = 1600
+limit_bottom = 180
+
+[node name="P3_Container" type="SubViewportContainer" parent="SplitScreenContainer" unique_id=1770259418]
+custom_minimum_size = Vector2(1280, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Viewport3" type="SubViewport" parent="SplitScreenContainer/P3_Container" unique_id=890082373]
+handle_input_locally = false
+size = Vector2i(1280, 180)
+render_target_update_mode = 4
+
+[node name="Track3" type="Node2D" parent="SplitScreenContainer/P3_Container/Viewport3" unique_id=1729428453]
+
+[node name="TrackBG" type="Sprite2D" parent="SplitScreenContainer/P3_Container/Viewport3/Track3" unique_id=2094359018]
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
+centered = false
+
+[node name="Player3" type="Node2D" parent="SplitScreenContainer/P3_Container/Viewport3/Track3" unique_id=438806103]
+position = Vector2(0, -8)
+
+[node name="Player1" type="Sprite2D" parent="SplitScreenContainer/P3_Container/Viewport3/Track3/Player3" unique_id=962874061]
+position = Vector2(48, 128)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("5_kv2lf")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="SplitScreenContainer/P3_Container/Viewport3/Track3/Player3/Player1" unique_id=1668231167]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Camera2D" type="Camera2D" parent="SplitScreenContainer/P3_Container/Viewport3/Track3/Player3/Player1" unique_id=1586278974]
+position = Vector2(-999.9999, -899.99994)
+scale = Vector2(9.999998, 9.999998)
+limit_left = 0
+limit_top = 0
+limit_right = 1600
+limit_bottom = 180
+
+[node name="P4_Container" type="SubViewportContainer" parent="SplitScreenContainer" unique_id=1536021023]
+custom_minimum_size = Vector2(1280, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Viewport4" type="SubViewport" parent="SplitScreenContainer/P4_Container" unique_id=398793640]
+handle_input_locally = false
+size = Vector2i(1280, 180)
+render_target_update_mode = 4
+
+[node name="Track4" type="Node2D" parent="SplitScreenContainer/P4_Container/Viewport4" unique_id=837204659]
+
+[node name="TrackBG" type="Sprite2D" parent="SplitScreenContainer/P4_Container/Viewport4/Track4" unique_id=601438336]
+scale = Vector2(2, 2)
+texture = ExtResource("2_f5ddq")
+centered = false
+
+[node name="Player4" type="Node2D" parent="SplitScreenContainer/P4_Container/Viewport4/Track4" unique_id=732281879]
+position = Vector2(0, -8)
+
+[node name="Player1" type="Sprite2D" parent="SplitScreenContainer/P4_Container/Viewport4/Track4/Player4" unique_id=2114442776]
+position = Vector2(48, 128)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("6_am5k4")
+hframes = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="SplitScreenContainer/P4_Container/Viewport4/Track4/Player4/Player1" unique_id=1641718287]
+libraries/ = SubResource("AnimationLibrary_bdxkt")
+
+[node name="Camera2D" type="Camera2D" parent="SplitScreenContainer/P4_Container/Viewport4/Track4/Player4/Player1" unique_id=1664108100]
+position = Vector2(-999.9999, -899.99994)
+scale = Vector2(9.999998, 9.999998)
+limit_left = 0
+limit_top = 0
+limit_right = 1600
+limit_bottom = 180
