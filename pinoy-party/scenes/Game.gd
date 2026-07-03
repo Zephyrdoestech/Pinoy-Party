@@ -79,7 +79,8 @@ func _update_roll_button() -> void:
 func _can_local_player_roll() -> bool:
 	if GameManager.state != Enums.GameState.ROLLING:
 		return false
-	if NetworkManager.get_my_player_index() != GameManager.current_player_index:
+	var my_player_index := NetworkManager.get_my_player_index()
+	if my_player_index != -1 and my_player_index != GameManager.current_player_index:
 		return false
 	return dice.get("is_rolling") != true
 

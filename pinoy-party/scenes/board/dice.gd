@@ -33,7 +33,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func roll() -> void:
 	if is_rolling:
 		return
-	if NetworkManager.get_my_player_index() != GameManager.current_player_index:
+	var my_player_index := NetworkManager.get_my_player_index()
+	if my_player_index != -1 and my_player_index != GameManager.current_player_index:
 		return  # not your turn
 	is_rolling = true
 	_play_rolling()
@@ -47,7 +48,9 @@ func roll() -> void:
 	# real roll so every peer ends up with the identical number.
 	# If we're the host, call directly — Godot blocks rpc_id(1) on yourself.
 	# If we're a client, send the request to the host (peer 1).
-	if NetworkManager.is_host:
+	if my_player_index == -1:
+		GameManager.on_dice_rolled(randi_range(1, Constants.DICE_FACES))
+	elif NetworkManager.is_host:
 		NetworkManager._process_roll_request(multiplayer.get_unique_id())
 	else:
 		NetworkManager.request_roll.rpc_id(1)
