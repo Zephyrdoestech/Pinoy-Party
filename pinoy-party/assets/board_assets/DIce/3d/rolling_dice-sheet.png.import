@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bno5akkkg21gn"
-path="res://.godot/imported/board_complete.png-c64d9e8aade655f1f66cb30e5a9df02a.ctex"
+uid="uid://bqnfcc3gafeua"
+path="res://.godot/imported/rolling_dice-sheet.png-6d2e323f1d930f3ec88b6bd1138317bc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/board_complete.png"
-dest_files=["res://.godot/imported/board_complete.png-c64d9e8aade655f1f66cb30e5a9df02a.ctex"]
+source_file="res://assets/board_assets/Dice/3d/rolling_dice-sheet.png"
+dest_files=["res://.godot/imported/rolling_dice-sheet.png-6d2e323f1d930f3ec88b6bd1138317bc.ctex"]
 
 [params]
 
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

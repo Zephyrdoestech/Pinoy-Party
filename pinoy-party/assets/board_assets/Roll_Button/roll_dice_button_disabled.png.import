@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bno5akkkg21gn"
-path="res://.godot/imported/board_complete.png-c64d9e8aade655f1f66cb30e5a9df02a.ctex"
+uid="uid://clc02ahavc0jv"
+path="res://.godot/imported/roll_dice_button_disabled.png-507d78ad030d0372ba2af039030bc7c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/board_complete.png"
-dest_files=["res://.godot/imported/board_complete.png-c64d9e8aade655f1f66cb30e5a9df02a.ctex"]
+source_file="res://assets/board_assets/Roll_Button/roll_dice_button_disabled.png"
+dest_files=["res://.godot/imported/roll_dice_button_disabled.png-507d78ad030d0372ba2af039030bc7c2.ctex"]
 
 [params]
 
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1
