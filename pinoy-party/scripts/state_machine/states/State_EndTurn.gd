@@ -64,4 +64,6 @@ func _update_ui(_gm: GameManager, _player_idx: int) -> void:
 
 
 func _check_game_over(gm: GameManager) -> bool:
+	# Delegate to the single source of truth on GameManager — avoids
+	# the win-condition logic being duplicated in two places.
 	return gm._is_game_over()

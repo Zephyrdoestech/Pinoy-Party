@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c2hbad6cv4qhg"]
+[gd_scene load_steps=0 format=3 uid="uid://c2hbad6cv4qhg"]
 
 [ext_resource type="Script" uid="uid://bge4f7psh0xlf" path="res://scenes/ui/game_over_screen.gd" id="1_0pcqs"]
 

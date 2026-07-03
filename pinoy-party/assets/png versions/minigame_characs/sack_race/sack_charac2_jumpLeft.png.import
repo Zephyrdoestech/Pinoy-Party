@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dqpx1x1pkrkha"
-path="res://.godot/imported/luskong_baka_building2.png-ed2d545fd6785e87d0da7150cac5fd91.ctex"
+uid="uid://i7sodimvelex"
+path="res://.godot/imported/sack_charac2_jumpLeft.png-8d116ba73e386d50b9b64d6c03b0684a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/minigame_assets/luksong_baka_assets/luskong_baka_building2.png"
-dest_files=["res://.godot/imported/luskong_baka_building2.png-ed2d545fd6785e87d0da7150cac5fd91.ctex"]
+source_file="res://assets/png versions/minigame_characs/sack_race/sack_charac2_jumpLeft.png"
+dest_files=["res://.godot/imported/sack_charac2_jumpLeft.png-8d116ba73e386d50b9b64d6c03b0684a.ctex"]
 
 [params]
 

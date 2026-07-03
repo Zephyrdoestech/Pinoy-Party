@@ -30,6 +30,11 @@ Utils="*uid://kq72ldfg6dn8"
 NetworkManager="*uid://dh16yfljr5wd7"
 TriviaController="*uid://bsqfygbc7nlo3"
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/AsepriteWizard/plugin.cfg")
