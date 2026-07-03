@@ -6,7 +6,7 @@ extends Control
 var rows: Array = []  # [{marker: Label, score: Label}]
 
 func _ready() -> void:
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		var row := HBoxContainer.new()
 		row.position = Vector2(0, i * 28)
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	_refresh_all()
 
 func _refresh_all() -> void:
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		_update_score_text(i)
 
 func _update_score_text(player_index: int) -> void:
@@ -39,6 +39,6 @@ func _on_score_changed(player_index: int, _new_score: int) -> void:
 	_update_score_text(player_index)
 
 func _on_turn_started(current_player_index: int) -> void:
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		var marker: Label = rows[i]["marker"]
 		marker.text = "▶" if i == current_player_index else ""
