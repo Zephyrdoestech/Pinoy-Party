@@ -1,25 +1,31 @@
+@tool
 extends Node2D
 
-var tile_index: int = 0
-var tile_type: int = Enums.TileType.BLANK
+@export var tile_index: int = 0
+@export var tile_type: Enums.TileType = Enums.TileType.BLANK:
+	set(value):
+		tile_type = value
+		_update_visual()
 
-@onready var color_rect: ColorRect = $ColorRect
-@onready var label: Label = $Label
+@export_group("Textures")
+@export var texture_blank: Texture2D
+@export var texture_trivia: Texture2D
+@export var texture_game: Texture2D
 
-func setup(index: int, type: int) -> void:
-	tile_index = index
-	tile_type = type
+func _ready() -> void:
+	print("Tile ", name, " is alive! Type is: ", tile_type)
 	_update_visual()
 
 func _update_visual() -> void:
-	if color_rect == null:
+	var sprite = get_node_or_null("Sprite2D")
+	
+	if sprite == null:
 		return
+	
 	match tile_type:
 		Enums.TileType.GAME_TRIGGER:
-			color_rect.color = Color.WEB_MAROON  # red
+			sprite.texture = texture_game
 		Enums.TileType.TRIVIA:
-			color_rect.color = Color.GOLDENROD
+			sprite.texture = texture_trivia
 		_:
-			color_rect.color = Color(0.7, 0.7, 0.7)  # gray
-	if label:
-		label.text = str(tile_index)
+			sprite.texture = texture_blank

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dbfm3smj58raw"]
+[gd_scene load_steps=0 format=3 uid="uid://dbfm3smj58raw"]
 
 [ext_resource type="Script" uid="uid://cwkpf155ser33" path="res://scenes/ui/lobby_screen.gd" id="1_3dmo6"]
 

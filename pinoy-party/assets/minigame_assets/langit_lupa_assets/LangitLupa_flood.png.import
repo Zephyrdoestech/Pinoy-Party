@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1hfpanojsaeq"
-path="res://.godot/imported/luskong_baka_building6.png-5b31406594e41dfad86eaf200e59c7c2.ctex"
+uid="uid://dw7pwk1i6ydgw"
+path="res://.godot/imported/LangitLupa_flood.png-3d94d325c34dc55cb60251f8199213fa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/minigame_assets/luksong_baka_assets/luskong_baka_building6.png"
-dest_files=["res://.godot/imported/luskong_baka_building6.png-5b31406594e41dfad86eaf200e59c7c2.ctex"]
+source_file="res://assets/minigame_assets/langit_lupa_assets/LangitLupa_flood.png"
+dest_files=["res://.godot/imported/LangitLupa_flood.png-3d94d325c34dc55cb60251f8199213fa.ctex"]
 
 [params]
 
