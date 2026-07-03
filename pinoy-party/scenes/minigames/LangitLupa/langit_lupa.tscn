@@ -25,9 +25,9 @@ position = Vector2(3, 649)
 shape = SubResource("WorldBoundaryShape2D_ncfyi")
 
 [node name="ColorRect" type="ColorRect" parent="Platforms/SpawnPlatform" unique_id=925924154]
-offset_left = -1.0
+offset_left = -423.0
 offset_top = -9.0
-offset_right = 1154.0
+offset_right = 2349.0
 offset_bottom = 11.0
 color = Color(0, 0.4874007, 1.92523e-07, 1)
 
@@ -45,17 +45,15 @@ offset_bottom = 10.0
 color = Color(1, 0.84313726, 0, 1)
 
 [node name="Flood" type="Area2D" parent="." unique_id=1708480871]
-position = Vector2(624, 3064)
-
-[node name="ColorRect" type="ColorRect" parent="Flood" unique_id=393360797]
-offset_left = -885.0
-offset_top = 733.0
-offset_right = 1176.0
-offset_bottom = 773.0
-color = Color(0.2, 0.4, 0.9, 0.5)
+position = Vector2(-150, 1467)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Flood" unique_id=434363969]
 shape = SubResource("RectangleShape2D_6uy84")
+
+[node name="ColorRect" type="ColorRect" parent="Flood" unique_id=393360797]
+offset_right = 2061.0
+offset_bottom = 40.0
+color = Color(0.2, 0.4, 0.9, 0.5)
 
 [node name="Players" type="Node2D" parent="." unique_id=1469192264]
 position = Vector2(123, 579)
