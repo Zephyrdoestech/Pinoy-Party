@@ -11,24 +11,36 @@ var finished_order: Array[int] = []
 var race_active := false
 var timeout_timer := 0.0
 
-func _get_track_rect(player_idx: int) -> ColorRect:
+#DEBUG         
+func _ready() -> void:
+	print("!")
+	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+		print("DEBUG MODE: Starting local test race.")
+		start_game([0, 1, 2, 3])
+		gameplay_locked = false 
+
+func _get_track_node(player_idx: int) -> Node2D:
 	return get_node("Tracks/Player %d" % (player_idx + 1))
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
 	for idx in players:
 		progress[idx] = 0.0
-		var rect := _get_track_rect(idx)
-		rect.position.x = 0.0  # reset to start line each race
+		var node := _get_track_node(idx)
+		if node:
+			node.position.x = 0.0  # reset to start line each race
 	finished_order.clear()
 	race_active = true
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
 	print("[SackRace] Race started for players: %s" % [players])
 	run_intro()
+	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+		gameplay_locked = false
+		print("DEBUG MODE: Gameplay explicitly unlocked.") 
 
 func _process(delta: float) -> void:
-	if gameplay_locked:
+	if not race_active or gameplay_locked:
 		return
 	
 	if not race_active:
@@ -40,11 +52,16 @@ func _process(delta: float) -> void:
 		print("[SackRace] Timeout reached, ending race early.")
 		_end_race()
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not race_active:
 		return
 	if not event.is_action_pressed("jump"):
 		return
+	#DEBUG
+	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+		apply_hop(0) # control p1 for testing
+		return
+		
 	var my_idx: int = NetworkManager.get_my_player_index()
 	if my_idx == -1 or my_idx not in participating_players:
 		return  # not a participant in this race (or no LAN match active)
@@ -69,9 +86,17 @@ func apply_hop(player_idx: int) -> void:
 	_advance(player_idx)
 
 func _advance(player_idx: int) -> void:
+	print("Advancing Player: ", player_idx)
+	
 	progress[player_idx] += HOP_DISTANCE
-	var rect := _get_track_rect(player_idx)
-	rect.position.x = progress[player_idx] * HOP_PIXELS
+	var player_node := _get_track_node(player_idx)
+	
+	if player_node:
+		player_node.position.x = progress[player_idx] * HOP_PIXELS
+		var anim = player_node.find_child("AnimationPlayer")
+		if anim:
+			player_node.find_child("AnimationPlayer").play("jump")
+	
 	if progress[player_idx] >= FINISH_DISTANCE and player_idx not in finished_order:
 		finished_order.append(player_idx)
 		print("[SackRace] Player %d finished in place %d." % [player_idx, finished_order.size()])

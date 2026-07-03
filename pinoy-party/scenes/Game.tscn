@@ -8,15 +8,171 @@
 [ext_resource type="Script" uid="uid://c4grj3vp5v4vj" path="res://scripts/state_machine/states/State_WaitingForDice.gd" id="6_3xj3m"]
 [ext_resource type="Script" uid="uid://dbpgmhuso24j4" path="res://scripts/state_machine/states/State_Moving.gd" id="7_mcffj"]
 [ext_resource type="Script" uid="uid://bj3xox6d6dtr7" path="res://scripts/state_machine/states/State_TileEvent.gd" id="8_2rd6h"]
+[ext_resource type="PackedScene" uid="uid://cph0668ds8x15" path="res://scenes/board/Tile.tscn" id="8_kyk2p"]
 [ext_resource type="Script" uid="uid://bn08v1ospija" path="res://scripts/state_machine/states/State_EndTurn.gd" id="9_7ua8r"]
 [ext_resource type="PackedScene" uid="uid://b27tfag0jsw3q" path="res://scenes/ui/HUD.tscn" id="10_qy1jj"]
 [ext_resource type="PackedScene" uid="uid://05p1lmwlynfu" path="res://scenes/ui/ScoreBoard.tscn" id="11_3xj3m"]
 [ext_resource type="PackedScene" uid="uid://c2hbad6cv4qhg" path="res://scenes/ui/GameOverScreen.tscn" id="12_mcffj"]
+[ext_resource type="Texture2D" uid="uid://b16cipce2a2vi" path="res://assets/board_assets/board_background.png" id="13_2rd6h"]
 
 [node name="Game" type="Node2D" unique_id=1768686812]
 script = ExtResource("1")
 
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2054004341]
+position = Vector2(643, 361)
+scale = Vector2(4.0187497, 3.7500002)
+texture = ExtResource("13_2rd6h")
+
 [node name="Board" parent="." unique_id=596197397 instance=ExtResource("2")]
+
+[node name="Tile" parent="Board" unique_id=684484247 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile2" parent="Board" unique_id=1600088854 instance=ExtResource("8_kyk2p")]
+position = Vector2(312, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile3" parent="Board" unique_id=1144859300 instance=ExtResource("8_kyk2p")]
+position = Vector2(392, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile4" parent="Board" unique_id=375673994 instance=ExtResource("8_kyk2p")]
+position = Vector2(472, 104)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile5" parent="Board" unique_id=1518892781 instance=ExtResource("8_kyk2p")]
+position = Vector2(552, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile6" parent="Board" unique_id=370085026 instance=ExtResource("8_kyk2p")]
+position = Vector2(632, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile7" parent="Board" unique_id=1120706849 instance=ExtResource("8_kyk2p")]
+position = Vector2(712, 104)
+scale = Vector2(2, 2)
+
+[node name="Tile8" parent="Board" unique_id=271920983 instance=ExtResource("8_kyk2p")]
+position = Vector2(792, 104)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile9" parent="Board" unique_id=1726265710 instance=ExtResource("8_kyk2p")]
+position = Vector2(792, 176)
+scale = Vector2(2, 2)
+
+[node name="Tile10" parent="Board" unique_id=70789912 instance=ExtResource("8_kyk2p")]
+position = Vector2(792, 248)
+scale = Vector2(2, 2)
+
+[node name="Tile11" parent="Board" unique_id=80101165 instance=ExtResource("8_kyk2p")]
+position = Vector2(792, 320)
+scale = Vector2(2, 2)
+
+[node name="Tile12" parent="Board" unique_id=1614665983 instance=ExtResource("8_kyk2p")]
+position = Vector2(712, 320)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile13" parent="Board" unique_id=823966111 instance=ExtResource("8_kyk2p")]
+position = Vector2(632, 320)
+scale = Vector2(2, 2)
+
+[node name="Tile14" parent="Board" unique_id=1729676914 instance=ExtResource("8_kyk2p")]
+position = Vector2(552, 320)
+scale = Vector2(2, 2)
+
+[node name="Tile15" parent="Board" unique_id=919960343 instance=ExtResource("8_kyk2p")]
+position = Vector2(472, 320)
+scale = Vector2(2, 2)
+tile_type = 2
+
+[node name="Tile16" parent="Board" unique_id=262356167 instance=ExtResource("8_kyk2p")]
+position = Vector2(392, 320)
+scale = Vector2(2, 2)
+
+[node name="Tile17" parent="Board" unique_id=2730298 instance=ExtResource("8_kyk2p")]
+position = Vector2(312, 320)
+scale = Vector2(2, 2)
+
+[node name="Tile18" parent="Board" unique_id=403107297 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 320)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile19" parent="Board" unique_id=2049756735 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 392)
+scale = Vector2(2, 2)
+
+[node name="Tile20" parent="Board" unique_id=197878232 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 464)
+scale = Vector2(2, 2)
+
+[node name="Tile21" parent="Board" unique_id=1982064522 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 536)
+scale = Vector2(2, 2)
+
+[node name="Tile22" parent="Board" unique_id=2078465233 instance=ExtResource("8_kyk2p")]
+position = Vector2(232, 616)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile23" parent="Board" unique_id=846374333 instance=ExtResource("8_kyk2p")]
+position = Vector2(312, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile24" parent="Board" unique_id=1229555866 instance=ExtResource("8_kyk2p")]
+position = Vector2(392, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile25" parent="Board" unique_id=1490904791 instance=ExtResource("8_kyk2p")]
+position = Vector2(472, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile26" parent="Board" unique_id=1582162263 instance=ExtResource("8_kyk2p")]
+position = Vector2(552, 616)
+scale = Vector2(2, 2)
+tile_type = 2
+
+[node name="Tile27" parent="Board" unique_id=227291589 instance=ExtResource("8_kyk2p")]
+position = Vector2(632, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile28" parent="Board" unique_id=1254731969 instance=ExtResource("8_kyk2p")]
+position = Vector2(712, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile29" parent="Board" unique_id=848752719 instance=ExtResource("8_kyk2p")]
+position = Vector2(792, 616)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile30" parent="Board" unique_id=1688110384 instance=ExtResource("8_kyk2p")]
+position = Vector2(872, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile31" parent="Board" unique_id=1731889793 instance=ExtResource("8_kyk2p")]
+position = Vector2(952, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile32" parent="Board" unique_id=596887515 instance=ExtResource("8_kyk2p")]
+position = Vector2(1032, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile33" parent="Board" unique_id=1322911378 instance=ExtResource("8_kyk2p")]
+position = Vector2(1112, 616)
+scale = Vector2(2, 2)
+
+[node name="Tile34" parent="Board" unique_id=1478156545 instance=ExtResource("8_kyk2p")]
+position = Vector2(1120, 536)
+scale = Vector2(2, 2)
+tile_type = 1
+
+[node name="Tile35" parent="Board" unique_id=5350535 instance=ExtResource("8_kyk2p")]
+position = Vector2(1120, 456)
+scale = Vector2(2, 2)
 
 [node name="Dice" parent="." unique_id=1631070114 instance=ExtResource("3")]
 position = Vector2(919, 347)
