@@ -97,7 +97,7 @@ func apply_langitlupa_start(picked_it: int, area_positions: Array) -> void:
 	_show_it_arrow(it_player)
 	_spawn_areas_at(area_positions)
 	_init_ai(participating_players)
-	run_intro("Player %d is IT!" % (it_player + 1))
+	await run_intro("Player %d is IT!" % (it_player + 1))
 
 
 ## Adds a red downward arrow above the IT player's node so they're clearly

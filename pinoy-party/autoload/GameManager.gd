@@ -102,17 +102,6 @@ func on_move_complete() -> void:
 	EventBus.player_moved.emit(current_player_index, tile_idx)
 
 
-func on_minigame_finished(scores: Dictionary) -> void:
-	for idx: int in scores:
-		players[idx]["score"] += scores[idx]
-	state = Enums.GameState.ROLLING
-	_advance_turn()
-
-
-func _advance_turn() -> void:
-	current_player_index = (current_player_index + 1) % active_player_count
-	start_turn()
-
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points
 	EventBus.score_changed.emit(player_index, players[player_index]["score"])

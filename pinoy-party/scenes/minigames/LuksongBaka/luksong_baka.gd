@@ -231,7 +231,7 @@ func _end_round_sweep() -> void:
 	var auto_eliminated: Array[int] = []
 	for player_idx in alive_players.duplicate():
 		if not jumped_this_round.has(player_idx):
-		auto_eliminated.append(player_idx)
+			auto_eliminated.append(player_idx)
 
 	NetworkManager.sync_luksong_round_end.rpc(auto_eliminated)
 

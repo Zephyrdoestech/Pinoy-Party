@@ -11,13 +11,6 @@ var finished_order: Array[int] = []
 var race_active := false
 var timeout_timer := 0.0
 
-#DEBUG         
-func _ready() -> void:
-	print("!")
-	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		print("DEBUG MODE: Starting local test race.")
-		start_game([0, 1, 2, 3])
-		gameplay_locked = false 
 
 func _get_track_node(player_idx: int) -> Node2D:
 	return get_node("Tracks/Player %d" % (player_idx + 1))
@@ -34,16 +27,10 @@ func start_game(players: Array[int]) -> void:
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
 	print("[SackRace] Race started for players: %s" % [players])
-	run_intro()
-	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		gameplay_locked = false
-		print("DEBUG MODE: Gameplay explicitly unlocked.") 
+	await run_intro()
 
 func _process(delta: float) -> void:
 	if not race_active or gameplay_locked:
-		return
-	
-	if not race_active:
 		return
 	timeout_timer += delta
 	var time_left := RACE_TIMEOUT - timeout_timer
