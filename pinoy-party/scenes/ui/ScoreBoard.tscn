@@ -1,12 +1,118 @@
-[gd_scene format=3 uid="uid://05p1lmwlynfu"]
+[gd_scene format=3 uid="uid://btf61rmswu0yb"]
 
-[ext_resource type="Script" uid="uid://ci6cy8ykse2kc" path="res://scenes/ui/score_board.gd" id="1_s5pty"]
+[ext_resource type="Script" uid="uid://ci6cy8ykse2kc" path="res://scenes/ui/ScoreBoard.gd" id="1_fla6y"]
+[ext_resource type="Texture2D" uid="uid://oaxrwrq6dgky" path="res://assets/board_assets/LeaderBoard/leaderboard_char2.png" id="2_oj0in"]
+[ext_resource type="Texture2D" uid="uid://2kujg18jxjay" path="res://assets/board_assets/LeaderBoard/leaderboard_char1.png" id="3_8dr08"]
+[ext_resource type="Texture2D" uid="uid://dshcqw2jdv14k" path="res://assets/board_assets/LeaderBoard/leaderboard_char3.png" id="4_6qmjq"]
+[ext_resource type="Texture2D" uid="uid://c45uj3bohns1k" path="res://assets/board_assets/LeaderBoard/leaderboard_char4.png" id="5_yvrsk"]
 
-[node name="ScoreBoard" type="Control" unique_id=1119907003]
+[node name="ScoreBoard" type="Control" unique_id=1160043138]
 layout_mode = 3
-anchors_preset = 0
-offset_left = 900.0
-offset_top = 50.0
-offset_right = 900.0
-offset_bottom = 50.0
-script = ExtResource("1_s5pty")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_fla6y")
+
+[node name="RowsContainer" type="VBoxContainer" parent="." unique_id=1686654090]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Row0" type="TextureRect" parent="RowsContainer" unique_id=1702318735]
+layout_mode = 2
+texture = ExtResource("2_oj0in")
+
+[node name="HBox" type="HBoxContainer" parent="RowsContainer/Row0" unique_id=974226120]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -11.5
+offset_right = 3.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Marker" type="Label" parent="RowsContainer/Row0/HBox" unique_id=1632443220]
+layout_mode = 2
+
+[node name="Score" type="Label" parent="RowsContainer/Row0/HBox" unique_id=1967911677]
+layout_mode = 2
+
+[node name="Row1" type="TextureRect" parent="RowsContainer" unique_id=1079583365]
+layout_mode = 2
+texture = ExtResource("3_8dr08")
+
+[node name="HBox" type="HBoxContainer" parent="RowsContainer/Row1" unique_id=2101984350]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Marker" type="Label" parent="RowsContainer/Row1/HBox" unique_id=1183316110]
+layout_mode = 2
+
+[node name="Score" type="Label" parent="RowsContainer/Row1/HBox" unique_id=472812731]
+layout_mode = 2
+
+[node name="Row2" type="TextureRect" parent="RowsContainer" unique_id=44061191]
+layout_mode = 2
+texture = ExtResource("4_6qmjq")
+
+[node name="HBox" type="HBoxContainer" parent="RowsContainer/Row2" unique_id=1166315763]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Marker" type="Label" parent="RowsContainer/Row2/HBox" unique_id=1593055459]
+layout_mode = 2
+
+[node name="Score" type="Label" parent="RowsContainer/Row2/HBox" unique_id=266269068]
+layout_mode = 2
+
+[node name="Row3" type="TextureRect" parent="RowsContainer" unique_id=905398530]
+layout_mode = 2
+texture = ExtResource("5_yvrsk")
+
+[node name="HBox" type="HBoxContainer" parent="RowsContainer/Row3" unique_id=906593251]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Marker" type="Label" parent="RowsContainer/Row3/HBox" unique_id=1676526884]
+layout_mode = 2
+
+[node name="Score" type="Label" parent="RowsContainer/Row3/HBox" unique_id=1382173240]
+layout_mode = 2
