@@ -73,6 +73,7 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 			push_error("[GameManager] _on_minigame_finished: invalid player index %d in scores dict" % idx)
 			continue
 		players[idx]["score"] += scores[idx]
+		EventBus.score_changed.emit(idx, players[idx]["score"])
 		print("[GameManager] Player %d earned %d point(s) from minigame." % [idx, scores[idx]])
 	current_player_index = (current_player_index + 1) % active_player_count
 
