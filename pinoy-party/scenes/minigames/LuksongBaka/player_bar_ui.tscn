@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://cwhh1x44g3c3n"]
+
+[node name="PlayerBarUI" type="PanelContainer" unique_id=1810153676]
+custom_minimum_size = Vector2(320, 180)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=260009234]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="TextureRect" unique_id=58309267]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColorRect2" type="ColorRect" parent="TextureRect" unique_id=13958281]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="PlayerName" type="Label" parent="." unique_id=2062797944]
+layout_mode = 2
+
+[node name="Status" type="Label" parent="." unique_id=623034165]
+layout_mode = 2

@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://c8ua4xdvwwvjn"]
+
+[ext_resource type="Texture2D" uid="uid://lu85r0oplr0p" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_bg.png" id="1_ec4lo"]
+[ext_resource type="Texture2D" uid="uid://c1hfpanojsaeq" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building6.png" id="2_jxrk7"]
+[ext_resource type="Texture2D" uid="uid://552gclrw4x6i" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building4.png" id="3_iwe7p"]
+[ext_resource type="Texture2D" uid="uid://dqpx1x1pkrkha" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building2.png" id="4_pkldg"]
+[ext_resource type="Texture2D" uid="uid://bgrqypebin53r" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building1.png" id="5_t0vb0"]
+[ext_resource type="Texture2D" uid="uid://dy08xb7fxshe4" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building5.png" id="6_oqlja"]
+[ext_resource type="Texture2D" uid="uid://bfm8bgvr1e3hu" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building3.png" id="7_qcgck"]
+
+[node name="PlayerQuadrant" type="SubViewportContainer" unique_id=161038997]
+offset_right = 40.0
+offset_bottom = 40.0
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=51279270]
+handle_input_locally = false
+size = Vector2i(40, 40)
+render_target_update_mode = 4
+
+[node name="Camera2D" type="Camera2D" parent="SubViewport" unique_id=931671746]
+
+[node name="Parallax2D" type="Parallax2D" parent="SubViewport" unique_id=547097920]
+repeat_size = Vector2(3840, 0)
+autoscroll = Vector2(-400, 0)
+
+[node name="BG" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1811716492]
+position = Vector2(640, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("1_ec4lo")
+
+[node name="BG4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=672349213]
+position = Vector2(640, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("1_ec4lo")
+
+[node name="BG2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1534743825]
+position = Vector2(1920, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("1_ec4lo")
+
+[node name="BG3" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=141045400]
+position = Vector2(3200, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("1_ec4lo")
+
+[node name="Building1" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=210857944]
+position = Vector2(1776, 352)
+scale = Vector2(8, 8)
+texture = ExtResource("2_jxrk7")
+
+[node name="Building8" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1244711650]
+position = Vector2(3176, 352)
+scale = Vector2(8, 8)
+texture = ExtResource("2_jxrk7")
+
+[node name="Building2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=389599442]
+position = Vector2(1864, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("3_iwe7p")
+
+[node name="Building3" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=503958685]
+position = Vector2(2992, 344)
+scale = Vector2(8, 8)
+texture = ExtResource("4_pkldg")
+
+[node name="Building4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1667406001]
+position = Vector2(64, 344)
+scale = Vector2(8, 8)
+texture = ExtResource("5_t0vb0")
+
+[node name="Building5" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1180793557]
+position = Vector2(864, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("6_oqlja")
+
+[node name="Building7" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1638838664]
+position = Vector2(3152, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("6_oqlja")
+
+[node name="Building6" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=912088263]
+position = Vector2(1472, 360)
+scale = Vector2(8, 8)
+texture = ExtResource("7_qcgck")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="SubViewport" unique_id=391435395]
