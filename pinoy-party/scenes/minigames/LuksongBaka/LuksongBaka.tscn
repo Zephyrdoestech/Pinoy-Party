@@ -1,103 +1,45 @@
 [gd_scene format=3 uid="uid://b3g0jbhmeyh5v"]
 
 [ext_resource type="Script" uid="uid://752x48f588ww" path="res://scenes/minigames/LuksongBaka/luksong_baka.gd" id="1_3p3bn"]
-[ext_resource type="Texture2D" uid="uid://lu85r0oplr0p" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_bg.png" id="2_bg"]
-[ext_resource type="Texture2D" uid="uid://c1hfpanojsaeq" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building6.png" id="3_72jge"]
-[ext_resource type="Texture2D" uid="uid://552gclrw4x6i" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building4.png" id="4_ti1ub"]
-[ext_resource type="Texture2D" uid="uid://dqpx1x1pkrkha" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building2.png" id="5_t088w"]
-[ext_resource type="Texture2D" uid="uid://bgrqypebin53r" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building1.png" id="6_mylto"]
-[ext_resource type="Texture2D" uid="uid://dy08xb7fxshe4" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building5.png" id="7_ce0ie"]
-[ext_resource type="Texture2D" uid="uid://bfm8bgvr1e3hu" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building3.png" id="8_m6ud2"]
 
 [node name="LuksongBaka" type="Node2D" unique_id=763183193]
 script = ExtResource("1_3p3bn")
 
-[node name="Parallax2D" type="Parallax2D" parent="." unique_id=471665570]
-repeat_size = Vector2(3840, 0)
-autoscroll = Vector2(-400, 0)
-
-[node name="BG" type="Sprite2D" parent="Parallax2D" unique_id=544775319]
-position = Vector2(640, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("2_bg")
-
-[node name="BG4" type="Sprite2D" parent="Parallax2D" unique_id=631823098]
-position = Vector2(640, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("2_bg")
-
-[node name="BG2" type="Sprite2D" parent="Parallax2D" unique_id=1888903432]
-position = Vector2(1920, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("2_bg")
-
-[node name="BG3" type="Sprite2D" parent="Parallax2D" unique_id=103648226]
-position = Vector2(3200, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("2_bg")
-
-[node name="Building1" type="Sprite2D" parent="Parallax2D" unique_id=2072087589]
-position = Vector2(1776, 352)
-scale = Vector2(8, 8)
-texture = ExtResource("3_72jge")
-
-[node name="Building8" type="Sprite2D" parent="Parallax2D" unique_id=880403759]
-position = Vector2(3176, 352)
-scale = Vector2(8, 8)
-texture = ExtResource("3_72jge")
-
-[node name="Building2" type="Sprite2D" parent="Parallax2D" unique_id=2081830610]
-position = Vector2(1864, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("4_ti1ub")
-
-[node name="Building3" type="Sprite2D" parent="Parallax2D" unique_id=1084434036]
-position = Vector2(2992, 344)
-scale = Vector2(8, 8)
-texture = ExtResource("5_t088w")
-
-[node name="Building4" type="Sprite2D" parent="Parallax2D" unique_id=1186447922]
-position = Vector2(64, 344)
-scale = Vector2(8, 8)
-texture = ExtResource("6_mylto")
-
-[node name="Building5" type="Sprite2D" parent="Parallax2D" unique_id=803841559]
-position = Vector2(864, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("7_ce0ie")
-
-[node name="Building7" type="Sprite2D" parent="Parallax2D" unique_id=1101593067]
-position = Vector2(3152, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("7_ce0ie")
-
-[node name="Building6" type="Sprite2D" parent="Parallax2D" unique_id=976695062]
-position = Vector2(1472, 360)
-scale = Vector2(8, 8)
-texture = ExtResource("8_m6ud2")
-
-[node name="Camera2D" type="Camera2D" parent="." unique_id=826886507]
-visible = false
-position = Vector2(640, 360)
-
-[node name="Buildings" type="Node2D" parent="." unique_id=100000002]
-
-[node name="Characters" type="Node2D" parent="." unique_id=100000003]
-
-[node name="PlayerBars" type="Node2D" parent="." unique_id=201911334]
+[node name="SplitscreenGrid" type="GridContainer" parent="." unique_id=1276076641]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1280.0
+offset_bottom = 720.0
+grow_horizontal = 2
+grow_vertical = 2
+columns = 2
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=649026699]
 
-[node name="RoundLabel" type="Label" parent="UI" unique_id=802643438]
-offset_right = 40.0
-offset_bottom = 23.0
-theme_override_font_sizes/font_size = 28
-text = "Round 1"
+[node name="RoundLabel" type="Label" parent="UI" unique_id=1518793290]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
 
-[node name="CountdownLabel" type="Label" parent="UI" unique_id=1088865441]
-offset_left = 560.0
-offset_top = 300.0
-offset_right = 600.0
-offset_bottom = 388.0
-theme_override_font_sizes/font_size = 64
-horizontal_alignment = 1
+[node name="CountdownLabel" type="Label" parent="UI" unique_id=1930423118]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2

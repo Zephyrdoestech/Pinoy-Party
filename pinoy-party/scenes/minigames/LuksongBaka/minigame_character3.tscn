@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://drsac63qdnnte"]
+
+[ext_resource type="Texture2D" uid="uid://daq0scn0ujl8j" path="res://assets/characters/minigame_characs/mg_c3/mg_charac3_jumpLeft.PNG" id="1_ddsn3"]
+[ext_resource type="Texture2D" uid="uid://w8x0rt58ansq" path="res://assets/characters/minigame_characs/mg_c3/mg_charac3_walkRight.PNG" id="2_3ecs4"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kjta8"]
+atlas = ExtResource("1_ddsn3")
+region = Rect2(0, 0, 1024, 1024)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hq3ie"]
+atlas = ExtResource("1_ddsn3")
+region = Rect2(1024, 0, 1024, 1024)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e6sdd"]
+atlas = ExtResource("2_3ecs4")
+region = Rect2(0, 0, 1024, 1024)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_an33l"]
+atlas = ExtResource("2_3ecs4")
+region = Rect2(1024, 0, 1024, 1024)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_03ol0"]
+atlas = ExtResource("2_3ecs4")
+region = Rect2(2048, 0, 1024, 1024)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wvfmi"]
+atlas = ExtResource("2_3ecs4")
+region = Rect2(3072, 0, 1024, 1024)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ty6le"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kjta8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hq3ie")
+}],
+"loop": false,
+"name": &"jump",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e6sdd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_an33l")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_03ol0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wvfmi")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 4.0
+}]
+
+[node name="MinigameCharacter" type="AnimatedSprite2D" unique_id=1087832396]
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_ty6le")
+animation = &"walk"
