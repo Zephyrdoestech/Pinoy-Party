@@ -341,14 +341,7 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 
 # --- LangitLupa sync ---
 
-# Host picked a random layout seed — every peer generates the identical platforms locally.
-@rpc("authority", "reliable", "call_local")
-func sync_langitlupa_platforms(seed_value: int) -> void:
-	var scene := get_tree().current_scene
-	if scene is LangitLupa:
-		scene._generate_platforms(seed_value)
-		if is_host:
-			sync_langitlupa_start.rpc()  
+
 
 # Host broadcasts it_player and area positions once at match start.
 @rpc("authority", "reliable", "call_local")
@@ -376,7 +369,6 @@ func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		# Don't overwrite local player's position — they own it locally
 		if player_idx != scene.local_player_index:
 			scene._get_player_node(player_idx).position = pos
 
