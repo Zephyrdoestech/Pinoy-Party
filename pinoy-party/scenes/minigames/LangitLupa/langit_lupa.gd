@@ -183,6 +183,7 @@ func _process(delta: float) -> void:
 	# Authoritative elimination check runs on host only.
 	if NetworkManager.is_host:
 		_check_flood()
+
 func _physics_process(delta: float) -> void:
 	if gameplay_locked:
 		print("[LangitLupa] blocked: gameplay_locked")
