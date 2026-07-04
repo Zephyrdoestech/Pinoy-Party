@@ -6,6 +6,8 @@
 position = Vector2(1100, 100)
 script = ExtResource("1_qdqvr")
 
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+
 [node name="Label" type="Label" parent="." unique_id=894461542]
 offset_left = -25.0
 offset_top = -65.0

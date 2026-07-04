@@ -76,10 +76,8 @@ func _handle_trivia() -> void:
 # Tile type resolution
 # ---------------------------------------------------------------------------
 ## Returns the TileType for the given board tile index.
-## TODO: Replace this stub with a real lookup once your Board node exposes a
-##       get_tile_type(tile_index: int) -> Enums.TileType method.
 func _get_tile_type(tile_index: int) -> Enums.TileType:
 	if GameManager.board_ref == null:
 		push_warning("[TileEvent] board_ref not set — defaulting to BLANK.")
 		return Enums.TileType.BLANK
-	return GameManager.board_ref.get_tile_type(tile_index)
+	return GameManager.board_ref.get_tile_type(tile_index) as Enums.TileType
