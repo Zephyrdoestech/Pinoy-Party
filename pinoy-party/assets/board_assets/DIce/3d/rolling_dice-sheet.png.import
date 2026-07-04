@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqnfcc3gafeua"
-path="res://.godot/imported/rolling_dice-sheet.png-6d2e323f1d930f3ec88b6bd1138317bc.ctex"
+path="res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/Dice/3d/rolling_dice-sheet.png"
-dest_files=["res://.godot/imported/rolling_dice-sheet.png-6d2e323f1d930f3ec88b6bd1138317bc.ctex"]
+source_file="res://assets/board_assets/DIce/3d/rolling_dice-sheet.png"
+dest_files=["res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"]
 
 [params]
 

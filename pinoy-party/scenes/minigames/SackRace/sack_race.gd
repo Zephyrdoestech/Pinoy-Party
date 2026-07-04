@@ -1,7 +1,7 @@
 class_name SackRace
 extends BaseMinigame
 
-const FINISH_DISTANCE := 30.0      # "hops" needed to win
+const FINISH_DISTANCE := 48.0      # "hops" needed to win
 const HOP_DISTANCE := 1.0          # progress per press
 const RACE_TIMEOUT := 15.0         # seconds, safety net
 const HOP_PIXELS := 30.0           # how many pixels each ColorRect moves per press
@@ -12,8 +12,18 @@ var race_active := false
 var timeout_timer := 0.0
 
 
+#func _get_track_node(player_idx: int) -> Node2D:
+	#return get_node("Tracks/Player %d" % (player_idx + 1))
+
 func _get_track_node(player_idx: int) -> Node2D:
-	return get_node("Tracks/Player %d" % (player_idx + 1))
+	var path := "SplitScreenContainer/P%d_Container/Viewport%d/Track%d/Player%d" % [
+		player_idx + 1, player_idx + 1, player_idx + 1, player_idx + 1
+	]
+	
+	var node = get_node_or_null(path)
+	if not node:
+		print("CRITICAL ERROR: Could not find player node at path: ", path)
+	return node
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
@@ -46,7 +56,7 @@ func _input(event: InputEvent) -> void:
 		return
 	#DEBUG
 	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		apply_hop(0) # control p1 for testing
+		apply_hop(1) # control p1 for testing
 		return
 		
 	var my_idx: int = NetworkManager.get_my_player_index()

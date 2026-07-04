@@ -341,12 +341,14 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 
 # --- LangitLupa sync ---
 
+
+
 # Host broadcasts it_player and area positions once at match start.
 @rpc("authority", "reliable", "call_local")
-func sync_langitlupa_start(it_player: int, area_positions: Array) -> void:
+func sync_langitlupa_start() -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		scene.apply_langitlupa_start(it_player, area_positions)
+		scene.start_round_synced()
 
 # Client sends its position to host each sync tick.
 # Host calls process_langitlupa_position() directly (avoids self-RPC throw).
@@ -367,30 +369,22 @@ func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		# Don't overwrite local player's position — they own it locally
 		if player_idx != scene.local_player_index:
 			scene._get_player_node(player_idx).position = pos
 
-# Host detected a tag — broadcast to all peers.
+# Host detected a player caught by the flood — broadcast to all peers.
 @rpc("authority", "reliable", "call_local")
-func sync_langitlupa_tag(player_idx: int) -> void:
+func broadcast_langitlupa_elimination(player_idx: int) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		scene.apply_tag(player_idx)
-
-# Host detected an area going unsafe — broadcast to all peers.
-@rpc("authority", "reliable", "call_local")
-func sync_langitlupa_area_unsafe(area_idx: int) -> void:
-	var scene := get_tree().current_scene
-	if scene is LangitLupa:
-		scene.apply_area_unsafe(area_idx)
+		scene.apply_elimination(player_idx)
 
 # Host decided the round is over — broadcast to all peers.
 @rpc("authority", "reliable", "call_local")
-func sync_langitlupa_end() -> void:
+func sync_langitlupa_end(scores: Dictionary) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		scene.apply_end()
+		scene._end_game(scores)
 
 # --- Trivia sync ---
 var _trivia_questions: Array = []
