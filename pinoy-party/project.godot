@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="PinoyParty"
-run/main_scene="uid://dbfm3smj58raw"
+run/main_scene="uid://otttrk2nbig1"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
