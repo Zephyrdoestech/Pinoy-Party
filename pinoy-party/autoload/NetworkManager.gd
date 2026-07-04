@@ -369,7 +369,6 @@ func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		# Don't overwrite local player's position — they own it locally
 		if player_idx != scene.local_player_index:
 			scene._get_player_node(player_idx).position = pos
 

@@ -36,6 +36,7 @@ func start_game(players: Array[int]) -> void:
 	local_player_index = NetworkManager.get_my_player_index()
 	alive_players = players.duplicate()
 	elimination_order.clear()
+	await get_tree().process_frame
 	_auto_position_spawn_and_goal()
 	_position_players()
 	_hide_inactive_players()
@@ -51,6 +52,7 @@ func _position_players() -> void:
 		var idx: int = participating_players[i]
 		var node := _get_player_node(idx)
 		node.position = spawn_pos + Vector2(i * 40.0 - 60.0, -30.0)
+	var spawn_collider: CollisionShape2D = $Platforms/SpawnPlatform/CollisionShape2D
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
@@ -63,6 +65,8 @@ func _auto_position_spawn_and_goal() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	$Platforms/SpawnPlatform.position = Vector2(SCREEN_MARGIN, viewport_size.y - SCREEN_MARGIN)
 	$Platforms/GoalPlatform.position = Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN)
+	$Flood.position = Vector2(-viewport_size.x, viewport_size.y + 60.0)
+	$Flood.get_node("ColorRect").size = Vector2(viewport_size.x * 3.0, 40.0)
 
 func _generate_platforms() -> void:
 	var spawn_pos: Vector2 = $Platforms/SpawnPlatform.position
@@ -115,7 +119,6 @@ func _spawn_platform_node(pos: Vector2, layer: int, index: int) -> void:
 	plat.add_child(visual)
 
 	$Platforms.add_child(plat)
-	print("[LangitLupa] Platform '%s' at %s" % [plat.name, plat.global_position])
 
 func _get_player_node(idx: int) -> CharacterBody2D:
 	return get_node("Players/Player %d" % (idx + 1))
@@ -126,7 +129,6 @@ func _process(delta: float) -> void:
 
 	if not round_active:
 		round_active = true
-		print("[LangitLupa] Round started.")
 
 	# Position sync — local client sends its position to host at POSITION_SYNC_HZ.
 	_position_sync_timer += delta
@@ -141,7 +143,6 @@ func _process(delta: float) -> void:
 
 	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
-	print("[LangitLupa] flood_y=%s round_start_msec=%s" % [$Flood.position.y, round_start_msec])
 
 	# Authoritative elimination check runs on host only.
 	if NetworkManager.is_host:
@@ -157,10 +158,6 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var player := _get_player_node(local_player_index)
-	print("[LangitLupa] pos=%s left=%s right=%s jump=%s on_floor=%s" % [
-		player.global_position, Input.is_action_pressed("move_left"), Input.is_action_pressed("move_right"),
-		Input.is_action_just_pressed("jump"), player.is_on_floor()
-	])
 	player.velocity.y += GRAVITY * delta
 
 	if player.is_on_floor():
@@ -180,6 +177,9 @@ func _physics_process(delta: float) -> void:
 		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
 
 	player.move_and_slide()
+	if player.get_slide_collision_count() > 0:
+		var col := player.get_slide_collision(0)
+		print("[LangitLupa] landed on: %s at %s" % [col.get_collider().name, col.get_collider().global_position])
 
 func _get_flood_y() -> float:
 	var elapsed_sec := (Time.get_ticks_msec() - round_start_msec) / 1000.0
@@ -188,8 +188,9 @@ func _get_flood_y() -> float:
 ## Host-only. Checks every alive player against the current flood line.
 func _check_flood() -> void:
 	var current_flood_y := _get_flood_y()
+
 	for idx in alive_players.duplicate():
-		var p := _get_player_node(idx)
+		var p := _get_player_node(idx)		
 		if is_instance_valid(p) and p.global_position.y >= current_flood_y:
 			_eliminate_player(idx)
 
