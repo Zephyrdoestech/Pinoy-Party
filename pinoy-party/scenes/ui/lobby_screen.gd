@@ -1,7 +1,7 @@
 extends Control
 
 const LOBBY_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
-const PLAYER_ICON_TEXTURE := preload("res://assets/screens/main_menu/player_icon.png")
+const PLAYER_ICON_TEXTURE := preload("res://assets/screens/lobby/player_icon.png")
 const PLAYER_NAME_COLOR := Color(0.12, 0.20, 0.34)
 
 var host_join_panel: VBoxContainer
