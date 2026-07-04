@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="PinoyParty"
-run/main_scene="uid://e8f5pc6jmxlh"
+run/main_scene="res://scenes/ui/LobbyScreen.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -34,6 +34,8 @@ TriviaController="*uid://bsqfygbc7nlo3"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [editor_plugins]
 
@@ -98,4 +100,5 @@ dash={
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
