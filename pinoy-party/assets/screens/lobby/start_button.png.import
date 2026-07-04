@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0367utmxwywl"
-path="res://.godot/imported/input_field.png-2d24f263c425c187cb7d7c8cd41e2f4e.ctex"
+uid="uid://gbtm4lwxv7cd"
+path="res://.godot/imported/start_button.png-d1beba8b3e34e558c640055887a78ce5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/screens/main_menu/input_field.png"
-dest_files=["res://.godot/imported/input_field.png-2d24f263c425c187cb7d7c8cd41e2f4e.ctex"]
+source_file="res://assets/screens/lobby/start_button.png"
+dest_files=["res://.godot/imported/start_button.png-d1beba8b3e34e558c640055887a78ce5.ctex"]
 
 [params]
 

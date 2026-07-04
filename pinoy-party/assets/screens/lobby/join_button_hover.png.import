@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xhgiifd4xkr4"
-path="res://.godot/imported/player_icon.png-93213ed9a43738a8ce9f816e09784227.ctex"
+uid="uid://b5ldow0o01n7c"
+path="res://.godot/imported/join_button_hover.png-6cd5d5547264dbf6a314bf762cfaca01.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/screens/main_menu/player_icon.png"
-dest_files=["res://.godot/imported/player_icon.png-93213ed9a43738a8ce9f816e09784227.ctex"]
+source_file="res://assets/screens/lobby/join_button_hover.png"
+dest_files=["res://.godot/imported/join_button_hover.png-6cd5d5547264dbf6a314bf762cfaca01.ctex"]
 
 [params]
 

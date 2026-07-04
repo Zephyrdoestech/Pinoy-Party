@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tt13ccv7chlu"
-path="res://.godot/imported/dice_3d_static_4.png-c335df8fdb802e37d8cd3b0b3455b06d.ctex"
+uid="uid://cceo2hxoo74fy"
+path="res://.godot/imported/play_button_disabled.png-d1c466ef257dbeff18749c6613683ba8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/Dice/3d/dice_3d_static_4.png"
-dest_files=["res://.godot/imported/dice_3d_static_4.png-c335df8fdb802e37d8cd3b0b3455b06d.ctex"]
+source_file="res://assets/screens/lobby/play_button_disabled.png"
+dest_files=["res://.godot/imported/play_button_disabled.png-d1c466ef257dbeff18749c6613683ba8.ctex"]
 
 [params]
 
