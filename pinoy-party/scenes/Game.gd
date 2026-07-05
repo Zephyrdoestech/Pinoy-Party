@@ -2,10 +2,21 @@ extends Node2D
 
 @export var player_token_scene: PackedScene = preload("res://scenes/player/PlayerToken.tscn")
 
+const BUTTON_CLICK_SFX := preload("res://assets/sfx/button_click_sfx.mp3")
+const DICE_ROLL_SFX := preload("res://assets/sfx/board/dice_roll_sfx.mp3")
+const WALKING_SFX := preload("res://assets/sfx/board/walking_sfx.mp3")
+const MINIGAME_TILE_SFX := preload("res://assets/sfx/board/plus_tile_sfx.mp3")
+const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.mp3")
+
 @onready var board: Node2D = $Board
 @onready var dice: Node2D = $Dice
 @onready var roll_button: TextureButton = $UI/RollButton
 @onready var state_machine: StateMachine = $StateMachine
+@onready var button_click_sfx: AudioStreamPlayer = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
+@onready var dice_roll_sfx: AudioStreamPlayer = _get_or_create_audio_player("DiceRollSfx", DICE_ROLL_SFX)
+@onready var walking_sfx: AudioStreamPlayer = _get_or_create_audio_player("WalkingSfx", WALKING_SFX)
+@onready var minigame_tile_sfx: AudioStreamPlayer = _get_or_create_audio_player("MinigameTileSfx", MINIGAME_TILE_SFX)
+@onready var sari_sari_tile_sfx: AudioStreamPlayer = _get_or_create_audio_player("SariSariTileSfx", SARI_SARI_TILE_SFX)
 
 var tokens: Array[Node2D] = []
 const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_game.png"
@@ -32,6 +43,7 @@ func _ready() -> void:
 	EventBus.dice_rolled.connect(_on_dice_rolled)
 	EventBus.game_over.connect(_on_game_over)
 	EventBus.player_moved.connect(_on_player_moved)
+	EventBus.tile_landed.connect(_on_tile_landed)
 	NetworkManager.host_left.connect(_on_match_ended.bind("Host disconnected."))
 	NetworkManager.player_left_mid_match.connect(_on_player_left_mid_match)
 	call_deferred(&"_update_roll_button")
@@ -100,11 +112,14 @@ func _spawn_tokens() -> void:
 		tokens.append(token)
 
 func _on_token_movement_finished(player_index: int) -> void:
+	_stop_audio(walking_sfx)
 	EventBus.movement_finished.emit(player_index)
 
 func _on_roll_pressed() -> void:
 	if roll_button.disabled:
 		return
+	_play_button_click_sfx()
+	_play_audio(dice_roll_sfx)
 	# Guard lives in State_WaitingForDice - stray clicks while in another
 	# state are harmless (dice.roll() just won't have a listener yet).
 	dice.roll()
@@ -122,6 +137,7 @@ func _on_dice_rolled(_player_index: int, _result: int) -> void:
 
 func _on_game_over(_winner_index: int) -> void:
 	roll_button.disabled = true
+	_stop_audio(walking_sfx)
 
 func _update_roll_button() -> void:
 	roll_button.disabled = not _can_local_player_roll()
@@ -134,9 +150,43 @@ func _can_local_player_roll() -> bool:
 		return false
 	return dice.get("is_rolling") != true
 
+func _play_button_click_sfx() -> void:
+	_play_audio(button_click_sfx)
+
+func _play_audio(player: AudioStreamPlayer) -> void:
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _stop_audio(player: AudioStreamPlayer) -> void:
+	if player != null:
+		player.stop()
+
+func _get_or_create_audio_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
+
 func _on_player_moved(player_index: int, new_tile_index: int) -> void:
 	# Tell the token to animate to its new tile.
+	_play_audio(walking_sfx)
 	tokens[player_index].move_to(new_tile_index)
+
+func _on_tile_landed(_player_index: int, tile_type: int) -> void:
+	match tile_type:
+		Enums.TileType.GAME_TRIGGER:
+			_play_audio(minigame_tile_sfx)
+		Enums.TileType.TRIVIA:
+			_play_audio(sari_sari_tile_sfx)
 
 func _on_player_left_mid_match(_peer_id: int, player_name: String) -> void:
 	_on_match_ended("%s disconnected - match ended." % player_name)

@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" uid="uid://cj08p2p12i82" path="res://assets/screens/lobby/play_button_pressed.png" id="12_wudpn"]
 [ext_resource type="Texture2D" uid="uid://cla7qo7iinhjn" path="res://assets/screens/lobby/play_button_hover.png" id="13_gqlph"]
 [ext_resource type="Texture2D" uid="uid://cceo2hxoo74fy" path="res://assets/screens/lobby/play_button_disabled.png" id="14_disabled"]
+[ext_resource type="AudioStream" uid="uid://c3pobn73w3sck" path="res://assets/sfx/type_sfx.mp3" id="18_typing"]
+[ext_resource type="AudioStream" uid="uid://dr1i3yqtnyuow" path="res://assets/sfx/button_click_sfx.mp3" id="19_click"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_f6syo"]
 texture = ExtResource("4_4jocg")
@@ -32,6 +34,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3dmo6")
+
+[node name="TypingSfx" type="AudioStreamPlayer" parent="." unique_id=588914186]
+stream = ExtResource("18_typing")
+
+[node name="ButtonSfx" type="AudioStreamPlayer" parent="." unique_id=1942394486]
+stream = ExtResource("19_click")
 
 [node name="UIContainer" type="CenterContainer" parent="." unique_id=259206432]
 layout_mode = 1
@@ -95,7 +103,7 @@ texture_hover = ExtResource("10_wudpn")
 
 [node name="JoinStatusLabel" type="Label" parent="UIContainer/UIControl/HostJoinPanel" unique_id=987162983]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.15, 0.15, 1)
+theme_override_colors/font_color = Color(0.9889876, 0.49327546, 0.4446264, 1)
 horizontal_alignment = 1
 autowrap_mode = 3
 

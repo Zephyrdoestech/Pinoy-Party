@@ -140,6 +140,7 @@ func apply_hop(player_idx: int) -> void:
 		return
 	if player_idx in finished_order:
 		return
+	play_jump_sfx()
 	_advance(player_idx)
 
 func _advance(player_idx: int) -> void:

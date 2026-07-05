@@ -271,6 +271,7 @@ func _physics_process(delta: float) -> void:
 		facing_right = false
 
 	if Input.is_action_just_pressed("jump") and _coyote_timer > 0.0:
+		play_jump_sfx()
 		player.velocity.y = JUMP_VELOCITY
 		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
 	
