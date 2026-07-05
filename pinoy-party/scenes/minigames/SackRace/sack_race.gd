@@ -22,7 +22,7 @@ func _get_track_node(player_idx: int) -> Node2D:
 	
 	var node = get_node_or_null(path)
 	if not node:
-		print("CRITICAL ERROR: Could not find player node at path: ", path)
+		return null
 	return node
 
 func start_game(players: Array[int]) -> void:
@@ -36,7 +36,6 @@ func start_game(players: Array[int]) -> void:
 	race_active = true
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
-	print("[SackRace] Race started for players: %s" % [players])
 	await run_intro()
 
 func _process(delta: float) -> void:
@@ -46,7 +45,6 @@ func _process(delta: float) -> void:
 	var time_left := RACE_TIMEOUT - timeout_timer
 	$UI/TimerLabel.text = "Time: %.1f" % max(time_left, 0.0)
 	if timeout_timer >= RACE_TIMEOUT:
-		print("[SackRace] Timeout reached, ending race early.")
 		_end_race()
 
 func _input(event: InputEvent) -> void:
@@ -83,7 +81,6 @@ func apply_hop(player_idx: int) -> void:
 	_advance(player_idx)
 
 func _advance(player_idx: int) -> void:
-	print("Advancing Player: ", player_idx)
 	
 	progress[player_idx] += HOP_DISTANCE
 	var player_node := _get_track_node(player_idx)
@@ -96,7 +93,6 @@ func _advance(player_idx: int) -> void:
 	
 	if progress[player_idx] >= FINISH_DISTANCE and player_idx not in finished_order:
 		finished_order.append(player_idx)
-		print("[SackRace] Player %d finished in place %d." % [player_idx, finished_order.size()])
 		if finished_order.size() == participating_players.size():
 			_end_race()
 
@@ -126,6 +122,5 @@ func _end_race() -> void:
 		groups.append(tie_group)
 		i = j
 
-	var scores: Dictionary = compute_placement_scores(groups)
-	print("[SackRace] Final placement groups (best to worst): %s" % [groups])
+	var scores: Dictionary = BaseMinigame.compute_placement_scores(groups)
 	_finish(scores)

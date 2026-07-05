@@ -16,8 +16,6 @@ func enter() -> void:
 	# Reset any per-turn state on the player dictionary.
 	player["state"] = Enums.PlayerState.IDLE
 
-	print("[StartTurn] Player %d (%s) begins their turn." % [player_idx, player["name"]])
-
 	# Notify the UI / other listeners.
 	EventBus.turn_started.emit(player_idx)
 

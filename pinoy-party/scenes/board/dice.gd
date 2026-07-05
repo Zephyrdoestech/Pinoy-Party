@@ -126,7 +126,7 @@ func _add_rolling_animation(frames: SpriteFrames) -> void:
 
 	for i in ROLLING_FRAME_COUNT:
 		var column := i % ROLLING_COLUMNS
-		var row := int(i / ROLLING_COLUMNS)
+		var row := i / ROLLING_COLUMNS
 		var atlas := AtlasTexture.new()
 		atlas.atlas = texture
 		atlas.region = Rect2(

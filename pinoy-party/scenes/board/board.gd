@@ -32,10 +32,8 @@ func _determine_tile_type(index: int) -> int:
 	if index == 0 or index == Constants.TOTAL_TILES - 1:
 		return Enums.TileType.BLANK
 	if index % 4 == 0:
-		print("[Board] tile %d generated as GAME_TRIGGER" % index)
 		return Enums.TileType.GAME_TRIGGER
-	if index % 2 == 0 :
-		print("[Board] tile %d generated as TRIVIA" % index)
+	if index % 2 == 0:
 		return Enums.TileType.TRIVIA
 	return Enums.TileType.BLANK
 

@@ -9,15 +9,6 @@ const FPS          := 8      # playback speed
 # Scale: 1024px native → ~51px on screen, fits within the 70px tile spacing.
 const SPRITE_SCALE := Vector2(0.05, 0.05)
 
-# Board segment boundaries (derived from Constants, listed here for clarity).
-# Segment   Tiles       Direction
-# Top        0–8        walkRight   (Constants.TOP_TILES = 9, so last index = 8)
-# Right      9–16       walkFront   (+ SIDE_TILES = 8)
-# Bottom    17–25       walkLeft    (+ TOP_TILES  = 9)
-# Left      26–33       walkBack    (remainder to finish loop)
-const TOP_END    := Constants.TOP_TILES - 1                          # 8
-const RIGHT_END  := Constants.TOP_TILES - 1 + Constants.SIDE_TILES   # 16
-const BOTTOM_END := Constants.TOP_TILES - 1 + Constants.SIDE_TILES + Constants.TOP_TILES  # 25
 
 var player_index: int = 0
 var board_ref: Node2D
@@ -73,21 +64,21 @@ func _build_frames(charac_num: int, front_sheet: Texture2D) -> SpriteFrames:
 
 	return frames
 
-## Returns the animation name matching the board segment that `from_index`
-## sits on. The board is a clockwise rectangular loop:
-##   Tiles  0–8  → top edge,   moving right → walkRight
-##   Tiles  9–16 → right edge, moving down  → walkFront
-##   Tiles 17–25 → bottom edge, moving left → walkLeft
-##   Tiles 26–33 → left edge,  moving up    → walkBack
-func _get_direction_animation(from_index: int, _to_index: int) -> String:
-	if from_index <= TOP_END:
-		return "walkRight"
-	elif from_index <= RIGHT_END:
+## Returns the animation name matching the direction of movement from
+## `from_index` to `to_index`, determined by comparing their world positions
+## on the board. This is robust to any board shape — no hardcoded index ranges.
+func _get_direction_animation(from_index: int, to_index: int) -> String:
+	if board_ref == null:
 		return "walkFront"
-	elif from_index <= BOTTOM_END:
-		return "walkLeft"
+	var from_pos: Vector2 = board_ref.get_tile_position(from_index)
+	var to_pos:   Vector2 = board_ref.get_tile_position(to_index)
+	var delta: Vector2    = to_pos - from_pos
+
+	# Decide based on whichever axis has the larger displacement.
+	if abs(delta.x) >= abs(delta.y):
+		return "walkRight" if delta.x > 0 else "walkLeft"
 	else:
-		return "walkBack"
+		return "walkFront" if delta.y > 0 else "walkBack"
 
 func move_to(target_tile_index: int) -> void:
 	if board_ref == null:
