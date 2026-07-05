@@ -10,9 +10,9 @@ extends Node2D
 var tokens: Array[Node2D] = []
 
 # ---------------------------------------------------------------------------
-# Board character spritesheets — one per player (0-indexed).
+# Board character spritesheets - one per player (0-indexed).
 # Path pattern: res://assets/characters/board_characs/charac{N}/charac{N}_walkFront.PNG
-# Sheets are 4096×1024px, 4 frames horizontal (hframes=4), imported as
+# Sheets are 4096x1024px, 4 frames horizontal (hframes=4), imported as
 # CompressedTexture2D. player_token.gd slices them into AtlasTexture frames.
 # ---------------------------------------------------------------------------
 const CHARACTER_SHEETS: Array[String] = [
@@ -55,7 +55,7 @@ func _on_token_movement_finished(player_index: int) -> void:
 func _on_roll_pressed() -> void:
 	if roll_button.disabled:
 		return
-	# Guard lives in State_WaitingForDice — stray clicks while in another
+	# Guard lives in State_WaitingForDice - stray clicks while in another
 	# state are harmless (dice.roll() just won't have a listener yet).
 	dice.roll()
 	_update_roll_button()
@@ -89,10 +89,10 @@ func _on_player_moved(player_index: int, new_tile_index: int) -> void:
 	tokens[player_index].move_to(new_tile_index)
 
 func _on_player_left_mid_match(_peer_id: int, player_name: String) -> void:
-	_on_match_ended("%s disconnected — match ended." % player_name)
+	_on_match_ended("%s disconnected - match ended." % player_name)
 
 func _on_match_ended(message: String) -> void:
-	# Same "build at runtime" approach as GameOverScreen — no scene edits.
+	# Same "build at runtime" approach as GameOverScreen - no scene edits.
 	var overlay := CanvasLayer.new()
 	add_child(overlay)
 

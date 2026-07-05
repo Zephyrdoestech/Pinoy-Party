@@ -37,11 +37,11 @@ const OBSTACLE_TEXTURES := [
 var current_round := 0
 var round_time := ROUND_TIME_START
 var zone_width := ZONE_WIDTH_START
-var zone_start := 0.0  # 0.0–1.0 position of zone start on the bar
+var zone_start := 0.0  # 0.0-1.0 position of zone start on the bar
 
 var alive_players: Array[int] = []
 var jumped_this_round: Dictionary = {}   # player_index -> bool
-var marker_t := 0.0                      # 0.0–1.0 sweep progress
+var marker_t := 0.0                      # 0.0-1.0 sweep progress
 var sweeping := false
 
 var eliminated_this_round: Array[int] = []
@@ -54,7 +54,7 @@ var quadrants: Dictionary = {}     # player_index -> SubViewportContainer refere
 func _ready() -> void:
 	randomize()
 	
-	# 🛠️ LOCAL TESTING OVERRIDE GATEWAY:
+	# ️ LOCAL TESTING OVERRIDE GATEWAY:
 	if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
 		GameManager.players = [
 			{"name": "Player 1 (You)", "score": 0},
@@ -89,7 +89,7 @@ func _start_countdown() -> void:
 
 	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
-	# 🌟 LOCAL SANDBOX COMPATIBILITY GATEWAY:
+	#  LOCAL SANDBOX COMPATIBILITY GATEWAY:
 	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
 	if is_local_test:
 		# Directly run the logic instantly without routing through NetworkManager
@@ -99,7 +99,7 @@ func _start_countdown() -> void:
 		if NetworkManager.is_host:
 			NetworkManager.sync_luksong_round.rpc(picked_zone_start)
 
-# 🌟 UNIFIED ROUND START FUNCTION
+#  UNIFIED ROUND START FUNCTION
 func _begin_round(synced_zone_start: float) -> void:
 	zone_start = synced_zone_start
 	marker_t = 0.0
@@ -108,7 +108,7 @@ func _begin_round(synced_zone_start: float) -> void:
 	jumped_this_round.clear()
 	
 	for player_idx in participating_players:
-		# 🛑 CRITICAL FIX: If this player is already eliminated, 
+		#  CRITICAL FIX: If this player is already eliminated, 
 		# do NOT reset their quadrant! Leave them frozen.
 		if not alive_players.has(player_idx):
 			continue # Skip straight to the next player loop execution
@@ -168,7 +168,7 @@ func _process(delta: float) -> void:
 		_end_round_sweep()
 		return
 
-	# 🛠️ TEST OVERRIDE: Simulate CPU player inputs when running locally
+	# ️ TEST OVERRIDE: Simulate CPU player inputs when running locally
 	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
 	if is_local_test:
 		for player_idx in alive_players.duplicate():
@@ -185,7 +185,7 @@ func _process(delta: float) -> void:
 		if not bars.has(player_idx):
 			continue
 			
-		# 1. 🌟 TIMED OBSTACLE LERP MOVEMENT
+		# 1.  TIMED OBSTACLE LERP MOVEMENT
 		if alive_players.has(player_idx) and quadrants.has(player_idx):
 			var quad = quadrants[player_idx]
 			var obstacle: Sprite2D = quad.get_node_or_null("SubViewport/Obstacle")
@@ -231,18 +231,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("jump"):
 		return
 		
-	print("🟢 Jump action detected!")
+	print(" Jump action detected!")
 
 	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
 	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
 	if is_local_test:
-		print("🛠️ Sandbox Mode: Routing jump to _try_jump(0)")
+		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
 		_try_jump(0)
-		return # 🌟 CRITICAL: This MUST be here so it stops execution right now!
+		return #  CRITICAL: This MUST be here so it stops execution right now!
 
 	# 4. GATEWAY B: Production Network Mode (F5 Running Main Game)
 	var my_idx: int = NetworkManager.get_my_player_index()
-	print("🌐 Network Mode: My Player Index = ", my_idx, " | Is Alive = ", alive_players.has(my_idx))
+	print(" Network Mode: My Player Index = ", my_idx, " | Is Alive = ", alive_players.has(my_idx))
 	
 	if my_idx == -1 or not alive_players.has(my_idx):
 		return
@@ -255,7 +255,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		NetworkManager.request_luksong_jump.rpc_id(1, my_idx, marker_t)
 
 func _try_jump(player_idx: int) -> void:
-	print("🔍 Checking _try_jump guards for player: ", player_idx)
+	print(" Checking _try_jump guards for player: ", player_idx)
 	
 	if not alive_players.has(player_idx):
 		print("❌ Guard failed: player_idx is not in alive_players! current alive: ", alive_players)
@@ -321,7 +321,7 @@ func _end_round_sweep() -> void:
 	sweeping = false
 	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
 	
-	# 🛠️ HARD SANDBOX RESET FOR F6 TESTING
+	# ️ HARD SANDBOX RESET FOR F6 TESTING
 	if is_local_test:
 		print("--- ROUND ENDED (SANDBOX) ---")
 		
@@ -384,7 +384,7 @@ func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 			char_sprites[player_idx].stop()
 			char_sprites[player_idx].modulate = Color(0.4, 0.4, 0.4)
 			
-		# 🌟 FIX: Added 'var' to properly declare the obstacle variable
+		#  FIX: Added 'var' to properly declare the obstacle variable
 		if quadrants.has(player_idx):
 			var obstacle = quadrants[player_idx].get_node_or_null("SubViewport/Obstacle")
 			if obstacle:
@@ -402,7 +402,7 @@ func apply_round_end(auto_eliminated: Array) -> void:
 			char_sprites[player_idx].stop()
 			char_sprites[player_idx].modulate = Color(0.4, 0.4, 0.4)
 			
-		# 🌟 FIXED: Moved inside the loop so player_idx and obstacle are in scope
+		#  FIXED: Moved inside the loop so player_idx and obstacle are in scope
 		if quadrants.has(player_idx):
 			var obstacle = quadrants[player_idx].get_node_or_null("SubViewport/Obstacle")
 			if obstacle:
@@ -450,7 +450,7 @@ func _end_game() -> void:
 	_finish(scores)
 
 # ---------------------------------------------------------------------------
-# Visual helpers — Handles targeted viewport processing and dynamic instantiation
+# Visual helpers - Handles targeted viewport processing and dynamic instantiation
 # ---------------------------------------------------------------------------
 
 ## Cleanly instantiates viewports and drops in unique character scene copies
@@ -506,9 +506,9 @@ func _scroll_buildings(_delta: float) -> void:
 			var bg: Parallax2D = quad.get_node_or_null("SubViewport/Parallax2D")
 			
 			if bg:
-				# 🌟 If the player is alive AND the game is actively sweeping, scroll!
+				#  If the player is alive AND the game is actively sweeping, scroll!
 				if alive_players.has(player_idx) and sweeping and not gameplay_locked:
 					bg.autoscroll.x = base_speed * speed_mult
 				else:
-					# 🛑 Otherwise, freeze their background completely
+					#  Otherwise, freeze their background completely
 					bg.autoscroll.x = 0.0

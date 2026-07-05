@@ -11,12 +11,12 @@ const LAYER_HEIGHT := 100.0
 const COLUMN_SPACING := 350.0   # must stay <= your real max horizontal jump distance
 const PLATFORM_WIDTH := 150.0
 
-# Set from NetworkManager.get_my_player_index() at start_game() — replaces
+# Set from NetworkManager.get_my_player_index() at start_game() - replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
 var facing_right := true
 var alive_players: Array[int] = []
-var elimination_order: Array = []      # Array[Array[int]] — tie-groups, in elimination order
+var elimination_order: Array = []      # Array[Array[int]] - tie-groups, in elimination order
 var flood_start_y: float
 @onready var flood: Area2D = $Flood
 @onready var flood_sprite: AnimatedSprite2D = $"Flood/flood sprite"
@@ -25,7 +25,7 @@ var round_active: bool = false
 var _coyote_timer: float = 0.
 var finished_players: Array[int] = []
 
-# Position sync — each client broadcasts their position at SYNC_HZ rate.
+# Position sync - each client broadcasts their position at SYNC_HZ rate.
 # Host collects all positions and rebroadcasts to everyone.
 const POSITION_SYNC_HZ := 20.0
 var _position_sync_timer := 0.0
@@ -92,7 +92,7 @@ func _generate_platforms() -> void:
 
 		for col in num_cols:
 			var x: float = min_x + direction_x * (col * COLUMN_SPACING + col_offset)
-			# Skip anything that would land past the goal's X or off the near edge —
+			# Skip anything that would land past the goal's X or off the near edge -
 			# keeps the grid from overshooting the level bounds.
 			if x < SCREEN_MARGIN or x > get_viewport_rect().size.x - SCREEN_MARGIN:
 				continue
@@ -132,7 +132,7 @@ func _process(delta: float) -> void:
 	if not round_active:
 		round_active = true
 
-	# Position sync — local client sends its position to host at POSITION_SYNC_HZ.
+	# Position sync - local client sends its position to host at POSITION_SYNC_HZ.
 	_position_sync_timer += delta
 	if _position_sync_timer >= 1.0 / POSITION_SYNC_HZ:
 		_position_sync_timer = 0.0
@@ -142,7 +142,7 @@ func _process(delta: float) -> void:
 				NetworkManager.process_langitlupa_position(local_player_index, my_pos)
 			else:
 				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
-	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
+	# Flood visual - every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
 	# Authoritative elimination check runs on host only (or offline debug mode).
@@ -247,7 +247,7 @@ func _check_goal() -> void:
 ## Host-only. Records a finish, removes them from the active race, checks for round end.
 func _finish_player(idx: int) -> void:
 	if not alive_players.has(idx):
-		return  # already finished or already flooded — guard against double-fire
+		return  # already finished or already flooded - guard against double-fire
 	alive_players.erase(idx)
 	finished_players.append(idx)
 	if alive_players.size() <= 1:
