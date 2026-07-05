@@ -273,11 +273,22 @@ func apply_elimination(player_idx: int) -> void:
 func _compute_final_scores() -> Dictionary:
 	var placement_points := [3, 2, 1]
 	var scores := {}
-	for i in finished_players.size():
+	
+	var ranking: Array[int] = []
+	# 1. Players who reached the goal
+	ranking.append_array(finished_players)
+	# 2. Any remaining alive players who survived until the end
+	ranking.append_array(alive_players)
+	# 3. Eliminated players (last to die ranks higher than first to die)
+	var reversed_eliminations = elimination_order.duplicate()
+	reversed_eliminations.reverse()
+	for group in reversed_eliminations:
+		ranking.append_array(group)
+		
+	for i in ranking.size():
 		if i < placement_points.size():
-			scores[finished_players[i]] = placement_points[i]
-	# Anyone flooded, or the one remaining player who never finished, simply has no
-	# entry in the dict — GameManager treats a missing entry as 0 points automatically.
+			scores[ranking[i]] = placement_points[i]
+			
 	return scores
 
 func _end_game(scores: Dictionary) -> void:
