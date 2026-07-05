@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dbfm3smj58raw"]
+[gd_scene load_steps=20 format=3 uid="uid://dbfm3smj58raw"]
 
 [ext_resource type="Script" uid="uid://cwkpf155ser33" path="res://scenes/ui/lobby_screen.gd" id="1_3dmo6"]
 [ext_resource type="Texture2D" uid="uid://c31a7g0kx3gxj" path="res://assets/screens/default_bg.png" id="2_24fv3"]
@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" uid="uid://cj08p2p12i82" path="res://assets/screens/lobby/play_button_pressed.png" id="12_wudpn"]
 [ext_resource type="Texture2D" uid="uid://cla7qo7iinhjn" path="res://assets/screens/lobby/play_button_hover.png" id="13_gqlph"]
 [ext_resource type="Texture2D" uid="uid://cceo2hxoo74fy" path="res://assets/screens/lobby/play_button_disabled.png" id="14_disabled"]
+[ext_resource type="AudioStream" uid="uid://c3pobn73w3sck" path="res://assets/sfx/type_sfx.mp3" id="18_typing"]
+[ext_resource type="AudioStream" uid="uid://dr1i3yqtnyuow" path="res://assets/sfx/button_click_sfx.mp3" id="19_click"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_f6syo"]
 texture = ExtResource("4_4jocg")
@@ -32,6 +34,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3dmo6")
+
+[node name="TypingSfx" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("18_typing")
+
+[node name="ButtonSfx" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("19_click")
 
 [node name="UIContainer" type="CenterContainer" parent="." unique_id=259206432]
 layout_mode = 1
