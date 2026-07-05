@@ -18,7 +18,6 @@ config/name="PinoyParty"
 run/main_scene="uid://e8f5pc6jmxlh"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="uid://bldmkhnvc10m3"
-<<<<<<<Updatedupstreamrun/main_scene="res://scenes/ui/LobbyScreen.tscn"
 
 [autoload]
 
