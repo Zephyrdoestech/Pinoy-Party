@@ -182,7 +182,7 @@ func start_game() -> void:
 func _on_game_start() -> void:
 	match_in_progress = true
 	game_starting.emit()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://cutscene.tscn")
 
 # --- Player index <-> peer id mapping ---
 # Built once on the host when the match starts, then broadcast to everyone.

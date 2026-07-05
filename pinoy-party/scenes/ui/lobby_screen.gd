@@ -35,7 +35,10 @@ func _ready() -> void:
 		"CenterContainer/VBoxContainer/StartButton",
 		"LobbyPanel/StartButton"
 	]) as TextureButton
-	status_label = _find_required_node("StatusLabel", ["StatusLabel"]) as Label
+	status_label = _find_required_node("StatusLabel", [
+		"LobbyContainer/Control/VBoxContainer/StatusLabel",
+		"StatusLabel"
+	]) as Label
 
 	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null:
 		return
@@ -43,6 +46,7 @@ func _ready() -> void:
 	NetworkManager.lobby_created.connect(_on_lobby_created)
 	NetworkManager.roster_updated.connect(_on_roster_changed)
 	NetworkManager.join_failed.connect(_on_join_failed)
+	NetworkManager.host_left.connect(_on_host_left)
 	start_button.pressed.connect(_on_start_pressed)
 	host_join_panel.get_node("HostButton").pressed.connect(_on_host_pressed)
 	host_join_panel.get_node("JoinButton").pressed.connect(_on_join_pressed)
@@ -52,11 +56,19 @@ func _ready() -> void:
 	lobby_panel.visible = false
 	start_button.visible = false
 	status_label.text = ""
+	status_label.add_theme_font_override("font", LOBBY_FONT)
+	status_label.add_theme_font_size_override("font_size", 24)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	NetworkManager.start_listening_for_lobbies()
 
 func _on_host_pressed() -> void:
-	NetworkManager.host_lobby(host_join_panel.get_node("NameInput").text)
+	var name_input: LineEdit = host_join_panel.get_node("NameInput")
+	var player_name: String = name_input.text.strip_edges()
+	if player_name.is_empty():
+		status_label.text = "Please enter your name!"
+		return
+	NetworkManager.host_lobby(player_name)
 
 func _on_join_pressed() -> void:
 	var join_ip_input: LineEdit = host_join_panel.get_node("JoinIPInput")
@@ -64,8 +76,15 @@ func _on_join_pressed() -> void:
 	var name_input: LineEdit = host_join_panel.get_node("NameInput")
 
 	var typed_ip: String = join_ip_input.text.strip_edges()
-	var code: String = join_code_input.text
-	var player_name: String = name_input.text
+	var code: String = join_code_input.text.strip_edges()
+	var player_name: String = name_input.text.strip_edges()
+
+	if player_name.is_empty():
+		status_label.text = "Please enter your name!"
+		return
+	if code.is_empty() and typed_ip.is_empty():
+		status_label.text = "Please enter a Lobby Code!"
+		return
 
 	if typed_ip != "":
 		NetworkManager.join_lobby(code, typed_ip, player_name)
@@ -83,6 +102,8 @@ func _on_roster_changed(_id: int = -1) -> void:
 	host_join_panel.visible = false
 	lobby_container.visible = true
 	lobby_panel.visible = true
+	if NetworkManager.lobby_code != "":
+		code_label.text = "Code: %s" % NetworkManager.lobby_code
 	_rebuild_cards()
 
 func _rebuild_cards() -> void:
@@ -95,6 +116,14 @@ func _rebuild_cards() -> void:
 	var player_count := NetworkManager.connected_players.size()
 	start_button.visible = lobby_container.visible and NetworkManager.is_host
 	start_button.disabled = player_count < 2
+	
+	if NetworkManager.is_host:
+		if player_count < 2:
+			status_label.text = "Cannot start game: Waiting for other players..."
+		else:
+			status_label.text = "All players ready! You may start."
+	else:
+		status_label.text = "Waiting for Host to start the game..."
 
 func _build_card(player_name: String) -> Control:
 	var vbox := VBoxContainer.new()
@@ -124,6 +153,13 @@ func _build_card(player_name: String) -> Control:
 
 func _on_join_failed(reason: String) -> void:
 	status_label.text = reason
+	host_join_panel.visible = true
+	lobby_container.visible = false
+	lobby_panel.visible = false
+	start_button.visible = false
+
+func _on_host_left() -> void:
+	status_label.text = "Host disconnected. Lobby closed."
 	host_join_panel.visible = true
 	lobby_container.visible = false
 	lobby_panel.visible = false

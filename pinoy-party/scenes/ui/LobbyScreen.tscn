@@ -192,7 +192,7 @@ texture_pressed = ExtResource("12_wudpn")
 texture_hover = ExtResource("13_gqlph")
 texture_disabled = ExtResource("14_disabled")
 
-[node name="StatusLabel" type="Label" parent="." unique_id=1481709683]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="StatusLabel" type="Label" parent="LobbyContainer/Control/VBoxContainer" unique_id=1481709683]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.15, 0.15, 1)
+horizontal_alignment = 1
