@@ -93,6 +93,8 @@ func _on_join_pressed() -> void:
 		_show_error("Please enter a Lobby Code!")
 		return
 
+	_show_error("Connecting...")
+	
 	if typed_ip != "":
 		NetworkManager.join_lobby(code, typed_ip, player_name)
 	else:
