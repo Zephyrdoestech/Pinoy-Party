@@ -20,6 +20,9 @@ const CHAR_Y: float = 275.0               # Adjusted vertical alignment relative
 @onready var round_label: Label = $UI/RoundLabel
 @onready var countdown_label: Label = $UI/CountdownLabel
 @onready var splitscreen_grid: GridContainer = $SplitscreenGrid
+const TUTORIAL_PNG_PATH := "res://assets/tutorials/tutorial_luksong_baka.png" 
+
+var tutorial_node: CanvasLayer = null
 
 const QUADRANT_SCENE = preload("res://scenes/minigames/LuksongBaka/player_quadrant.tscn")
 const PLAYER_SCENES := {
@@ -30,9 +33,11 @@ const PLAYER_SCENES := {
 }
 
 const OBSTACLE_TEXTURES := [
-	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle1.png"),
-	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle2.png"),
-	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle3.png")
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle4.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle7.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle11.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle9.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle8.png")
 ]
 
 var current_round := 0
@@ -68,11 +73,13 @@ func _ready() -> void:
 		start_game([0, 1, 2, 3])
 
 func start_game(players: Array[int]) -> void:
-	super(players)
 	alive_players = players.duplicate()
-	
+	super(players)
+	elimination_order.clear()
 	# Initialize our 4 separate isolated viewports
 	_spawn_splitscreen_worlds()
+	
+	_show_tutorial_png()
 	
 	if DEBUG_FORCE_LOCAL_TEST :
 		await get_tree().process_frame 
@@ -87,6 +94,11 @@ func _start_countdown() -> void:
 	round_label.text = "Round %d" % current_round
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
+	
+	if current_round == 1:
+		gameplay_locked = true 
+		await get_tree().create_timer(3.0).timeout 
+		gameplay_locked = false
 
 	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
@@ -181,8 +193,8 @@ func _process(delta: float) -> void:
 
 	# Update visual timelines, markers, and obstacles for each player grid
 	var visible_players: Array = participating_players
-	if not DEBUG_FORCE_LOCAL_TEST:
-		visible_players = [NetworkManager.get_my_player_index()]
+	#if not DEBUG_FORCE_LOCAL_TEST:
+		#visible_players = [NetworkManager.get_my_player_index()]
 
 	for player_idx in visible_players:
 		if not bars.has(player_idx):
@@ -222,6 +234,8 @@ func _process(delta: float) -> void:
 			marker_rect.position.x = marker_t * current_track_width
 
 func _begin_sweep() -> void:
+	if tutorial_node and is_instance_valid(tutorial_node):
+		tutorial_node.queue_free()
 	marker_t = 0.0
 	sweeping = true
 	gameplay_locked = false
@@ -262,19 +276,19 @@ func _try_jump(player_idx: int) -> void:
 	print(" Checking _try_jump guards for player: ", player_idx)
 	
 	if not alive_players.has(player_idx):
-		print("❌ Guard failed: player_idx is not in alive_players! current alive: ", alive_players)
+		print("Guard failed: player_idx is not in alive_players! current alive: ", alive_players)
 		return
 	if jumped_this_round.has(player_idx):
-		print("❌ Guard failed: player already jumped this round!")
+		print("Guard failed: player already jumped this round!")
 		return
 	if not bars.has(player_idx):
-		print("❌ Guard failed: bars dictionary is missing player_idx!")
+		print("Guard failed: bars dictionary is missing player_idx!")
 		return
 	if not char_sprites.has(player_idx):
-		print("❌ Guard failed: char_sprites dictionary is missing player_idx!")
+		print("Guard failed: char_sprites dictionary is missing player_idx!")
 		return
 
-	print("✅ All guards passed! Processing jump calculations...")
+	print("All guards passed! Processing jump calculations...")
 	play_jump_sfx()
 	jumped_this_round[player_idx] = true
 	var in_zone: bool = marker_t >= zone_start and marker_t <= (zone_start + zone_width)
@@ -474,8 +488,8 @@ func _spawn_splitscreen_worlds() -> void:
 
 	var visible_players: Array = participating_players
 	splitscreen_grid.columns = visible_players.size()
-	if not DEBUG_FORCE_LOCAL_TEST:
-		visible_players = [NetworkManager.get_my_player_index()]
+	#if not DEBUG_FORCE_LOCAL_TEST:
+		#visible_players = [NetworkManager.get_my_player_index()]
 
 	for player_idx in visible_players:
 		var quad = QUADRANT_SCENE.instantiate()
@@ -518,8 +532,8 @@ func _scroll_buildings(_delta: float) -> void:
 	var base_speed: float = -400.0 
 	
 	var visible_players: Array = participating_players
-	if not DEBUG_FORCE_LOCAL_TEST:
-		visible_players = [NetworkManager.get_my_player_index()]
+	#if not DEBUG_FORCE_LOCAL_TEST:
+		#visible_players = [NetworkManager.get_my_player_index()]
 
 	for player_idx in visible_players:
 		if quadrants.has(player_idx):
@@ -533,3 +547,31 @@ func _scroll_buildings(_delta: float) -> void:
 				else:
 					#  Otherwise, freeze their background completely
 					bg.autoscroll.x = 0.0
+					
+func _show_tutorial_png() -> void:
+	if current_round > 1:
+		return
+		
+	var tutorial_tex = load(TUTORIAL_PNG_PATH)
+	if not tutorial_tex:
+		print("Error: Could not find the tutorial PNG file path")
+		return
+
+	tutorial_node = CanvasLayer.new()
+	tutorial_node.layer = 128
+	add_child(tutorial_node)
+
+	var tut_rect := TextureRect.new()
+	tut_rect.texture = tutorial_tex
+	
+	tut_rect.custom_minimum_size = tutorial_tex.get_size()
+	
+	tut_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	tut_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	
+	tut_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
+	tut_rect.set_anchors_preset(Control.PRESET_CENTER)
+	
+	tutorial_node.add_child(tut_rect)
+	tut_rect.set_anchors_preset(Control.PRESET_CENTER)
