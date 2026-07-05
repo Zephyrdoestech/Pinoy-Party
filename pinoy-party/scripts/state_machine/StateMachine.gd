@@ -16,7 +16,7 @@
 # The StateMachine:
 #   • Collects child State nodes on _ready().
 #   • Enters the first state automatically (or call start() manually).
-#   • Routes _physics_process → active state's tick().
+#   • Routes _physics_process -> active state's tick().
 #   • Listens to each state's transition_requested signal and switches states.
 # ---------------------------------------------------------------------------
 class_name StateMachine
@@ -28,7 +28,7 @@ extends Node
 ## Read-only: the currently active State node (null before start() is called).
 var current_state: State = null
 
-## Internal map:  StringName → State
+## Internal map:  StringName -> State
 var _states: Dictionary = {}
 
 

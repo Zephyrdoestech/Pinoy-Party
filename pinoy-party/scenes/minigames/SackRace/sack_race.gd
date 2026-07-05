@@ -62,7 +62,7 @@ func _input(event: InputEvent) -> void:
 		return  # not a participant in this race (or no LAN match active)
 	if my_idx in finished_order:
 		return  # already finished, ignore further presses
-	# Route through the host so every client's progress stays in sync —
+	# Route through the host so every client's progress stays in sync -
 	# same request -> host-broadcast pattern used for dice rolls.
 	if NetworkManager.is_host:
 		NetworkManager.process_sack_race_hop(my_idx)
@@ -71,7 +71,7 @@ func _input(event: InputEvent) -> void:
 
 ## Called by NetworkManager._apply_sack_race_hop() on every peer once the
 ## host has validated and broadcast the hop. This is the only place
-## progress should be advanced from now — local input no longer calls
+## progress should be advanced from now - local input no longer calls
 ## _advance() directly, it just requests a hop via NetworkManager.
 func apply_hop(player_idx: int) -> void:
 	if not race_active:
@@ -101,7 +101,7 @@ func _end_race() -> void:
 
 	# Players who actually crossed the finish line have a strict, tie-free
 	# order (only one player advances per key-press event, so two players
-	# can't finish on the exact same input) — each is their own group.
+	# can't finish on the exact same input) - each is their own group.
 	var groups: Array = []
 	for idx in finished_order:
 		groups.append([idx])

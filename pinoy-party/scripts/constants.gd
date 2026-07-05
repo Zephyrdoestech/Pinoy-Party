@@ -12,8 +12,8 @@ const MOVE_STEP_DURATION := 0.2  # seconds per tile hop
 const MOVEMENT_TIMEOUT_SEC := 5.0   # max wait for movement_finished before forcing the move to complete
 const DICE_ROLL_TICKS   := 15
 
-# Mini-game IDs — matches folder names under scenes/minigames/
-const MINIGAMES := ["LangitLupa"]
+# Mini-game IDs - matches folder names under scenes/minigames/
+const MINIGAMES := ["LangitLupa", "LuksongBaka", "SackRace"]
 
 # Trivia
 const TRIVIA_QUESTIONS_PATH := "res://data/trivia_questions.json"

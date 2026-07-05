@@ -16,7 +16,7 @@ var state_machine: StateMachine
 
 
 # ---------------------------------------------------------------------------
-# Virtual interface – override in each concrete state.
+# Virtual interface - override in each concrete state.
 # ---------------------------------------------------------------------------
 
 ## Called once when the state becomes active.

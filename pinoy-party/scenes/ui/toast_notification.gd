@@ -1,7 +1,7 @@
 extends Control
 
 ## Slide-down toast for "needs a roll of X to win" messages.
-## Built entirely at runtime — same pattern as hud.gd / score_board.gd.
+## Built entirely at runtime - same pattern as hud.gd / score_board.gd.
 ## Root node of ToastNotification.tscn must be a Control.
 
 const VISIBLE_DURATION_SEC := 2.0
