@@ -145,13 +145,10 @@ func _process(delta: float) -> void:
 	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
-	# Authoritative elimination check runs on host only.
-	if NetworkManager.is_host:
+	# Authoritative elimination check runs on host only (or offline debug mode).
+	if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 		_check_flood()
 		_check_goal()
-	# Local mode
-	_check_flood()
-	_check_goal()
 
 func _physics_process(delta: float) -> void:
 	if gameplay_locked:
