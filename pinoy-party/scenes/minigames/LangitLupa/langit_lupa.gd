@@ -211,20 +211,37 @@ func _spawn_platform_node(pos: Vector2, layer: int, index: int) -> void:
 func _get_player_node(idx: int) -> CharacterBody2D:
 	return get_node("Players/Player %d" % (idx + 1))
 
+func _get_player_sprite(idx: int) -> AnimatedSprite2D:
+	var player := _get_player_node(idx)
+	match idx:
+		0: return player.get_node("player1node")
+		1: return player.get_node("player2node")
+		2: return player.get_node("player3node")
+		3: return player.get_node("player4node")
+	return null
+
+func apply_remote_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
+	if player_idx != local_player_index:
+		_get_player_node(player_idx).position = pos
+		var sprite = _get_player_sprite(player_idx)
+		if sprite and anim_name != "" and sprite.animation != anim_name:
+			sprite.play(anim_name)
+
 func _process(delta: float) -> void:
 	if not round_active or gameplay_locked:
 		return
 
-	# Position sync - local client sends its position to host at POSITION_SYNC_HZ.
 	_position_sync_timer += delta
 	if _position_sync_timer >= 1.0 / POSITION_SYNC_HZ:
 		_position_sync_timer = 0.0
 		if local_player_index != -1:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
+			var sprite := _get_player_sprite(local_player_index)
+			var my_anim: String = sprite.animation if sprite else ""
 			if NetworkManager.is_host:
-				NetworkManager.process_langitlupa_position(local_player_index, my_pos)
+				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
 			else:
-				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
+				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
 	# Flood visual - every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
@@ -240,16 +257,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var player := _get_player_node(local_player_index)
-	var sprite: AnimatedSprite2D
-	match local_player_index:
-		0:
-			sprite = player.get_node("player1node")
-		1:
-			sprite = player.get_node("player2node")
-		2:
-			sprite = player.get_node("player3node")
-		3:
-			sprite = player.get_node("player4node")
+	var sprite := _get_player_sprite(local_player_index)
 	player.velocity.y += GRAVITY * delta
 
 	if player.is_on_floor():
