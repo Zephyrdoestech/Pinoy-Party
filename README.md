@@ -36,4 +36,4 @@
 
 ## 👥 Credits
 
-Developed with love by **Darryll** and team!
+Developed with love by **ClutchFive**!
