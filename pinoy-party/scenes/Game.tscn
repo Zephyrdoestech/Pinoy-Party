@@ -8,8 +8,8 @@
 [ext_resource type="Texture2D" uid="uid://08f52o7ptp2m" path="res://assets/board_assets/Tiles/Goal_Tile.png" id="5_r7sob"]
 [ext_resource type="Script" uid="uid://c4grj3vp5v4vj" path="res://scripts/state_machine/states/State_WaitingForDice.gd" id="6_3xj3m"]
 [ext_resource type="Texture2D" uid="uid://b4qdql78gou8b" path="res://assets/board_assets/Dice/3d/dice_3d_static_1.png" id="6_ocgqw"]
-[ext_resource type="Texture2D" uid="uid://dkpj8xsklr6m5" path="res://assets/board_assets/Dice/3d/dice_3d_static_2.png" id="7_jbgew"]
 [ext_resource type="Texture2D" uid="uid://kjqgrs5sqdpb" path="res://assets/board_assets/board_arrow_placed.png" id="6_vjgi4"]
+[ext_resource type="Texture2D" uid="uid://dkpj8xsklr6m5" path="res://assets/board_assets/Dice/3d/dice_3d_static_2.png" id="7_jbgew"]
 [ext_resource type="Script" uid="uid://dku470pmgkaql" path="res://scenes/sprite_2d_3.gd" id="7_kyk2p"]
 [ext_resource type="Script" uid="uid://dbpgmhuso24j4" path="res://scripts/state_machine/states/State_Moving.gd" id="7_mcffj"]
 [ext_resource type="Script" uid="uid://bj3xox6d6dtr7" path="res://scripts/state_machine/states/State_TileEvent.gd" id="8_2rd6h"]
@@ -19,15 +19,51 @@
 [ext_resource type="Texture2D" uid="uid://tt13ccv7chlu" path="res://assets/board_assets/Dice/3d/dice_3d_static_4.png" id="9_jhsr3"]
 [ext_resource type="Texture2D" uid="uid://cg3ob4pru2lg1" path="res://assets/board_assets/Dice/3d/dice_3d_static_5.png" id="10_0bq3a"]
 [ext_resource type="PackedScene" uid="uid://b27tfag0jsw3q" path="res://scenes/ui/HUD.tscn" id="10_qy1jj"]
-[ext_resource type="PackedScene" uid="uid://05p1lmwlynfu" path="res://scenes/ui/ScoreBoard.tscn" id="11_3xj3m"]
 [ext_resource type="Texture2D" uid="uid://dmwq54nfsgvfj" path="res://assets/board_assets/Dice/3d/dice_3d_static_6.png" id="11_754j2"]
 [ext_resource type="Texture2D" uid="uid://bqnfcc3gafeua" path="res://assets/board_assets/Dice/3d/rolling_dice-sheet.png" id="12_i4jil"]
 [ext_resource type="PackedScene" uid="uid://c2hbad6cv4qhg" path="res://scenes/ui/GameOverScreen.tscn" id="12_mcffj"]
 [ext_resource type="Texture2D" uid="uid://b16cipce2a2vi" path="res://assets/board_assets/board_background.png" id="13_2rd6h"]
+[ext_resource type="PackedScene" uid="uid://05p1lmwlynfu" path="res://scenes/ui/ScoreBoard.tscn" id="17_vjgi4"]
 [ext_resource type="Texture2D" uid="uid://cr6xkhabksb7f" path="res://assets/board_assets/Roll_Button/roll_dice_button.png" id="19_jai3c"]
 [ext_resource type="Texture2D" uid="uid://dqmrqeul7ha8i" path="res://assets/board_assets/Roll_Button/roll_dice_button_rolling.png" id="20_1gdd5"]
 [ext_resource type="Texture2D" uid="uid://clc02ahavc0jv" path="res://assets/board_assets/Roll_Button/roll_dice_button_disabled.png" id="21_426vi"]
-[ext_resource type="PackedScene" uid="uid://btf61rmswu0yb" path="res://scenes/ui/ScoreBoard.tscn" id="17_vjgi4"]
+
+[sub_resource type="Animation" id="Animation_45i86"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(642, 352)]
+}
+
+[sub_resource type="Animation" id="Animation_sv1m6"]
+resource_name = "bounce"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4927375, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(642, 352), Vector2(642, 330), Vector2(642, 352)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_a8wo8"]
+_data = {
+&"RESET": SubResource("Animation_45i86"),
+&"bounce": SubResource("Animation_sv1m6")
+}
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_naigu"]
 atlas = ExtResource("6_ocgqw")
@@ -305,44 +341,6 @@ animations = [{
 "speed": 18.0
 }]
 
-[sub_resource type="Animation" id="Animation_45i86"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(642, 352)]
-}
-
-[sub_resource type="Animation" id="Animation_sv1m6"]
-resource_name = "bounce"
-loop_mode = 1
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.4927375, 1),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Vector2(642, 352), Vector2(642, 330), Vector2(642, 352)]
-}
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_a8wo8"]
-_data = {
-&"RESET": SubResource("Animation_45i86"),
-&"bounce": SubResource("Animation_sv1m6")
-}
-
-
 [node name="Game" type="Node2D" unique_id=1768686812]
 script = ExtResource("1")
 
@@ -559,6 +557,7 @@ stretch_mode = 5
 [node name="Hud" parent="UI" unique_id=821560762 instance=ExtResource("10_qy1jj")]
 
 [node name="GameOverScreen" parent="UI" unique_id=818565318 instance=ExtResource("12_mcffj")]
+visible = false
 
 [node name="ScoreBoard" parent="UI" unique_id=1160043138 instance=ExtResource("17_vjgi4")]
 anchors_preset = 11
