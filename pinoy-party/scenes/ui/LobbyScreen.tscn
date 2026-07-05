@@ -1,62 +1,196 @@
-[gd_scene load_steps=0 format=3 uid="uid://dbfm3smj58raw"]
+[gd_scene format=3 uid="uid://dbfm3smj58raw"]
 
 [ext_resource type="Script" uid="uid://cwkpf155ser33" path="res://scenes/ui/lobby_screen.gd" id="1_3dmo6"]
+[ext_resource type="Texture2D" uid="uid://c31a7g0kx3gxj" path="res://assets/screens/default_bg.png" id="2_24fv3"]
+[ext_resource type="FontFile" uid="uid://dchskkvpjy4f" path="res://assets/fonts/GrapeSoda.ttf" id="3_e13dy"]
+[ext_resource type="Texture2D" uid="uid://d0367utmxwywl" path="res://assets/screens/lobby/input_field.png" id="4_4jocg"]
+[ext_resource type="Texture2D" uid="uid://vlgvdpjwf18b" path="res://assets/screens/lobby/host_button.png" id="5_5h8ee"]
+[ext_resource type="Texture2D" uid="uid://k82lub4vivw6" path="res://assets/screens/lobby/host_button_pressed.png" id="6_f6syo"]
+[ext_resource type="Texture2D" uid="uid://dwalcuwls8rep" path="res://assets/screens/lobby/join_button.png" id="6_ipv3o"]
+[ext_resource type="Texture2D" uid="uid://cwvbxfktl3gyt" path="res://assets/screens/lobby/host_button_hover.png" id="7_pi0kg"]
+[ext_resource type="Texture2D" uid="uid://bnicdbih3utql" path="res://assets/screens/lobby/join_button_pressed.png" id="9_edbn7"]
+[ext_resource type="Texture2D" uid="uid://b5ldow0o01n7c" path="res://assets/screens/lobby/join_button_hover.png" id="10_wudpn"]
+[ext_resource type="Texture2D" uid="uid://brb55uoj3ejvd" path="res://assets/screens/lobby/play_button.png" id="11_edbn7"]
+[ext_resource type="Texture2D" uid="uid://by8vgvt235vab" path="res://assets/screens/lobby/lobby_container.png" id="11_wudpn"]
+[ext_resource type="Texture2D" uid="uid://dbi03bt30fua6" path="res://assets/screens/lobby/code_bg.png" id="12_gqlph"]
+[ext_resource type="Texture2D" uid="uid://cj08p2p12i82" path="res://assets/screens/lobby/play_button_pressed.png" id="12_wudpn"]
+[ext_resource type="Texture2D" uid="uid://cla7qo7iinhjn" path="res://assets/screens/lobby/play_button_hover.png" id="13_gqlph"]
+[ext_resource type="Texture2D" uid="uid://cceo2hxoo74fy" path="res://assets/screens/lobby/play_button_disabled.png" id="14_disabled"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_f6syo"]
+texture = ExtResource("4_4jocg")
+texture_margin_left = 16.0
+texture_margin_top = 2.0
+texture_margin_right = 16.0
+texture_margin_bottom = 2.0
 
 [node name="LobbyScreen" type="Control" unique_id=797514953]
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_3dmo6")
 
-[node name="HostJoinPanel" type="VBoxContainer" parent="." unique_id=1246908335]
+[node name="UIContainer" type="CenterContainer" parent="." unique_id=259206432]
 layout_mode = 1
-offset_left = 500.0
-offset_top = 100.0
-offset_right = 801.0
-offset_bottom = 271.0
 
-[node name="NameInput" type="LineEdit" parent="HostJoinPanel" unique_id=927161110]
+[node name="UIControl" type="Control" parent="UIContainer" unique_id=1329513174]
 layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIContainer/UIControl" unique_id=604542295]
+layout_mode = 0
+offset_right = 1277.0
+offset_bottom = 766.2
+texture = ExtResource("2_24fv3")
+expand_mode = 5
+stretch_mode = 5
+
+[node name="HostJoinPanel" type="VBoxContainer" parent="UIContainer/UIControl" unique_id=1246908335]
+layout_mode = 1
+offset_left = 380.0
+offset_top = 151.0
+offset_right = 892.0
+offset_bottom = 427.0
+
+[node name="NameInput" type="LineEdit" parent="UIContainer/UIControl/HostJoinPanel" unique_id=927161110]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1897483, 0.16007765, 0.086104214, 1)
+theme_override_colors/font_placeholder_color = Color(0.18771215, 0.16025484, 0.084871754, 0.5)
+theme_override_fonts/font = ExtResource("3_e13dy")
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxTexture_f6syo")
 placeholder_text = "Your Name"
 
-[node name="HostButton" type="Button" parent="HostJoinPanel" unique_id=841486670]
+[node name="HostButton" type="TextureButton" parent="UIContainer/UIControl/HostJoinPanel" unique_id=1035666047]
 layout_mode = 2
-text = "Host"
+texture_normal = ExtResource("5_5h8ee")
+texture_pressed = ExtResource("6_f6syo")
+texture_hover = ExtResource("7_pi0kg")
 
-[node name="JoinCodeInput" type="LineEdit" parent="HostJoinPanel" unique_id=1177639380]
+[node name="JoinCodeInput" type="LineEdit" parent="UIContainer/UIControl/HostJoinPanel" unique_id=1177639380]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.1882353, 0.16078432, 0.08627451, 1)
+theme_override_colors/font_placeholder_color = Color(0.1897483, 0.16007765, 0.086104214, 0.5)
+theme_override_fonts/font = ExtResource("3_e13dy")
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxTexture_f6syo")
 placeholder_text = "Code"
 
-[node name="JoinIPInput" type="LineEdit" parent="HostJoinPanel" unique_id=439305146]
+[node name="JoinIPInput" type="LineEdit" parent="UIContainer/UIControl/HostJoinPanel" unique_id=439305146]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.1882353, 0.16078432, 0.08627451, 1)
+theme_override_colors/font_placeholder_color = Color(0.1897483, 0.16007765, 0.086104214, 0.5)
+theme_override_fonts/font = ExtResource("3_e13dy")
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxTexture_f6syo")
 placeholder_text = "IP (optional)"
 
-[node name="JoinButton" type="Button" parent="HostJoinPanel" unique_id=312165117]
+[node name="JoinButton" type="TextureButton" parent="UIContainer/UIControl/HostJoinPanel" unique_id=1464605830]
 layout_mode = 2
-text = "Join"
+texture_normal = ExtResource("6_ipv3o")
+texture_pressed = ExtResource("9_edbn7")
+texture_hover = ExtResource("10_wudpn")
 
-[node name="LobbyPanel" type="Control" parent="." unique_id=176445436]
-anchors_preset = 0
-offset_left = 650.0
-offset_top = 300.0
-offset_right = 690.0
-offset_bottom = 340.0
+[node name="LobbyContainer" type="CenterContainer" parent="." unique_id=1171731143]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="CodeLabel" type="Label" parent="LobbyPanel" unique_id=1175620813]
+[node name="Control" type="Control" parent="LobbyContainer" unique_id=1414767357]
+custom_minimum_size = Vector2(608, 392)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="LobbyBG" type="TextureRect" parent="LobbyContainer/Control" unique_id=292377114]
 layout_mode = 0
-offset_left = 50.0
-offset_right = 90.0
-offset_bottom = 23.0
+offset_right = 608.0
+offset_bottom = 392.0
+texture = ExtResource("11_wudpn")
+expand_mode = 5
+stretch_mode = 5
 
-[node name="PlayerCards" type="HBoxContainer" parent="LobbyPanel" unique_id=260652977]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="VBoxContainer" type="VBoxContainer" parent="LobbyContainer/Control" unique_id=2032476864]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = 36.0
+offset_right = -48.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 18
+alignment = 1
 
-[node name="StartButton" type="Button" parent="LobbyPanel" unique_id=1144353135]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
-text = "Start"
+[node name="LobbyPanel" type="VBoxContainer" parent="LobbyContainer/Control/VBoxContainer" unique_id=176445436]
+custom_minimum_size = Vector2(512, 220)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Control" type="Control" parent="LobbyContainer/Control/VBoxContainer/LobbyPanel" unique_id=975004216]
+custom_minimum_size = Vector2(512, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="TextureRect" type="TextureRect" parent="LobbyContainer/Control/VBoxContainer/LobbyPanel/Control" unique_id=660888917]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("12_gqlph")
+expand_mode = 5
+stretch_mode = 5
+
+[node name="CodeLabel" type="Label" parent="LobbyContainer/Control/VBoxContainer/LobbyPanel/Control" unique_id=1175620813]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_e13dy")
+theme_override_font_sizes/font_size = 42
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="LobbyContainer/Control/VBoxContainer/LobbyPanel" unique_id=1583764762]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="PlayerCards" type="HBoxContainer" parent="LobbyContainer/Control/VBoxContainer/LobbyPanel/CenterContainer" unique_id=260652977]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="StartButton" type="TextureButton" parent="LobbyContainer/Control/VBoxContainer" unique_id=1274192763]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+disabled = true
+texture_normal = ExtResource("11_edbn7")
+texture_pressed = ExtResource("12_wudpn")
+texture_hover = ExtResource("13_gqlph")
+texture_disabled = ExtResource("14_disabled")
 
 [node name="StatusLabel" type="Label" parent="." unique_id=1481709683]
 layout_mode = 0
