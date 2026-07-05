@@ -57,7 +57,8 @@ func _ready() -> void:
 	start_button.visible = false
 	status_label.text = ""
 	status_label.add_theme_font_override("font", LOBBY_FONT)
-	status_label.add_theme_font_size_override("font_size", 34)
+	status_label.add_theme_font_size_override("font_size", 24)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	NetworkManager.start_listening_for_lobbies()
 
