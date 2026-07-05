@@ -43,8 +43,11 @@ func _ready() -> void:
 		"LobbyContainer/Control/VBoxContainer/StatusLabel",
 		"StatusLabel"
 	]) as Label
+	join_status_label = _find_required_node("JoinStatusLabel", [
+		"UIContainer/UIControl/HostJoinPanel/JoinStatusLabel"
+	]) as Label
 
-	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null:
+	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null or join_status_label == null:
 		return
 
 	button_click_sfx = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
@@ -61,14 +64,24 @@ func _ready() -> void:
 	_connect_typing_sfx(host_join_panel.get_node("JoinIPInput") as LineEdit)
 	_connect_typing_sfx(host_join_panel.get_node("JoinCodeInput") as LineEdit)
 
-	host_join_panel.visible = true
-	lobby_container.visible = false
-	lobby_panel.visible = false
-	start_button.visible = false
-	status_label.text = ""
+	if multiplayer.has_multiplayer_peer() and NetworkManager.lobby_code != "":
+		if NetworkManager.is_host:
+			_on_lobby_created(NetworkManager.lobby_code)
+			NetworkManager._start_broadcasting()
+		else:
+			_on_roster_changed()
+	else:
+		host_join_panel.visible = true
+		lobby_container.visible = false
+		lobby_panel.visible = false
+		start_button.visible = false
+	_show_error("")
 	status_label.add_theme_font_override("font", LOBBY_FONT)
 	status_label.add_theme_font_size_override("font_size", 24)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	join_status_label.add_theme_font_override("font", LOBBY_FONT)
+	join_status_label.add_theme_font_size_override("font_size", 24)
+	join_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	NetworkManager.start_listening_for_lobbies()
 
@@ -77,7 +90,7 @@ func _on_host_pressed() -> void:
 	var name_input: LineEdit = host_join_panel.get_node("NameInput")
 	var player_name: String = name_input.text.strip_edges()
 	if player_name.is_empty():
-		status_label.text = "Please enter your name!"
+		_show_error("Please enter your name!")
 		return
 	NetworkManager.host_lobby(player_name)
 
@@ -92,12 +105,14 @@ func _on_join_pressed() -> void:
 	var player_name: String = name_input.text.strip_edges()
 
 	if player_name.is_empty():
-		status_label.text = "Please enter your name!"
+		_show_error("Please enter your name!")
 		return
 	if code.is_empty() and typed_ip.is_empty():
-		status_label.text = "Please enter a Lobby Code!"
+		_show_error("Please enter a Lobby Code!")
 		return
 
+	_show_error("Connecting...")
+	
 	if typed_ip != "":
 		NetworkManager.join_lobby(code, typed_ip, player_name)
 	else:
@@ -131,11 +146,11 @@ func _rebuild_cards() -> void:
 	
 	if NetworkManager.is_host:
 		if player_count < 2:
-			status_label.text = "Cannot start game: Waiting for other players..."
+			_show_error("Cannot start game: Waiting for other players...")
 		else:
-			status_label.text = "All players ready! You may start."
+			_show_error("All players ready! You may start.")
 	else:
-		status_label.text = "Waiting for Host to start the game..."
+		_show_error("Waiting for Host to start the game...")
 
 func _build_card(player_name: String) -> Control:
 	var vbox := VBoxContainer.new()
@@ -164,18 +179,22 @@ func _build_card(player_name: String) -> Control:
 	return vbox
 
 func _on_join_failed(reason: String) -> void:
-	status_label.text = reason
+	_show_error(reason)
 	host_join_panel.visible = true
 	lobby_container.visible = false
 	lobby_panel.visible = false
 	start_button.visible = false
 
 func _on_host_left() -> void:
-	status_label.text = "Host disconnected. Lobby closed."
+	_show_error("Host disconnected. Lobby closed.")
 	host_join_panel.visible = true
 	lobby_container.visible = false
 	lobby_panel.visible = false
 	start_button.visible = false
+
+func _show_error(msg: String) -> void:
+	status_label.text = msg
+	join_status_label.text = msg
 
 func _on_start_pressed() -> void:
 	_play_button_click_sfx()
