@@ -89,10 +89,10 @@ func _process(_delta: float) -> void:
 func join_lobby_by_code(code: String, player_name: String) -> void:
 	code = code.to_upper()
 	if not discovered_lobbies.has(code):
-		# Fallback: If testing two windows on the same PC, the host blocks the UDP
-		# discovery port, so the client's scanner fails. We automatically try 
-		# localhost as a fallback. If the code is wrong, the host will kick them.
-		join_lobby(code, "127.0.0.1", player_name)
+		if OS.has_feature("debug"):
+			join_lobby(code, "127.0.0.1", player_name)
+		else:
+			join_failed.emit("Lobby not found! (Check code or enter IP manually)")
 		return
 	join_lobby(code, discovered_lobbies[code]["ip"], player_name)
 
@@ -109,6 +109,10 @@ func join_lobby(code: String, ip: String, player_name: String) -> void:
 	is_host = false
 	_pending_name = player_name
 
+	if not ip.is_valid_ip_address() and ip != "localhost":
+		join_failed.emit("Invalid IP Address format")
+		return
+
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
 	if err != OK:
@@ -120,7 +124,7 @@ func _on_connected_ok() -> void:
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
-	join_failed.emit("Connection failed")
+	join_failed.emit("Lobby not found or unreachable")
 
 @rpc("any_peer", "reliable")
 func _register_player(player_name: String, code: String) -> void:
@@ -182,7 +186,7 @@ func start_game() -> void:
 func _on_game_start() -> void:
 	match_in_progress = true
 	game_starting.emit()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://cutscene.tscn")
 
 # --- Player index <-> peer id mapping ---
 # Built once on the host when the match starts, then broadcast to everyone.
@@ -492,5 +496,6 @@ func request_restart() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _apply_restart() -> void:
+	match_in_progress = false
 	GameManager.reset_for_new_game()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
