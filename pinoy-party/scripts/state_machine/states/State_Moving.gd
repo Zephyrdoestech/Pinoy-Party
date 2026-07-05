@@ -10,10 +10,21 @@ func enter() -> void:
 	gm.players[player_idx]["state"] = Enums.PlayerState.MOVING
 
 	var old_tile: int = gm.players[player_idx]["tile_index"]
-	var new_tile: int = mini(old_tile + roll, Constants.TOTAL_TILES - 1)
-
+	var tiles_remaining: int = Constants.TOTAL_TILES - 1 - old_tile
+ 
+	if roll > tiles_remaining:
+		# Overshoot — don't move at all. tile_index is never touched, so this
+		# can't be mistaken for a finish by State_TileEvent/game-over checks.
+		print("[Moving] Player %d rolled %d but only needs %d — no move." % [player_idx, roll, tiles_remaining])
+		gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
+		EventBus.roll_exceeded.emit(player_idx, tiles_remaining)
+		request_transition.call_deferred(&"State_EndTurn")
+		return
+ 
+	var new_tile: int = old_tile + roll
+ 
 	print("[Moving] Player %d moves %d tile(s) → tile %d." % [player_idx, roll, new_tile])
-
+ 
 	_animate_and_advance.call_deferred(player_idx, new_tile)
 
 func _animate_and_advance(player_idx: int, new_tile: int) -> void:

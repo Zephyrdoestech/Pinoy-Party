@@ -392,6 +392,5 @@ func _spawn_character_sprites() -> void:
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		spr.position = Vector2(x_positions[i], CHAR_Y)
 		spr.play("walk")
-
 		characters_node.add_child(spr)
 		char_sprites[player_idx] = spr
