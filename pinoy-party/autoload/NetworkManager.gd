@@ -474,3 +474,14 @@ func _generate_code() -> String:
 	for i in 5:
 		code += CHARS[randi() % CHARS.length()]
 	return code
+
+@rpc("any_peer", "call_local", "reliable")
+func request_restart() -> void:
+	if not is_host:
+		return
+	_apply_restart.rpc()
+
+@rpc("authority", "call_local", "reliable")
+func _apply_restart() -> void:
+	GameManager.reset_for_new_game()
+	get_tree().change_scene_to_file("res://scenes/Game.tscn")

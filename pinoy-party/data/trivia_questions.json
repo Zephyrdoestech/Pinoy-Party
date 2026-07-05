@@ -1,12 +1,37 @@
 [
-  {
-	"question": "Which historical artifact can you find in the men's room of a Las Vegas casino?",
-	"options": ["Real moon rocks", "A piece of the Berlin Wall", "Lincoln's top hat", "A chunk of Stonehenge"],
-	"correct_index": 0
-  },
-  {
-	"question": "What is the national fruit of the Philippines?",
-	"options": ["Mango", "Durian", "Banana", "Pineapple"],
-	"correct_index": 0
-  }
+{
+"question": "What common green leafy vegetable in the Philippines is often called a 'miracle tree' because it is very rich in vitamins and iron?",
+"options": ["Cabbage", "Malunggay", "Lettuce", "Pechay"],
+"correct_index": 1
+},
+{
+"question": "In the health lessons taught in Philippine schools, which food group does rice belong to?",
+"options": ["Go foods", "Grow foods", "Glow foods", "Junk foods"],
+"correct_index": 0
+},
+{
+"question": "What small, round, green citrus fruit is very popular in the Philippines for making juice rich in Vitamin C?",
+"options": ["Mango", "Calamansi", "Coconut", "Watermelon"],
+"correct_index": 1
+},
+{
+"question": "Which of these is an example of a 'Grow' food that helps Filipino children build strong muscles?",
+"options": ["Kamote (Sweet Potato)", "Saging (Banana)", "Isda (Fish)", "Tinapay (Bread)"],
+"correct_index": 2
+},
+{
+"question": "What is the visual guide created by the government to help Filipinos eat a balanced healthy meal on a single plate?",
+"options": ["Pinggang Pinoy", "Food Pyramid", "Nutri-Plate", "Magic Plate"],
+"correct_index": 0
+},
+{
+"question": "Why is it important to eat 'Glow' foods like papaya and squash?",
+"options": ["They give us energy to run", "They help build our muscles", "They protect us from sickness and keep skin healthy", "They make us sleepy"],
+"correct_index": 2
+},
+{
+"question": "What nutritious drink is given in school feeding programs to help strengthen bones and teeth?",
+"options": ["Softdrinks", "Milk", "Coffee", "Iced Tea"],
+"correct_index": 1
+}
 ]

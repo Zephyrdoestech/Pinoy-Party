@@ -14,6 +14,8 @@ func _ready() -> void:
 		tiles[i].tile_index = i
 		tiles[i]._update_visual()
 
+	if tiles.size() != Constants.TOTAL_TILES:
+		push_error("[Board] Scene has %d tile nodes but Constants.TOTAL_TILES is %d — board and game-over logic will disagree." % [tiles.size(), Constants.TOTAL_TILES])
 #func generate_board() -> void:
 	#for child in get_children():
 		#child.queue_free()

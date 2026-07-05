@@ -54,7 +54,7 @@ func _on_game_over(winner_index: int) -> void:
 	headline.text = "%s Wins!" % winner_data["name"]
 	headline.modulate = winner_data["color"]
 
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		var p: Dictionary = GameManager.players[i]
 		var label: Label = score_rows[i]
 		label.text = "%s: %d" % [p["name"], p["score"]]
@@ -66,5 +66,4 @@ func _on_game_over(winner_index: int) -> void:
 
 func _on_restart_pressed() -> void:
 	visible = false
-	GameManager.reset_for_new_game()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	NetworkManager.request_restart.rpc_id(1)
