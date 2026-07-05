@@ -10,7 +10,7 @@ const SCREEN_MARGIN := 100.0
 const LAYER_HEIGHT := 100.0
 const COLUMN_SPACING := 350.0   # must stay <= your real max horizontal jump distance
 const PLATFORM_WIDTH := 150.0
-
+const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_langit_lupa.png"
 # Set from NetworkManager.get_my_player_index() at start_game() - replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
@@ -45,8 +45,99 @@ func start_game(players: Array[int]) -> void:
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
 	flood_sprite.play("default") 
+	
+	gameplay_locked = true
+	_show_intro_tutorial_synced()
+	
 	await run_intro("")
 	if NetworkManager.is_host:
+		NetworkManager.sync_langitlupa_start.rpc()
+
+## Builds the blurring layout wrapper on every client machine locally
+func _show_intro_tutorial_synced() -> void:
+	var overlay := CanvasLayer.new()
+	overlay.layer = 128 # High sorting layer priority to keep it on top
+	add_child(overlay)
+	
+	# 1. Background Blur Shield
+	var blur_rect := ColorRect.new()
+	blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item;\n" + \
+				  "uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;\n" + \
+				  "uniform float lod: hint_range(0.0, 5.0) = 2.5;\n" + \
+				  "void fragment() {\n" + \
+				  "    COLOR = textureLod(screen_texture, SCREEN_UV, lod);\n" + \
+				  "}"
+	
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	blur_rect.material = mat
+	overlay.add_child(blur_rect)
+	
+	# 2. Invisible Full-Screen Click Target Area
+	var click_zone := TextureButton.new()
+	click_zone.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(click_zone)
+	
+	# 3. Tutorial Graphical Slide Image
+	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
+	if tut_texture:
+		var tut_rect := TextureRect.new()
+		tut_rect.texture = tut_texture
+		tut_rect.set_anchors_preset(Control.PRESET_CENTER)
+		tut_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
+		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		click_zone.add_child(tut_rect)
+		
+	# 4. Interactive Notice Label
+	var flash_label := Label.new()
+	flash_label.set_anchors_preset(Control.PRESET_CENTER)
+	flash_label.position.y += 250
+	flash_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	flash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	click_zone.add_child(flash_label)
+	
+	# Evaluate authority permissions
+	var is_offline := not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	var can_interact := is_offline or NetworkManager.is_host
+	
+	if can_interact:
+		flash_label.text = "Click anywhere to start the round..."
+		var tween = create_tween().set_loops()
+		tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
+		
+		click_zone.pressed.connect(func():
+			tween.kill()
+			if is_offline:
+				_sync_dismiss_tutorial_and_start()
+			else:
+				rpc("_sync_dismiss_tutorial_and_start")
+		)
+	else:
+		flash_label.text = "Waiting for host to dismiss tutorial..."
+		flash_label.modulate.a = 0.7
+		click_zone.disabled = true
+
+
+# 🌟 Synced network execution broadcast
+@rpc("authority", "call_local", "reliable")
+func _sync_dismiss_tutorial_and_start() -> void:
+	# 1. Clean up the custom tutorial CanvasLayer on everyone's screen
+	for child in get_children():
+		if child is CanvasLayer and child.layer == 128:
+			child.queue_free()
+			
+	# 2. Lift the block so physics engine and loops run together on the same frame
+	gameplay_locked = false
+	round_start_msec = Time.get_ticks_msec()
+	round_active = true
+	
+	# 3. Host signals the underlying server network state to listen for inputs
+	if NetworkManager.is_host and multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		NetworkManager.sync_langitlupa_start.rpc()
 
 func _position_players() -> void:
@@ -126,11 +217,8 @@ func _get_player_node(idx: int) -> CharacterBody2D:
 	return get_node("Players/Player %d" % (idx + 1))
 
 func _process(delta: float) -> void:
-	if gameplay_locked:
+	if not round_active or gameplay_locked:
 		return
-
-	if not round_active:
-		round_active = true
 
 	# Position sync - local client sends its position to host at POSITION_SYNC_HZ.
 	_position_sync_timer += delta
@@ -151,7 +239,7 @@ func _process(delta: float) -> void:
 		_check_goal()
 
 func _physics_process(delta: float) -> void:
-	if gameplay_locked:
+	if not round_active or gameplay_locked:
 		return
 	if local_player_index == -1 or not alive_players.has(local_player_index):
 		return

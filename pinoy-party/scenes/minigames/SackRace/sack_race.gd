@@ -23,20 +23,18 @@ func _get_track_node(player_idx: int) -> Node2D:
 	return node
 
 func start_game(players: Array[int]) -> void:
-	# 1. Run the base minigame startup rules on the host
 	super.start_game(players)
 	
-	# 2. 🌟 BROADCAST TO ALL CLIENTS
 	# If we are online, the host tells everyone to execute the visual positioning logic
 	if multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		if NetworkManager.is_host:
 			rpc("_sync_local_client_setup", players)
 	else:
-		# Offline fallback sandbox mode
+		# Offline fallback
 		_sync_local_client_setup(players)
 
 
-# 🌟 New synchronized RPC function that configures the UI for EVERY client player
+# synchronized RPC function that configures the UI for each client player
 @rpc("authority", "call_local", "reliable")
 func _sync_local_client_setup(players: Array[int]) -> void:
 	# Move variables to local scope for everyone
@@ -50,15 +48,12 @@ func _sync_local_client_setup(players: Array[int]) -> void:
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
 
-	# 🌟 MOVE THE COUNTDOWN LABEL DOWNWARD FOR EVERYONE
-	var countdown_label = get_node_or_null("UI/TimerLabel") 
+	var countdown_label = get_node_or_null("UI/CountdownLabel") 
 	if countdown_label:
 		countdown_label.position.y += 400.0 
 
-	# 🌟 SPAWN TUTORIAL FOR EVERYONE
 	var tutorial_overlay := _show_intro_tutorial()
 	
-	# Keep an internal tracking method to clear it out when run_intro finishes
 	_manage_client_intro_lifecycle(tutorial_overlay)
 
 

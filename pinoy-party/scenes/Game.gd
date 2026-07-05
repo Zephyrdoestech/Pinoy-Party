@@ -39,20 +39,19 @@ func _ready() -> void:
 	_show_tutorial_overlay()
 	
 func _show_tutorial_overlay() -> void:
-	# Freeze the gameplay loop underneath
 	get_tree().paused = true
 	
-	# Create the canvas layer wrapper
+	# canvas layer wrapper
 	var overlay := CanvasLayer.new()
 	overlay.layer = 100
 	overlay.process_mode = PROCESS_MODE_ALWAYS 
 	add_child(overlay)
 	
-	# Create blur
+	# blur
 	var blur_rect := ColorRect.new()
 	blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	
-	# Create a runtime canvas shader to process the background pixels safely
+	# runtime canvas shader to process the background pixels safely
 	var shader := Shader.new()
 	shader.code = "shader_type canvas_item;\n" + \
 				  "uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;\n" + \
@@ -66,12 +65,11 @@ func _show_tutorial_overlay() -> void:
 	blur_rect.material = mat
 	overlay.add_child(blur_rect)
 	
-	# Create a clickable, full-screen background controller
 	var click_zone := TextureButton.new()
 	click_zone.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(click_zone)
 	
-	# Display the tutorial graphic layout
+	# Displays the tutorial graphic layout
 	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
 	if tut_texture:
 		var tut_rect := TextureRect.new()
@@ -82,7 +80,7 @@ func _show_tutorial_overlay() -> void:
 		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		click_zone.add_child(tut_rect)
 	
-	# Click to clean up and unpause execution layout
+	# clean up and unpause execution layout
 	click_zone.pressed.connect(func():
 		overlay.queue_free() # Destroys the image and the blur rect
 		get_tree().paused = false
