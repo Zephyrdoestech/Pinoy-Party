@@ -17,8 +17,6 @@ func enter() -> void:
 	var gm: GameManager = GameManager
 	var player_idx: int = gm.current_player_index
 
-	print("[EndTurn] Ending turn for Player %d." % player_idx)
-
 	# 1. Persist turn-end state.
 	_save_state(gm)
 
@@ -28,7 +26,6 @@ func enter() -> void:
 	# 3. Check win condition before advancing.
 	if _check_game_over(gm):
 		var winner: int = gm._get_winner()
-		print("[EndTurn] Game over! Winner is Player %d." % winner)
 		gm.state = Enums.GameState.GAME_OVER
 		EventBus.game_over.emit(winner)
 		# Do NOT loop back – the game is finished.
@@ -36,8 +33,6 @@ func enter() -> void:
 
 	# 4. Advance the player index (wrap around with modulo).
 	gm.current_player_index = (player_idx + 1) % gm.active_player_count
-
-	print("[EndTurn] Next player: %d." % gm.current_player_index)
 
 	# 5. Loop back to the start of the next player's turn.
 	request_transition(&"State_StartTurn")

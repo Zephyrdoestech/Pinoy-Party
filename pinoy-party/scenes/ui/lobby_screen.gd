@@ -59,7 +59,6 @@ func _on_host_pressed() -> void:
 	NetworkManager.host_lobby(host_join_panel.get_node("NameInput").text)
 
 func _on_join_pressed() -> void:
-	print("_on_join_pressed fired")
 	var join_ip_input: LineEdit = host_join_panel.get_node("JoinIPInput")
 	var join_code_input: LineEdit = host_join_panel.get_node("JoinCodeInput")
 	var name_input: LineEdit = host_join_panel.get_node("NameInput")

@@ -52,7 +52,6 @@ func _position_players() -> void:
 		var idx: int = participating_players[i]
 		var node := _get_player_node(idx)
 		node.position = spawn_pos + Vector2(i * 40.0 - 60.0, -30.0)
-	var spawn_collider: CollisionShape2D = $Platforms/SpawnPlatform/CollisionShape2D
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
@@ -151,10 +150,8 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if gameplay_locked:
-		print("[LangitLupa] blocked: gameplay_locked")
 		return
 	if local_player_index == -1 or not alive_players.has(local_player_index):
-		print("[LangitLupa] blocked: local_player_index=%s alive=%s" % [local_player_index, alive_players])
 		return
 
 	var player := _get_player_node(local_player_index)
@@ -177,9 +174,6 @@ func _physics_process(delta: float) -> void:
 		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
 
 	player.move_and_slide()
-	if player.get_slide_collision_count() > 0:
-		var col := player.get_slide_collision(0)
-		print("[LangitLupa] landed on: %s at %s" % [col.get_collider().name, col.get_collider().global_position])
 
 func _get_flood_y() -> float:
 	var elapsed_sec := (Time.get_ticks_msec() - round_start_msec) / 1000.0
@@ -216,7 +210,6 @@ func _finish_player(idx: int) -> void:
 		return  # already finished or already flooded — guard against double-fire
 	alive_players.erase(idx)
 	finished_players.append(idx)
-	print("[LangitLupa] Player %d reached the goal! (place %d)" % [idx, finished_players.size()])
 	if alive_players.size() <= 1:
 		NetworkManager.sync_langitlupa_end.rpc(_compute_final_scores())
 
@@ -233,7 +226,6 @@ func _eliminate_player(idx: int) -> void:
 ## Called on every peer (including host) when NetworkManager broadcasts an elimination.
 func apply_elimination(player_idx: int) -> void:
 	_get_player_node(player_idx).modulate.a = 0.3
-	print("[LangitLupa] Player %d caught by the flood!" % player_idx)
 
 func _compute_final_scores() -> Dictionary:
 	var placement_points := [3, 2, 1]
