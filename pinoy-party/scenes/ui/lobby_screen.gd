@@ -35,7 +35,10 @@ func _ready() -> void:
 		"CenterContainer/VBoxContainer/StartButton",
 		"LobbyPanel/StartButton"
 	]) as TextureButton
-	status_label = _find_required_node("StatusLabel", ["StatusLabel"]) as Label
+	status_label = _find_required_node("StatusLabel", [
+		"LobbyContainer/Control/VBoxContainer/StatusLabel",
+		"StatusLabel"
+	]) as Label
 
 	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null:
 		return
