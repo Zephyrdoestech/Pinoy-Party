@@ -1,0 +1,93 @@
+[gd_scene format=3 uid="uid://c8ua4xdvwwvjn"]
+
+[ext_resource type="Texture2D" uid="uid://lu85r0oplr0p" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_bg.png" id="1_ec4lo"]
+[ext_resource type="Texture2D" uid="uid://c1hfpanojsaeq" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building6.png" id="2_jxrk7"]
+[ext_resource type="Texture2D" uid="uid://552gclrw4x6i" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building4.png" id="3_iwe7p"]
+[ext_resource type="Texture2D" uid="uid://dqpx1x1pkrkha" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building2.png" id="4_pkldg"]
+[ext_resource type="Texture2D" uid="uid://bgrqypebin53r" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building1.png" id="5_t0vb0"]
+[ext_resource type="Texture2D" uid="uid://dy08xb7fxshe4" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building5.png" id="6_oqlja"]
+[ext_resource type="Texture2D" uid="uid://bfm8bgvr1e3hu" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building3.png" id="7_qcgck"]
+[ext_resource type="PackedScene" uid="uid://nidyxrgqfp0k" path="res://scenes/minigames/LuksongBaka/minigame_character.tscn" id="8_iwe7p"]
+[ext_resource type="Texture2D" uid="uid://dvlvjr8k6pnwv" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle1.png" id="8_pkldg"]
+[ext_resource type="PackedScene" uid="uid://cwhh1x44g3c3n" path="res://scenes/minigames/LuksongBaka/player_bar_ui.tscn" id="9_pkldg"]
+
+[node name="PlayerQuadrant" type="SubViewportContainer" unique_id=161038997]
+offset_right = 472.0
+offset_bottom = 320.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=51279270]
+handle_input_locally = false
+size = Vector2i(472, 320)
+render_target_update_mode = 4
+
+[node name="Parallax2D" type="Parallax2D" parent="SubViewport" unique_id=547097920]
+repeat_size = Vector2(1800, 0)
+autoscroll = Vector2(-400, 0)
+
+[node name="BG" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1811716492]
+position = Vector2(960, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("1_ec4lo")
+
+[node name="BG4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=672349213]
+position = Vector2(320, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("1_ec4lo")
+
+[node name="BG2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1534743825]
+position = Vector2(1600, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("1_ec4lo")
+
+[node name="Building1" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=210857944]
+position = Vector2(664, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("2_jxrk7")
+
+[node name="Building2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=389599442]
+position = Vector2(1192, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("3_iwe7p")
+
+[node name="Building3" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=503958685]
+position = Vector2(1448, 176)
+scale = Vector2(4, 4)
+texture = ExtResource("4_pkldg")
+
+[node name="Building4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1667406001]
+position = Vector2(-64, 176)
+scale = Vector2(4, 4)
+texture = ExtResource("5_t0vb0")
+
+[node name="Building5" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1180793557]
+position = Vector2(368, 192)
+scale = Vector2(4, 4)
+texture = ExtResource("6_oqlja")
+
+[node name="Building6" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=912088263]
+position = Vector2(704, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("7_qcgck")
+
+[node name="Building9" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1018977225]
+position = Vector2(1728, 184)
+scale = Vector2(4, 4)
+texture = ExtResource("7_qcgck")
+
+[node name="Camera2D" type="Camera2D" parent="SubViewport" unique_id=931671746]
+anchor_mode = 0
+
+[node name="Obstacle" type="Sprite2D" parent="SubViewport" unique_id=791024491]
+position = Vector2(286, 256)
+scale = Vector2(3.9999995, 3.9999995)
+texture = ExtResource("8_pkldg")
+
+[node name="Character" parent="SubViewport" unique_id=1087832396 instance=ExtResource("8_iwe7p")]
+position = Vector2(48, 256)
+scale = Vector2(0.083, 0.083)
+
+[node name="PlayerBarUI" parent="." unique_id=1810153676 instance=ExtResource("9_pkldg")]
+layout_mode = 2

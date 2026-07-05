@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://cll00chcsrh7b"]
+
+[ext_resource type="Script" uid="uid://bqnh43oeiwec6" path="res://scenes/minigames/SackRace/sack_race.gd" id="1_wmqyi"]
+
+[node name="SackRace" type="Node2D" unique_id=1414252881]
+script = ExtResource("1_wmqyi")
+
+[node name="Tracks" type="Node2D" parent="." unique_id=963667019]
+
+[node name="Player 1" type="ColorRect" parent="Tracks" unique_id=154553668]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Player 2" type="ColorRect" parent="Tracks" unique_id=1264256216]
+offset_top = 200.0
+offset_right = 40.0
+offset_bottom = 240.0
+
+[node name="Player 3" type="ColorRect" parent="Tracks" unique_id=2050587001]
+offset_top = 400.0
+offset_right = 40.0
+offset_bottom = 440.0
+
+[node name="Player 4" type="ColorRect" parent="Tracks" unique_id=668938210]
+offset_left = 1.0
+offset_top = 600.0
+offset_right = 41.0
+offset_bottom = 645.0
+
+[node name="Finish Line" type="ColorRect" parent="." unique_id=997488694]
+offset_left = 900.0
+offset_right = 942.0
+offset_bottom = 649.0
+color = Color(0, 0, 0, 1)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1526385548]
+
+[node name="StatusLabel" type="Label" parent="UI" unique_id=973152409]
+visible = false
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="TimerLabel" type="Label" parent="UI" unique_id=915730029]
+offset_left = 946.0
+offset_top = 2.0
+offset_right = 1061.0
+offset_bottom = 79.0
+theme_override_font_sizes/font_size = 36

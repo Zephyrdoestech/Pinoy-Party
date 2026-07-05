@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://bpa7rdgj5r1e4"]
+
+[ext_resource type="Script" uid="uid://db2g7lb16tosu" path="res://scenes/minigames/LangitLupa/langit_lupa.gd" id="1_ncfyi"]
+
+[node name="LangitLupa" type="Node2D" unique_id=1057970935]
+script = ExtResource("1_ncfyi")
+
+[node name="Areas" type="Node2D" parent="." unique_id=601966709]
+
+[node name="Area0" type="ColorRect" parent="Areas" unique_id=1046669822]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Area1" type="ColorRect" parent="Areas" unique_id=762900140]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Area2" type="ColorRect" parent="Areas" unique_id=1100885044]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Area3" type="ColorRect" parent="Areas" unique_id=1640034057]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Area4" type="ColorRect" parent="Areas" unique_id=723471486]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Area5" type="ColorRect" parent="Areas" unique_id=927363358]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Players" type="Node2D" parent="." unique_id=1469192264]
+
+[node name="Player 1" type="ColorRect" parent="Players" unique_id=1655790277]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Player 2" type="ColorRect" parent="Players" unique_id=610307793]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Player 3" type="ColorRect" parent="Players" unique_id=1307919762]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Player 4" type="ColorRect" parent="Players" unique_id=1908967927]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1568367716]
+
+[node name="ItLabel" type="Label" parent="UI" unique_id=690729628]
+offset_left = 336.0
+offset_top = 11.0
+offset_right = 438.0
+offset_bottom = 34.0
+text = "Player X is IT!"
+
+[node name="TimerLabel" type="Label" parent="UI" unique_id=1654470388]
+offset_left = 1051.0
+offset_top = 17.0
+offset_right = 1091.0
+offset_bottom = 40.0
