@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://drsac63qdnnte"]
+[gd_scene load_steps=0 format=3 uid="uid://drsac63qdnnte"]
 
 [ext_resource type="Texture2D" uid="uid://daq0scn0ujl8j" path="res://assets/characters/minigame_characs/mg_c3/mg_charac3_jumpLeft.PNG" id="1_ddsn3"]
 [ext_resource type="Texture2D" uid="uid://w8x0rt58ansq" path="res://assets/characters/minigame_characs/mg_c3/mg_charac3_walkRight.PNG" id="2_3ecs4"]

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://di03yrig3tdum"]
+[gd_scene load_steps=0 format=3 uid="uid://di03yrig3tdum"]
 
 [ext_resource type="Script" uid="uid://ddkyvvv231fah" path="res://scenes/ui/toast_notification.gd" id="1_bdg73"]
 
