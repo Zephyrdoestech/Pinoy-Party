@@ -106,6 +106,10 @@ func join_lobby(code: String, ip: String, player_name: String) -> void:
 	is_host = false
 	_pending_name = player_name
 
+	if not ip.is_valid_ip_address() and ip != "localhost":
+		join_failed.emit("Invalid IP Address format")
+		return
+
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
 	if err != OK:
