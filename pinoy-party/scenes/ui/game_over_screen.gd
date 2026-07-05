@@ -52,6 +52,8 @@ func _ready() -> void:
 	restart_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	restart_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	restart_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	restart_button.offset_left = -80
+	restart_button.offset_right = 80
 	restart_button.offset_bottom = -60
 	restart_button.offset_top = -108
 
