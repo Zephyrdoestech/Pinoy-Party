@@ -14,10 +14,12 @@ const PLATFORM_WIDTH := 150.0
 # Set from NetworkManager.get_my_player_index() at start_game() — replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
-
+var facing_right := true
 var alive_players: Array[int] = []
 var elimination_order: Array = []      # Array[Array[int]] — tie-groups, in elimination order
 var flood_start_y: float
+@onready var flood: Area2D = $Flood
+@onready var flood_sprite: AnimatedSprite2D = $"Flood/flood sprite"
 var round_start_msec: int
 var round_active: bool = false
 var _coyote_timer: float = 0.
@@ -42,6 +44,7 @@ func start_game(players: Array[int]) -> void:
 	_hide_inactive_players()
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
+	flood_sprite.play("default") 
 	await run_intro("")
 	if NetworkManager.is_host:
 		NetworkManager.sync_langitlupa_start.rpc()
@@ -139,7 +142,6 @@ func _process(delta: float) -> void:
 				NetworkManager.process_langitlupa_position(local_player_index, my_pos)
 			else:
 				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
-
 	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
@@ -147,6 +149,9 @@ func _process(delta: float) -> void:
 	if NetworkManager.is_host:
 		_check_flood()
 		_check_goal()
+	# Local mode
+	_check_flood()
+	_check_goal()
 
 func _physics_process(delta: float) -> void:
 	if gameplay_locked:
@@ -155,6 +160,16 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var player := _get_player_node(local_player_index)
+	var sprite: AnimatedSprite2D
+	match local_player_index:
+		0:
+			sprite = player.get_node("player1node")
+		1:
+			sprite = player.get_node("player2node")
+		2:
+			sprite = player.get_node("player3node")
+		3:
+			sprite = player.get_node("player4node")
 	player.velocity.y += GRAVITY * delta
 
 	if player.is_on_floor():
@@ -163,16 +178,44 @@ func _physics_process(delta: float) -> void:
 		_coyote_timer -= delta
 
 	var direction := 0.0
+
 	if Input.is_action_pressed("move_left"):
-		direction -= 1.0
-	if Input.is_action_pressed("move_right"):
-		direction += 1.0
+		direction = -1.0
+	elif Input.is_action_pressed("move_right"):
+		direction = 1.0
+
 	player.velocity.x = direction * MOVE_SPEED
+	if direction > 0:
+		facing_right = true
+	elif direction < 0:
+		facing_right = false
 
 	if Input.is_action_just_pressed("jump") and _coyote_timer > 0.0:
 		player.velocity.y = JUMP_VELOCITY
 		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
-
+	
+	if not player.is_on_floor():
+		if facing_right:
+			if sprite.animation != "jumpRight":
+				sprite.play("jumpRight")
+		else:
+			if sprite.animation != "jumpLeft":
+				sprite.play("jumpLeft")
+	elif direction != 0:
+		if facing_right:
+			if sprite.animation != "walkRight":
+				sprite.play("walkRight")
+		else:
+			if sprite.animation != "walkLeft":
+				sprite.play("walkLeft")
+	else:
+		if facing_right:
+			if sprite.animation != "idleRight":
+				sprite.play("idleRight")
+		else:
+			if sprite.animation != "idleLeft":
+				sprite.play("idleLeft")
+				
 	player.move_and_slide()
 
 func _get_flood_y() -> float:

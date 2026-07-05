@@ -15,6 +15,7 @@ const INTRO_DIM_ALPHA := 0.85       # background is barely visible during intro
 const ANNOUNCEMENT_DURATION := 2.0  # seconds
 const COUNTDOWN_DURATION := 3.0     # seconds (3, 2, 1)
 
+
 ## Subclasses MUST check this at the top of _process() and bail out early
 ## (`if gameplay_locked: return`) until run_intro() finishes. This is what
 ## actually prevents movement/timers/tagging from running during the intro.
