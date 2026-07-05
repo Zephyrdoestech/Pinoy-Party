@@ -60,7 +60,8 @@ func _ready() -> void:
 	NetworkManager.start_listening_for_lobbies()
 
 func _on_host_pressed() -> void:
-	var player_name := host_join_panel.get_node("NameInput").text.strip_edges()
+	var name_input: LineEdit = host_join_panel.get_node("NameInput")
+	var player_name: String = name_input.text.strip_edges()
 	if player_name.is_empty():
 		status_label.text = "Please enter your name!"
 		return
