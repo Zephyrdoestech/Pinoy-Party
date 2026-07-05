@@ -89,7 +89,10 @@ func _process(_delta: float) -> void:
 func join_lobby_by_code(code: String, player_name: String) -> void:
 	code = code.to_upper()
 	if not discovered_lobbies.has(code):
-		join_failed.emit("Lobby not found! (Check code or enter IP manually)")
+		if OS.has_feature("debug"):
+			join_lobby(code, "127.0.0.1", player_name)
+		else:
+			join_failed.emit("Lobby not found! (Check code or enter IP manually)")
 		return
 	join_lobby(code, discovered_lobbies[code]["ip"], player_name)
 
