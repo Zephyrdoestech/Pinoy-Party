@@ -24,14 +24,30 @@ func _ready() -> void:
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	panel.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(panel)
+
 	headline = Label.new()
 	headline.add_theme_font_size_override("font_size", 56)
 	headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	headline.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	headline.position.y = 100.0 
 	if custom_font:
 		headline.add_theme_font_override("font", custom_font)
-	add_child(headline)
+	panel.add_child(headline)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 24)
+	panel.add_child(spacer)
+
+	for i in Constants.MAX_PLAYERS:
+		var score_label := Label.new()
+		score_label.add_theme_font_size_override("font_size", 24)
+		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if custom_font:
+			score_label.add_theme_font_override("font", custom_font)
+		panel.add_child(score_label)
+		score_rows.append(score_label)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 24)
+	panel.add_child(spacer2)
 
 	restart_button = Button.new()
 	restart_button.text = "Play Again"
@@ -41,11 +57,15 @@ func _ready() -> void:
 		restart_button.add_theme_font_override("font", custom_font)
 		restart_button.add_theme_font_size_override("font_size", 20)
 	add_child(restart_button)
-	restart_button.set_anchors_preset(Control.PRESET_CENTER)
-	restart_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	restart_button.grow_vertical = Control.GROW_DIRECTION_BOTH
 	
-	restart_button.position.y += 120.0
+	restart_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	restart_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	restart_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	restart_button.offset_left = -80
+	restart_button.offset_right = 80
+	restart_button.offset_bottom = -60
+	restart_button.offset_top = -108
+	
 	EventBus.game_over.connect(_on_game_over)
 
 func _on_game_over(winner_index: int) -> void:
@@ -59,7 +79,6 @@ func _on_game_over(winner_index: int) -> void:
 			var p: Dictionary = GameManager.players[i]
 			label.text = "%s: %d" % [p["name"], p["score"]]
 			label.modulate = p["color"]
-			# Make the winner's row stand out among the rest.
 			label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
 			label.show()
 		else:
