@@ -271,6 +271,7 @@ func _try_jump(player_idx: int) -> void:
 		return
 
 	print("✅ All guards passed! Processing jump calculations...")
+	play_jump_sfx()
 	jumped_this_round[player_idx] = true
 	var in_zone: bool = marker_t >= zone_start and marker_t <= (zone_start + zone_width)
 	var status: Label = bars[player_idx].get_node_or_null("Status")
@@ -373,6 +374,7 @@ func _end_round_sweep() -> void:
 func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 	if not alive_players.has(player_idx):
 		return
+	play_jump_sfx()
 	jumped_this_round[player_idx] = true
 	var status: Label = bars[player_idx].get_node_or_null("Status")
 	if status:
