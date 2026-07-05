@@ -13,7 +13,6 @@ extends Node2D
 @export var texture_game: Texture2D
 
 func _ready() -> void:
-	print("Tile ", name, " is alive! Type is: ", tile_type)
 	_update_visual()
 
 func _update_visual() -> void:

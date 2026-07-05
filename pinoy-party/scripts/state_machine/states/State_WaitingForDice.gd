@@ -20,8 +20,6 @@ func enter() -> void:
 	var gm: GameManager = GameManager
 	var player_idx: int = gm.current_player_index
 
-	print("[WaitingForDice] Waiting for Player %d to roll…" % player_idx)
-
 	# Update the GameManager's legacy state enum so Game.gd's roll-guard still
 	# works while we migrate to the FSM incrementally.
 	gm.state = Enums.GameState.ROLLING
@@ -55,8 +53,6 @@ func _on_dice_rolled(player_index: int, result: int) -> void:
 			% [player_index, gm.current_player_index]
 		)
 		return
-
-	print("[WaitingForDice] Player %d rolled a %d." % [player_index, result])
 
 	# Store the roll result so State_Moving can read it.
 	gm.pending_roll = result

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://b3u5o816wh5t3"]
+
+[ext_resource type="Script" uid="uid://ysppl0n0baq1" path="res://scenes/player/player_token.gd" id="1_rf7oy"]
+
+[node name="PlayerToken" type="Node2D" unique_id=1295295330]
+script = ExtResource("1_rf7oy")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1682481046]
+
+[node name="Label" type="Label" parent="." unique_id=1706046835]
+offset_right = 40.0
+offset_bottom = 23.0

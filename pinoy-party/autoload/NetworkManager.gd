@@ -67,14 +67,12 @@ func _start_broadcasting() -> void:
 func _send_broadcast() -> void:
 	var msg := "PINOYPARTY|%s" % lobby_code
 	_discovery_socket.set_dest_address("255.255.255.255", DISCOVERY_PORT)
-	var err := _discovery_socket.put_packet(msg.to_utf8_buffer())
-	print("Broadcasting lobby code: ", lobby_code, " err=", err)
+	_discovery_socket.put_packet(msg.to_utf8_buffer())
 
 func start_listening_for_lobbies() -> void:
 	discovered_lobbies.clear()
 	_discovery_socket = PacketPeerUDP.new()
-	var err := _discovery_socket.bind(DISCOVERY_PORT)
-	print("Discovery bind result: ", err)
+	_discovery_socket.bind(DISCOVERY_PORT)
 	set_process(true)
 
 func _process(_delta: float) -> void:
@@ -104,30 +102,25 @@ func stop_discovery() -> void:
 		_broadcast_timer.queue_free()
 
 func join_lobby(code: String, ip: String, player_name: String) -> void:
-	print("join_lobby called: code=", code, " ip=", ip, " name=", player_name)
 	lobby_code = code.to_upper()
 	is_host = false
 	_pending_name = player_name
 
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
-	print("create_client result: ", err)
 	if err != OK:
 		join_failed.emit("Could not reach host")
 		return
 	multiplayer.multiplayer_peer = peer
 
 func _on_connected_ok() -> void:
-	print("Connected to host, registering as: ", _pending_name)
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
-	print("Connection failed")
 	join_failed.emit("Connection failed")
 
 @rpc("any_peer", "reliable")
 func _register_player(player_name: String, code: String) -> void:
-	print("_register_player called on host: name=", player_name, " code=", code)
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
@@ -151,7 +144,7 @@ func _sync_player_list(players: Dictionary) -> void:
 	connected_players = players
 	roster_updated.emit()
 
-func _on_peer_connected(id: int) -> void:
+func _on_peer_connected(_id: int) -> void:
 	if not is_host:
 		stop_discovery()
 
@@ -232,24 +225,19 @@ func request_roll() -> void:
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
-	print("request_roll received, raw sender_id=", sender_id)
 	if sender_id == 0:
 		sender_id = multiplayer.get_unique_id()
 	_process_roll_request(sender_id)
 
 func _process_roll_request(sender_id: int) -> void:
 	var sender_player_idx: int = peer_to_player_index.get(sender_id, -1)
-	print("Resolved sender_id=", sender_id, " to player_idx=", sender_player_idx, " (current turn=", GameManager.current_player_index, ")")
 	if sender_player_idx != GameManager.current_player_index:
-		print("Rejected roll — not this peer's turn")
 		return
 	var result := randi_range(1, Constants.DICE_FACES)
-	print("Rolled: ", result, " — broadcasting to all peers")
 	rpc("_apply_roll_result", result)
 
 @rpc("authority", "reliable", "call_local")
 func _apply_roll_result(result: int) -> void:
-	print("_apply_roll_result received: ", result)
 	GameManager.on_dice_rolled(result)
 
 # --- Minigame launch sync ---
@@ -265,7 +253,6 @@ func start_minigame_synced(participating_players: Array[int]) -> void:
 
 @rpc("authority", "reliable", "call_local")
 func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
-	print("Launching synced minigame: ", minigame_id)
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
 
@@ -308,7 +295,7 @@ func request_luksong_jump(player_idx: int, client_marker_t: float) -> void:
 		return  # client tried to jump for a player it doesn't control
 	process_luksong_jump(player_idx, client_marker_t)
 
-func process_luksong_jump(player_idx: int, client_marker_t: float) -> void:
+func process_luksong_jump(player_idx: int, _client_marker_t: float) -> void:
 	var scene := get_tree().current_scene
 	if not scene is LuksongBaka:
 		return
@@ -402,7 +389,11 @@ func _load_trivia_questions() -> void:
 	_trivia_questions = parsed if parsed is Array else []
 
 func start_trivia_synced(answering_player_idx: int) -> void:
-	if not is_host:
+	# In a local/offline debug session, host_lobby() is never called so
+	# is_host stays false.  Treat the session as host if no real peer exists.
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if not is_host and not offline:
 		return
 	_load_trivia_questions()
 	if _trivia_questions.is_empty():
@@ -412,7 +403,12 @@ func start_trivia_synced(answering_player_idx: int) -> void:
 	_trivia_answering_player = answering_player_idx
 	_trivia_round_id += 1
 	var this_round_id: int = _trivia_round_id
-	rpc("_apply_trivia_start", _current_trivia["question"], _current_trivia["options"], answering_player_idx)
+
+	if offline:
+		# No ENet peer — call directly instead of via RPC.
+		_apply_trivia_start(_current_trivia["question"], _current_trivia["options"], answering_player_idx)
+	else:
+		rpc("_apply_trivia_start", _current_trivia["question"], _current_trivia["options"], answering_player_idx)
 
 	# Auto-reveal after the answer window, regardless of whether everyone
 	# answered — mirrors SackRace's RACE_TIMEOUT pattern (don't let one
@@ -426,6 +422,7 @@ func start_trivia_synced(answering_player_idx: int) -> void:
 	# round bleeding into a later one.
 	if this_round_id == _trivia_round_id:
 		_reveal_trivia_results()
+
 
 @rpc("authority", "reliable", "call_local")
 func _apply_trivia_start(question: String, options: Array, answering_player_idx: int) -> void:
@@ -460,11 +457,20 @@ func _reveal_trivia_results() -> void:
 	for idx in _trivia_answers:
 		if _trivia_answers[idx] == correct_idx:
 			scores[idx] = Constants.TRIVIA_POINTS
-	rpc("_apply_trivia_reveal", scores, correct_idx)
 	_current_trivia = {}  # guard against double-reveal
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_apply_trivia_reveal(scores, correct_idx)
+	else:
+		rpc("_apply_trivia_reveal", scores, correct_idx)
 
 @rpc("authority", "reliable", "call_local")
 func _apply_trivia_reveal(scores: Dictionary, correct_idx: int) -> void:
+	if TriviaController == null or not TriviaController.visible:
+		# Overlay was never shown on this peer — just propagate the score signal.
+		EventBus.trivia_finished.emit(scores)
+		return
 	TriviaController.show_results(scores, correct_idx)
 	EventBus.trivia_finished.emit(scores)
 
@@ -474,3 +480,14 @@ func _generate_code() -> String:
 	for i in 5:
 		code += CHARS[randi() % CHARS.length()]
 	return code
+
+@rpc("any_peer", "call_local", "reliable")
+func request_restart() -> void:
+	if not is_host:
+		return
+	_apply_restart.rpc()
+
+@rpc("authority", "call_local", "reliable")
+func _apply_restart() -> void:
+	GameManager.reset_for_new_game()
+	get_tree().change_scene_to_file("res://scenes/Game.tscn")

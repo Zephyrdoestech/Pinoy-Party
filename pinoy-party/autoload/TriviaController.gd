@@ -197,7 +197,11 @@ func _on_option_unhovered(option_idx: int) -> void:
 
 func _on_option_pressed(option_idx: int) -> void:
 	var my_idx: int = NetworkManager.get_my_player_index()
-	if my_idx == -1 or _has_submitted:
+	# In offline/local play there is no ENet peer, so get_my_player_index()
+	# returns -1.  Fall back to the current turn's player so answers still work.
+	if my_idx == -1:
+		my_idx = GameManager.current_player_index
+	if _has_submitted:
 		return
 
 	_has_submitted = true
@@ -205,7 +209,9 @@ func _on_option_pressed(option_idx: int) -> void:
 	_current_selection = option_idx
 	_show_only_selected_option()
 
-	if NetworkManager.is_host:
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if NetworkManager.is_host or offline:
 		NetworkManager.process_trivia_answer(my_idx, option_idx)
 	else:
 		NetworkManager.request_trivia_answer.rpc_id(1, my_idx, option_idx)

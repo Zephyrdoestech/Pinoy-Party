@@ -14,6 +14,8 @@ func _ready() -> void:
 		tiles[i].tile_index = i
 		tiles[i]._update_visual()
 
+	if tiles.size() != Constants.TOTAL_TILES:
+		push_error("[Board] Scene has %d tile nodes but Constants.TOTAL_TILES is %d — board and game-over logic will disagree." % [tiles.size(), Constants.TOTAL_TILES])
 #func generate_board() -> void:
 	#for child in get_children():
 		#child.queue_free()
@@ -30,10 +32,8 @@ func _determine_tile_type(index: int) -> int:
 	if index == 0 or index == Constants.TOTAL_TILES - 1:
 		return Enums.TileType.BLANK
 	if index % 4 == 0:
-		print("[Board] tile %d generated as GAME_TRIGGER" % index)
 		return Enums.TileType.GAME_TRIGGER
-	if index % 2 == 0 :
-		print("[Board] tile %d generated as TRIVIA" % index)
+	if index % 2 == 0:
 		return Enums.TileType.TRIVIA
 	return Enums.TileType.BLANK
 
