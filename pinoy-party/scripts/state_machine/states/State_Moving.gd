@@ -10,10 +10,18 @@ func enter() -> void:
 	gm.players[player_idx]["state"] = Enums.PlayerState.MOVING
 
 	var old_tile: int = gm.players[player_idx]["tile_index"]
-	var new_tile: int = mini(old_tile + roll, Constants.TOTAL_TILES - 1)
-
-	print("[Moving] Player %d moves %d tile(s) → tile %d." % [player_idx, roll, new_tile])
-
+	var tiles_remaining: int = Constants.TOTAL_TILES - 1 - old_tile
+ 
+	if roll > tiles_remaining:
+		# Overshoot - don't move at all. tile_index is never touched, so this
+		# can't be mistaken for a finish by State_TileEvent/game-over checks.
+		gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
+		EventBus.roll_exceeded.emit(player_idx, tiles_remaining)
+		request_transition.call_deferred(&"State_EndTurn")
+		return
+ 
+	var new_tile: int = old_tile + roll
+ 
 	_animate_and_advance.call_deferred(player_idx, new_tile)
 
 func _animate_and_advance(player_idx: int, new_tile: int) -> void:
@@ -35,7 +43,7 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 	# Poll each frame until our specific player's token finishes, or until
 	# MOVEMENT_TIMEOUT_SEC elapses. Without this cap, a dropped/never-fired
 	# movement_finished (packet loss, a token that failed to spawn, etc.)
-	# hangs the FSM forever with no error — force-completing trades a
+	# hangs the FSM forever with no error - force-completing trades a
 	# possible visual snap for the game never getting permanently stuck.
 	var elapsed := 0.0
 	while not done[0] and elapsed < Constants.MOVEMENT_TIMEOUT_SEC:
@@ -43,7 +51,7 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 		elapsed += get_process_delta_time()
 
 	if not done[0]:
-		push_warning("[State_Moving] movement_finished timed out for player %d — forcing completion." % player_idx)
+		push_warning("[State_Moving] movement_finished timed out for player %d - forcing completion." % player_idx)
 
 	# Safety: disconnect if still connected (e.g. signal never fired).
 	if EventBus.movement_finished.is_connected(_handler):

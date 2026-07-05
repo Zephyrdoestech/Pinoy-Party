@@ -1,0 +1,52 @@
+[gd_scene load_steps=0 format=3 uid="uid://cwhh1x44g3c3n"]
+
+[node name="PlayerBarUI" type="Control" unique_id=991425365]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="PlayerName" type="Label" parent="." unique_id=2062797944]
+layout_mode = 0
+offset_top = 5.0
+offset_right = 1.0
+offset_bottom = 28.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+
+[node name="Track" type="TextureRect" parent="." unique_id=260009234]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 40.0
+
+[node name="Zone" type="ColorRect" parent="Track" unique_id=58309267]
+layout_mode = 1
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(0.66611713, 0.9797489, 0.49439484, 1)
+
+[node name="Marker" type="ColorRect" parent="Track" unique_id=13958281]
+layout_mode = 1
+offset_right = 5.0
+offset_bottom = 40.0
+
+[node name="Status" type="Label" parent="." unique_id=623034165]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -0.5
+offset_top = -11.5
+offset_right = 0.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0

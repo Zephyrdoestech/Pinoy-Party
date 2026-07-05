@@ -9,11 +9,12 @@ var participating_players: Array[int] = []
 # Shared pre-round intro: optional announcement (e.g. "Player 2 is IT!"),
 # then a dimmed-background 3-2-1 countdown, before gameplay is allowed.
 # Built dynamically at runtime so existing minigame scenes don't need any
-# new nodes added by hand — applies uniformly to every minigame.
+# new nodes added by hand - applies uniformly to every minigame.
 # ---------------------------------------------------------------------------
 const INTRO_DIM_ALPHA := 0.85       # background is barely visible during intro
 const ANNOUNCEMENT_DURATION := 2.0  # seconds
 const COUNTDOWN_DURATION := 3.0     # seconds (3, 2, 1)
+
 
 ## Subclasses MUST check this at the top of _process() and bail out early
 ## (`if gameplay_locked: return`) until run_intro() finishes. This is what
@@ -27,20 +28,20 @@ var _intro_dim: ColorRect
 var _intro_label: Label
 
 
-## Override in each minigame — called by SceneLoader after instancing
+## Override in each minigame - called by SceneLoader after instancing
 func start_game(players: Array[int]) -> void:
 	participating_players = players
 
 
 # ---------------------------------------------------------------------------
 # Shared placement scoring for "elimination" minigames (LuksongBaka,
-# SackRace) — anywhere players are progressively knocked out and the result
+# SackRace) - anywhere players are progressively knocked out and the result
 # is a 1st/2nd/3rd placement.
 #
 # `groups` must be ordered BEST placement first, where each element is an
 # Array[int] of player indices who tied for that placement block (size 1 =
 # no tie). A tied group is awarded the point value of the WORST individual
-# rank their group would have spanned had they not tied — e.g. two players
+# rank their group would have spanned had they not tied - e.g. two players
 # tied for what would have been 2nd/3rd both get 3rd's value. Any rank
 # beyond 3rd scores 0. See DEVLOG.md for the worked examples this matches.
 # ---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ static func compute_placement_scores(groups: Array) -> Dictionary:
 
 ## Call from a subclass's start_game(), AFTER any setup that determines the
 ## announcement text (e.g. picking who is "IT") or world layout, and BEFORE
-## any gameplay should be possible. `announcement_text` is optional — pass
+## any gameplay should be possible. `announcement_text` is optional - pass
 ## "" to skip straight to the countdown.
 func run_intro(announcement_text: String = "") -> void:
 	gameplay_locked = true

@@ -1,0 +1,57 @@
+[gd_scene load_steps=0 format=3 uid="uid://e8f5pc6jmxlh"]
+
+[ext_resource type="Script" uid="uid://d4gbcn1plx82g" path="res://scenes/ui/main_menu.gd" id="1_vjtqc"]
+[ext_resource type="Texture2D" uid="uid://d0w827ijtrax6" path="res://assets/screens/main_menu/main_menu_screen.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://brb55uoj3ejvd" path="res://assets/screens/lobby/play_button.png" id="3_7mi0g"]
+[ext_resource type="Texture2D" uid="uid://cj08p2p12i82" path="res://assets/screens/lobby/play_button_pressed.png" id="4_nqjyj"]
+[ext_resource type="Texture2D" uid="uid://cla7qo7iinhjn" path="res://assets/screens/lobby/play_button_hover.png" id="5_7vr37"]
+[ext_resource type="Texture2D" uid="uid://c5qsole7x8q4i" path="res://assets/screens/main_menu/exit_button.png" id="6_kncl5"]
+[ext_resource type="Texture2D" uid="uid://buyxo370a4lqs" path="res://assets/screens/main_menu/exit_button_pressed.png" id="7_clp4r"]
+[ext_resource type="Texture2D" uid="uid://bpc5ilicfw4wq" path="res://assets/screens/main_menu/exit_button_hover.png" id="8_ee60a"]
+
+[node name="MainMenu" type="Control" unique_id=835569058]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vjtqc")
+
+[node name="MainMenuBG" type="TextureRect" parent="." unique_id=372389070]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=974459014]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -580.0
+offset_right = -196.0
+offset_bottom = -208.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/margin_top = 360
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="MarginContainer" unique_id=811473941]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="PlayButton" type="TextureButton" parent="MarginContainer/ButtonsContainer" unique_id=1544532193]
+layout_mode = 2
+texture_normal = ExtResource("3_7mi0g")
+texture_pressed = ExtResource("4_nqjyj")
+texture_hover = ExtResource("5_7vr37")
+
+[node name="ExitButton" type="TextureButton" parent="MarginContainer/ButtonsContainer" unique_id=1420080763]
+layout_mode = 2
+texture_normal = ExtResource("6_kncl5")
+texture_pressed = ExtResource("7_clp4r")
+texture_hover = ExtResource("8_ee60a")

@@ -1,7 +1,7 @@
 class_name SackRace
 extends BaseMinigame
 
-const FINISH_DISTANCE := 30.0      # "hops" needed to win
+const FINISH_DISTANCE := 48.0      # "hops" needed to win
 const HOP_DISTANCE := 1.0          # progress per press
 const RACE_TIMEOUT := 15.0         # seconds, safety net
 const HOP_PIXELS := 30.0           # how many pixels each ColorRect moves per press
@@ -12,8 +12,18 @@ var race_active := false
 var timeout_timer := 0.0
 
 
+#func _get_track_node(player_idx: int) -> Node2D:
+	#return get_node("Tracks/Player %d" % (player_idx + 1))
+
 func _get_track_node(player_idx: int) -> Node2D:
-	return get_node("Tracks/Player %d" % (player_idx + 1))
+	var path := "SplitScreenContainer/P%d_Container/Viewport%d/Track%d/Player%d" % [
+		player_idx + 1, player_idx + 1, player_idx + 1, player_idx + 1
+	]
+	
+	var node = get_node_or_null(path)
+	if not node:
+		return null
+	return node
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
@@ -26,7 +36,6 @@ func start_game(players: Array[int]) -> void:
 	race_active = true
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
-	print("[SackRace] Race started for players: %s" % [players])
 	await run_intro()
 
 func _process(delta: float) -> void:
@@ -36,7 +45,6 @@ func _process(delta: float) -> void:
 	var time_left := RACE_TIMEOUT - timeout_timer
 	$UI/TimerLabel.text = "Time: %.1f" % max(time_left, 0.0)
 	if timeout_timer >= RACE_TIMEOUT:
-		print("[SackRace] Timeout reached, ending race early.")
 		_end_race()
 
 func _input(event: InputEvent) -> void:
@@ -46,7 +54,7 @@ func _input(event: InputEvent) -> void:
 		return
 	#DEBUG
 	if not multiplayer.has_multiplayer_peer() or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		apply_hop(0) # control p1 for testing
+		apply_hop(1) # control p1 for testing
 		return
 		
 	var my_idx: int = NetworkManager.get_my_player_index()
@@ -54,7 +62,7 @@ func _input(event: InputEvent) -> void:
 		return  # not a participant in this race (or no LAN match active)
 	if my_idx in finished_order:
 		return  # already finished, ignore further presses
-	# Route through the host so every client's progress stays in sync —
+	# Route through the host so every client's progress stays in sync -
 	# same request -> host-broadcast pattern used for dice rolls.
 	if NetworkManager.is_host:
 		NetworkManager.process_sack_race_hop(my_idx)
@@ -63,7 +71,7 @@ func _input(event: InputEvent) -> void:
 
 ## Called by NetworkManager._apply_sack_race_hop() on every peer once the
 ## host has validated and broadcast the hop. This is the only place
-## progress should be advanced from now — local input no longer calls
+## progress should be advanced from now - local input no longer calls
 ## _advance() directly, it just requests a hop via NetworkManager.
 func apply_hop(player_idx: int) -> void:
 	if not race_active:
@@ -73,7 +81,6 @@ func apply_hop(player_idx: int) -> void:
 	_advance(player_idx)
 
 func _advance(player_idx: int) -> void:
-	print("Advancing Player: ", player_idx)
 	
 	progress[player_idx] += HOP_DISTANCE
 	var player_node := _get_track_node(player_idx)
@@ -86,7 +93,6 @@ func _advance(player_idx: int) -> void:
 	
 	if progress[player_idx] >= FINISH_DISTANCE and player_idx not in finished_order:
 		finished_order.append(player_idx)
-		print("[SackRace] Player %d finished in place %d." % [player_idx, finished_order.size()])
 		if finished_order.size() == participating_players.size():
 			_end_race()
 
@@ -95,7 +101,7 @@ func _end_race() -> void:
 
 	# Players who actually crossed the finish line have a strict, tie-free
 	# order (only one player advances per key-press event, so two players
-	# can't finish on the exact same input) — each is their own group.
+	# can't finish on the exact same input) - each is their own group.
 	var groups: Array = []
 	for idx in finished_order:
 		groups.append([idx])
@@ -116,6 +122,5 @@ func _end_race() -> void:
 		groups.append(tie_group)
 		i = j
 
-	var scores: Dictionary = compute_placement_scores(groups)
-	print("[SackRace] Final placement groups (best to worst): %s" % [groups])
+	var scores: Dictionary = BaseMinigame.compute_placement_scores(groups)
 	_finish(scores)

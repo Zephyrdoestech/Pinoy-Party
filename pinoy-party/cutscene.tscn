@@ -1,0 +1,1611 @@
+[gd_scene format=3 uid="uid://u0sr2xuqyhk7"]
+
+[ext_resource type="Texture2D" uid="uid://b6jsgmgt2b1r7" path="res://assets/characters/cutscene/dialogue.png" id="1_l2u6u"]
+[ext_resource type="Texture2D" uid="uid://ch7buvw4b1nl4" path="res://assets/characters/cutscene/Character3.png" id="1_u4yv4"]
+[ext_resource type="Texture2D" uid="uid://50xjye0312ka" path="res://assets/characters/cutscene/Character2.png" id="2_p30sb"]
+[ext_resource type="FontFile" uid="uid://bprw638txg8en" path="res://assets/characters/cutscene/GAMEDAY.ttf" id="2_pby01"]
+[ext_resource type="Texture2D" uid="uid://dcv2rswcs5o0t" path="res://assets/characters/cutscene/Character1.png" id="3_53jq0"]
+[ext_resource type="Texture2D" uid="uid://bvsiuyg3gcf46" path="res://assets/characters/cutscene/Character4.png" id="4_3q24f"]
+[ext_resource type="Texture2D" uid="uid://cav3vfpuuo05l" path="res://assets/characters/cutscene/ShoutEmote.png" id="4_p30sb"]
+[ext_resource type="Texture2D" uid="uid://2x0sgsqgc1g1" path="res://assets/characters/cutscene/park_bg.png" id="5_u4yv4"]
+[ext_resource type="Texture2D" uid="uid://qctp46nbxr7i" path="res://assets/characters/cutscene/Character1 2.png" id="6_3q24f"]
+[ext_resource type="Texture2D" uid="uid://c7y0vt3jhab2k" path="res://assets/characters/cutscene/Character2 2.png" id="7_8ye5a"]
+[ext_resource type="AudioStream" uid="uid://dg1dbwon5hfc0" path="res://assets/characters/cutscene/audios/Dialogue2.mp3" id="9_8ye5a"]
+[ext_resource type="AudioStream" uid="uid://ba14jt7cee5ly" path="res://assets/characters/cutscene/audios/Dialogue3.mp3" id="10_1titf"]
+[ext_resource type="AudioStream" uid="uid://cojpu462sl2am" path="res://assets/characters/cutscene/audios/Dialogue4.mp3" id="11_ed5nn"]
+[ext_resource type="AudioStream" uid="uid://dkcl0ystfwp71" path="res://assets/characters/cutscene/audios/Dialogue5.mp3" id="12_5gysb"]
+[ext_resource type="AudioStream" uid="uid://dtlc35swcrlhj" path="res://assets/characters/cutscene/audios/Dialogue6.mp3" id="13_l2u6u"]
+[ext_resource type="Texture2D" uid="uid://dqhdv1trk2w6o" path="res://assets/characters/cutscene/CharacterHeads.png" id="14_ed5nn"]
+[ext_resource type="AudioStream" uid="uid://dey108oo2dd58" path="res://assets/characters/cutscene/audios/ParkAmbience.mp3" id="17_pby01"]
+[ext_resource type="AudioStream" uid="uid://vsub6hpvtwm8" path="res://assets/characters/cutscene/audios/ChildrenLaughing.mp3" id="18_jyjru"]
+[ext_resource type="AudioStream" uid="uid://dr44oue8oyf0x" path="res://assets/characters/cutscene/audios/ChildrenLaughing2.mp3" id="19_3v3wj"]
+[ext_resource type="AudioStream" uid="uid://ct03ki7o6eb0k" path="res://assets/characters/cutscene/audios/LolaRecording.mp3" id="20_jad71"]
+[ext_resource type="Script" path="res://cutscene.gd" id="1_script"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jyjru"]
+
+[sub_resource type="FontVariation" id="FontVariation_3v3wj"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_jad71"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_l2u6u"]
+
+[sub_resource type="FontVariation" id="FontVariation_pby01"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_jyjru"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pby01"]
+
+[sub_resource type="FontVariation" id="FontVariation_2kv0s"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_kw1r5"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_mlekn"]
+
+[sub_resource type="FontVariation" id="FontVariation_doqf5"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_bkhuc"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_o856q"]
+
+[sub_resource type="FontVariation" id="FontVariation_6evsr"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_maqbp"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_3v3wj"]
+
+[sub_resource type="FontVariation" id="FontVariation_mlekn"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="FontVariation" id="FontVariation_o856q"]
+base_font = ExtResource("2_pby01")
+
+[sub_resource type="Animation" id="Animation_8ye5a"]
+resource_name = "1st_Cutscene"
+length = 34.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Characters/Character2:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0333333, 0.5, 1.0666667, 1.7, 2.3333333, 2.9333334, 3.5, 4.133333, 4.733333, 5.366667, 6, 6.6666665, 7.3333335, 7.9666667, 8.6, 9.333333, 13.549733, 15.716399, 20.389997, 29.866667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [ExtResource("2_p30sb"), 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 4, 5, 4, 5, 5]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Characters/Character1:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.0333333, 0.2999997, 0.5999999, 0.8999996, 1.1666665, 1.5999999, 2.0666668, 2.3333333, 2.6333334, 2.9333332, 3.2, 3.6999998, 3.9666667, 4.3666673, 4.6333337, 4.8666673, 5.1333337, 5.433334, 5.733333, 6.1666665, 6.633333, 7.1, 7.5333333, 7.9333334, 8.233334, 8.5, 9.333333, 13.549733, 15.716399, 20.366667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1, 2, 1, 0, 2, 3, 2, 3]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Characters/Character4:frame")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.33333325, 0.7, 1.1333333, 1.6, 1.9666667, 2.4666667, 2.9, 3.3666663, 3.8000002, 4.2, 4.6666665, 5.0666666, 5.5666666, 6.0666666, 6.5333333, 7, 7.4, 7.866667, 8.333333, 8.766666, 9.333333, 13.549733, 15.766666, 16.9, 17.233334, 17.633333, 18.033333, 18.466667, 18.9, 19.266666, 19.666666, 21.2, 22.1, 29.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [ExtResource("4_3q24f"), 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 3, 7, 4, 5, 4, 5, 4, 5, 4, 5, 4, 6, 4, 6]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("ShoutEmote:frame")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(9.3),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("4_p30sb")]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("ShoutEmote:visible")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.16666667, 9.466666, 12.405751),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Characters/Character3:frame")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 3.0666666, 6.0333333, 9.333333, 13.7, 16.400002, 20.470001, 22.066668, 22.968872, 23.235538, 23.502205, 23.802206, 24.068872, 24.235538, 24.502205, 24.768873, 25.03554, 25.3, 25.57, 25.859999, 26.139997, 26.394758, 26.674757, 26.994757, 27.274757, 27.554756, 27.85476, 28.154757, 28.464756, 28.814756, 29.135538, 30.013336),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [ExtResource("1_u4yv4"), 1, 0, 2, 3, 2, 3, 5, 4, 5, 4, 5, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 3]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Characters/Character12:frame")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(22.066668),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Characters/Character12:visible")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0.13333334, 22.176668, 29.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Characters/Character22:frame")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(21.933332),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [6]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Characters/Character22:visible")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0.13333334, 22.10333, 29.9),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("UI/Dialogue1:visible")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0.1, 9.29794, 12.420718),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("UI/Dialogue1/VBoxContainer/Label:text")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(9.333333),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Lola"]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("UI/Dialogue1/VBoxContainer/RichTextLabel:text")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(9.333333, 9.337515, 9.352289),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": ["\"Hoy mga bata! Merienda na!\"", "\"Mga bata! Merienda na!\"", "\"Hoy mga bata! Merienda na!\""]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("UI/Dialogue1/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(9.333333, 10.165392),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("UI/Dialogue2:visible")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0.12, 13.5, 15.419941),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("UI/Dialogue2/VBoxContainer/RichTextLabel:text")
+tracks/15/interp = 1
+tracks/15/loop_wrap = true
+tracks/15/keys = {
+"times": PackedFloat32Array(13.5),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Okay po!\""]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("UI/Dialogue2/VBoxContainer/Label:text")
+tracks/16/interp = 1
+tracks/16/loop_wrap = true
+tracks/16/keys = {
+"times": PackedFloat32Array(13.5),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Mga Bata:"]
+}
+tracks/17/type = "value"
+tracks/17/imported = false
+tracks/17/enabled = true
+tracks/17/path = NodePath("UI/Dialogue2/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/17/interp = 1
+tracks/17/loop_wrap = true
+tracks/17/keys = {
+"times": PackedFloat32Array(13.5, 14.25),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/18/type = "value"
+tracks/18/imported = false
+tracks/18/enabled = true
+tracks/18/path = NodePath("UI/Dialogue3:visible")
+tracks/18/interp = 1
+tracks/18/loop_wrap = true
+tracks/18/keys = {
+"times": PackedFloat32Array(0.16, 16.572552, 19.845701),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/19/type = "value"
+tracks/19/imported = false
+tracks/19/enabled = true
+tracks/19/path = NodePath("UI/Dialogue3/VBoxContainer/Label:text")
+tracks/19/interp = 1
+tracks/19/loop_wrap = true
+tracks/19/keys = {
+"times": PackedFloat32Array(16.593332),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Bata 1:"]
+}
+tracks/20/type = "value"
+tracks/20/imported = false
+tracks/20/enabled = true
+tracks/20/path = NodePath("UI/Dialogue3/VBoxContainer/RichTextLabel:text")
+tracks/20/interp = 1
+tracks/20/loop_wrap = true
+tracks/20/keys = {
+"times": PackedFloat32Array(16.573332),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Unang makapasok sa bahay, mas maraming 
+makukuhang merienda!\""]
+}
+tracks/21/type = "value"
+tracks/21/imported = false
+tracks/21/enabled = true
+tracks/21/path = NodePath("UI/Dialogue3/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/21/interp = 1
+tracks/21/loop_wrap = true
+tracks/21/keys = {
+"times": PackedFloat32Array(16.573332, 18.133333),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/22/type = "value"
+tracks/22/imported = false
+tracks/22/enabled = true
+tracks/22/path = NodePath("UI/Dialogue4/VBoxContainer/Label:text")
+tracks/22/interp = 1
+tracks/22/loop_wrap = true
+tracks/22/keys = {
+"times": PackedFloat32Array(20.41098),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Mga Bata:"]
+}
+tracks/23/type = "value"
+tracks/23/imported = false
+tracks/23/enabled = true
+tracks/23/path = NodePath("UI/Dialogue4/VBoxContainer/RichTextLabel:text")
+tracks/23/interp = 1
+tracks/23/loop_wrap = true
+tracks/23/keys = {
+"times": PackedFloat32Array(20.41098, 21.57484, 22.144842),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": ["\"Bet!\"", "\"Bet!\"", "\"Bet!\""]
+}
+tracks/24/type = "value"
+tracks/24/imported = false
+tracks/24/enabled = true
+tracks/24/path = NodePath("UI/Dialogue4:visible")
+tracks/24/interp = 1
+tracks/24/loop_wrap = true
+tracks/24/keys = {
+"times": PackedFloat32Array(0.24, 20.477646, 21.66328),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/25/type = "value"
+tracks/25/imported = false
+tracks/25/enabled = true
+tracks/25/path = NodePath("UI/Dialogue4/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/25/interp = 1
+tracks/25/loop_wrap = true
+tracks/25/keys = {
+"times": PackedFloat32Array(20.43569, 21.1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/26/type = "value"
+tracks/26/imported = false
+tracks/26/enabled = true
+tracks/26/path = NodePath("UI/Dialogue5:visible")
+tracks/26/interp = 1
+tracks/26/loop_wrap = true
+tracks/26/keys = {
+"times": PackedFloat32Array(0.15, 22.920717, 29.382229),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/27/type = "value"
+tracks/27/imported = false
+tracks/27/enabled = true
+tracks/27/path = NodePath("UI/Dialogue5/VBoxContainer/Label:text")
+tracks/27/interp = 1
+tracks/27/loop_wrap = true
+tracks/27/keys = {
+"times": PackedFloat32Array(22.920717),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Bata 2:"]
+}
+tracks/28/type = "value"
+tracks/28/imported = false
+tracks/28/enabled = true
+tracks/28/path = NodePath("UI/Dialogue5/VBoxContainer/RichTextLabel:text")
+tracks/28/interp = 1
+tracks/28/loop_wrap = true
+tracks/28/keys = {
+"times": PackedFloat32Array(22.920717, 22.935156),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": ["\"Tara! Habang papunta tayo kina lola, kunwari muna tayong mga DRRR officers!\"", "\"Tara! Habang papunta tayo kina lola, kunwari 
+muna tayong mga DRRR officers!\""]
+}
+tracks/29/type = "value"
+tracks/29/imported = false
+tracks/29/enabled = true
+tracks/29/path = NodePath("UI/Dialogue5/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/29/interp = 1
+tracks/29/loop_wrap = true
+tracks/29/keys = {
+"times": PackedFloat32Array(22.920717, 23.950716),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/30/type = "value"
+tracks/30/imported = false
+tracks/30/enabled = true
+tracks/30/path = NodePath("UI/Dialogue6:visible")
+tracks/30/interp = 1
+tracks/30/loop_wrap = true
+tracks/30/keys = {
+"times": PackedFloat32Array(0.17999999, 29.791119, 31.137299),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/31/type = "value"
+tracks/31/imported = false
+tracks/31/enabled = true
+tracks/31/path = NodePath("UI/Dialogue6/VBoxContainer/Label:text")
+tracks/31/interp = 1
+tracks/31/loop_wrap = true
+tracks/31/keys = {
+"times": PackedFloat32Array(29.803331),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["Mga Bata:"]
+}
+tracks/32/type = "value"
+tracks/32/imported = false
+tracks/32/enabled = true
+tracks/32/path = NodePath("UI/Dialogue6/VBoxContainer/RichTextLabel:text")
+tracks/32/interp = 1
+tracks/32/loop_wrap = true
+tracks/32/keys = {
+"times": PackedFloat32Array(29.803331),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Sige Sige!\""]
+}
+tracks/33/type = "value"
+tracks/33/imported = false
+tracks/33/enabled = true
+tracks/33/path = NodePath("UI/Dialogue6/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/33/interp = 1
+tracks/33/loop_wrap = true
+tracks/33/keys = {
+"times": PackedFloat32Array(29.803331, 30.433332),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/34/type = "value"
+tracks/34/imported = false
+tracks/34/enabled = true
+tracks/34/path = NodePath(".:modulate")
+tracks/34/interp = 1
+tracks/34/loop_wrap = true
+tracks/34/keys = {
+"times": PackedFloat32Array(31.5, 33.8),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(0.033853278, 0.033853278, 0.033853274, 1)]
+}
+tracks/35/type = "value"
+tracks/35/imported = false
+tracks/35/enabled = true
+tracks/35/path = NodePath("Audios/Dialogue2:playing")
+tracks/35/interp = 1
+tracks/35/loop_wrap = true
+tracks/35/keys = {
+"times": PackedFloat32Array(12.990224, 13.6172085, 15.330224),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/36/type = "value"
+tracks/36/imported = false
+tracks/36/enabled = true
+tracks/36/path = NodePath("Audios/Dialogue3:playing")
+tracks/36/interp = 1
+tracks/36/loop_wrap = true
+tracks/36/keys = {
+"times": PackedFloat32Array(16.1, 16.233334, 19.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/37/type = "value"
+tracks/37/imported = false
+tracks/37/enabled = true
+tracks/37/path = NodePath("Audios/Dialogue4:playing")
+tracks/37/interp = 1
+tracks/37/loop_wrap = true
+tracks/37/keys = {
+"times": PackedFloat32Array(19.916666, 20.339735, 21.666666),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/38/type = "value"
+tracks/38/imported = false
+tracks/38/enabled = true
+tracks/38/path = NodePath("Audios/Dialogue5:playing")
+tracks/38/interp = 1
+tracks/38/loop_wrap = true
+tracks/38/keys = {
+"times": PackedFloat32Array(22.36333, 22.933332, 29.204376),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/39/type = "value"
+tracks/39/imported = false
+tracks/39/enabled = true
+tracks/39/path = NodePath("Audios/Dialogue6:playing")
+tracks/39/interp = 1
+tracks/39/loop_wrap = true
+tracks/39/keys = {
+"times": PackedFloat32Array(29.35, 29.8, 31.410782),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/40/type = "value"
+tracks/40/imported = false
+tracks/40/enabled = true
+tracks/40/path = NodePath("UI/Dialogue1/CharacterHeads:texture")
+tracks/40/interp = 1
+tracks/40/loop_wrap = true
+tracks/40/keys = {
+"times": PackedFloat32Array(9.532496),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("14_ed5nn")]
+}
+tracks/41/type = "value"
+tracks/41/imported = false
+tracks/41/enabled = true
+tracks/41/path = NodePath("UI/Dialogue1/CharacterHeads:visible")
+tracks/41/interp = 1
+tracks/41/loop_wrap = true
+tracks/41/keys = {
+"times": PackedFloat32Array(0.35750842, 9.500036, 12.448444),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/42/type = "value"
+tracks/42/imported = false
+tracks/42/enabled = true
+tracks/42/path = NodePath("ShoutEmote:position")
+tracks/42/interp = 1
+tracks/42/loop_wrap = true
+tracks/42/keys = {
+"times": PackedFloat32Array(9.500035, 9.765977, 10.017144, 10.342184, 10.637675, 10.888843, 11.1695595, 11.450275, 11.745767, 12.011708, 12.233334),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(1158.625, 361.4375), Vector2(1158.625, 384.4375), Vector2(1158.625, 360.4375), Vector2(1158.625, 384.4375), Vector2(1158.625, 344.4375), Vector2(1158.625, 376.4375), Vector2(1158.625, 344.4375), Vector2(1158.625, 376.4375), Vector2(1158.625, 352.4375), Vector2(1158.625, 376.4375), Vector2(1158.625, 344.4375)]
+}
+tracks/43/type = "value"
+tracks/43/imported = false
+tracks/43/enabled = true
+tracks/43/path = NodePath("Audios/ParkAmbience:playing")
+tracks/43/interp = 1
+tracks/43/loop_wrap = true
+tracks/43/keys = {
+"times": PackedFloat32Array(0.04432365, 32.955677),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/44/type = "value"
+tracks/44/imported = false
+tracks/44/enabled = true
+tracks/44/path = NodePath("Audios/ChildrenLaughing:playing")
+tracks/44/interp = 1
+tracks/44/loop_wrap = true
+tracks/44/keys = {
+"times": PackedFloat32Array(0, 9.333333),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/45/type = "value"
+tracks/45/imported = false
+tracks/45/enabled = true
+tracks/45/path = NodePath("Audios/ChildrenLaughing2:playing")
+tracks/45/interp = 1
+tracks/45/loop_wrap = true
+tracks/45/keys = {
+"times": PackedFloat32Array(31.191387, 31.266666, 34),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+tracks/46/type = "value"
+tracks/46/imported = false
+tracks/46/enabled = true
+tracks/46/path = NodePath("Audios/LolaDialogue:playing")
+tracks/46/interp = 1
+tracks/46/loop_wrap = true
+tracks/46/keys = {
+"times": PackedFloat32Array(0.059098195, 9.433333, 12.666667),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+
+[sub_resource type="Animation" id="Animation_qcoa3"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Characters/Character2:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("2_p30sb")]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Characters/Character2:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Characters/Character1:texture")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("3_53jq0")]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Characters/Character1:frame")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Characters/Character4:texture")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("4_3q24f")]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Characters/Character4:frame")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("ShoutEmote:texture")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("4_p30sb")]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("ShoutEmote:visible")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Characters/Character3:texture")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("1_u4yv4")]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Characters/Character3:frame")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Characters/Character12:texture")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("6_3q24f")]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Characters/Character12:visible")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Characters/Character22:texture")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("7_8ye5a")]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Characters/Character22:visible")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("UI/Dialogue1:visible")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("UI/Dialogue1/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/15/interp = 1
+tracks/15/loop_wrap = true
+tracks/15/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("UI/Dialogue2/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/16/interp = 1
+tracks/16/loop_wrap = true
+tracks/16/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/17/type = "value"
+tracks/17/imported = false
+tracks/17/enabled = true
+tracks/17/path = NodePath("UI/Dialogue2:visible")
+tracks/17/interp = 1
+tracks/17/loop_wrap = true
+tracks/17/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/18/type = "value"
+tracks/18/imported = false
+tracks/18/enabled = true
+tracks/18/path = NodePath("UI/Dialogue3:visible")
+tracks/18/interp = 1
+tracks/18/loop_wrap = true
+tracks/18/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/19/type = "value"
+tracks/19/imported = false
+tracks/19/enabled = true
+tracks/19/path = NodePath("UI/Dialogue3/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/19/interp = 1
+tracks/19/loop_wrap = true
+tracks/19/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/20/type = "value"
+tracks/20/imported = false
+tracks/20/enabled = true
+tracks/20/path = NodePath("UI/Dialogue4:visible")
+tracks/20/interp = 1
+tracks/20/loop_wrap = true
+tracks/20/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/21/type = "value"
+tracks/21/imported = false
+tracks/21/enabled = true
+tracks/21/path = NodePath("UI/Dialogue4/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/21/interp = 1
+tracks/21/loop_wrap = true
+tracks/21/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/22/type = "value"
+tracks/22/imported = false
+tracks/22/enabled = true
+tracks/22/path = NodePath("UI/Dialogue5/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/22/interp = 1
+tracks/22/loop_wrap = true
+tracks/22/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/23/type = "value"
+tracks/23/imported = false
+tracks/23/enabled = true
+tracks/23/path = NodePath("UI/Dialogue5:visible")
+tracks/23/interp = 1
+tracks/23/loop_wrap = true
+tracks/23/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/24/type = "value"
+tracks/24/imported = false
+tracks/24/enabled = true
+tracks/24/path = NodePath("UI/Dialogue6:visible")
+tracks/24/interp = 1
+tracks/24/loop_wrap = true
+tracks/24/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/25/type = "value"
+tracks/25/imported = false
+tracks/25/enabled = true
+tracks/25/path = NodePath("UI/Dialogue6/VBoxContainer/RichTextLabel:visible_ratio")
+tracks/25/interp = 1
+tracks/25/loop_wrap = true
+tracks/25/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+tracks/26/type = "value"
+tracks/26/imported = false
+tracks/26/enabled = true
+tracks/26/path = NodePath("UI/Dialogue6/VBoxContainer/RichTextLabel:text")
+tracks/26/interp = 1
+tracks/26/loop_wrap = true
+tracks/26/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Sige tara!\""]
+}
+tracks/27/type = "value"
+tracks/27/imported = false
+tracks/27/enabled = true
+tracks/27/path = NodePath(".:modulate")
+tracks/27/interp = 1
+tracks/27/loop_wrap = true
+tracks/27/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0.033853278, 0.033853278, 0.033853274, 1)]
+}
+tracks/28/type = "value"
+tracks/28/imported = false
+tracks/28/enabled = true
+tracks/28/path = NodePath("UI/Dialogue4/VBoxContainer/RichTextLabel:text")
+tracks/28/interp = 1
+tracks/28/loop_wrap = true
+tracks/28/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Bet!\""]
+}
+tracks/29/type = "value"
+tracks/29/imported = false
+tracks/29/enabled = true
+tracks/29/path = NodePath("Audios/Dialogue2:playing")
+tracks/29/interp = 1
+tracks/29/loop_wrap = true
+tracks/29/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/30/type = "value"
+tracks/30/imported = false
+tracks/30/enabled = true
+tracks/30/path = NodePath("Audios/Dialogue3:playing")
+tracks/30/interp = 1
+tracks/30/loop_wrap = true
+tracks/30/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/31/type = "value"
+tracks/31/imported = false
+tracks/31/enabled = true
+tracks/31/path = NodePath("Audios/Dialogue4:playing")
+tracks/31/interp = 1
+tracks/31/loop_wrap = true
+tracks/31/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/32/type = "value"
+tracks/32/imported = false
+tracks/32/enabled = true
+tracks/32/path = NodePath("Audios/Dialogue5:playing")
+tracks/32/interp = 1
+tracks/32/loop_wrap = true
+tracks/32/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/33/type = "value"
+tracks/33/imported = false
+tracks/33/enabled = true
+tracks/33/path = NodePath("Audios/Dialogue6:playing")
+tracks/33/interp = 1
+tracks/33/loop_wrap = true
+tracks/33/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/34/type = "value"
+tracks/34/imported = false
+tracks/34/enabled = true
+tracks/34/path = NodePath("UI/Dialogue1/CharacterHeads:visible")
+tracks/34/interp = 1
+tracks/34/loop_wrap = true
+tracks/34/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/35/type = "value"
+tracks/35/imported = false
+tracks/35/enabled = true
+tracks/35/path = NodePath("UI/Dialogue5/VBoxContainer/RichTextLabel:text")
+tracks/35/interp = 1
+tracks/35/loop_wrap = true
+tracks/35/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Tara! Habang papunta tayo kina lola, kunwari 
+muna tayong mga DRRR officers!\""]
+}
+tracks/36/type = "value"
+tracks/36/imported = false
+tracks/36/enabled = true
+tracks/36/path = NodePath("ShoutEmote:position")
+tracks/36/interp = 1
+tracks/36/loop_wrap = true
+tracks/36/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(1158.625, 361.4375)]
+}
+tracks/37/type = "value"
+tracks/37/imported = false
+tracks/37/enabled = true
+tracks/37/path = NodePath("Audios/ParkAmbience:playing")
+tracks/37/interp = 1
+tracks/37/loop_wrap = true
+tracks/37/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/38/type = "value"
+tracks/38/imported = false
+tracks/38/enabled = true
+tracks/38/path = NodePath("Audios/ChildrenLaughing:playing")
+tracks/38/interp = 1
+tracks/38/loop_wrap = true
+tracks/38/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/39/type = "value"
+tracks/39/imported = false
+tracks/39/enabled = true
+tracks/39/path = NodePath("Audios/ChildrenLaughing2:playing")
+tracks/39/interp = 1
+tracks/39/loop_wrap = true
+tracks/39/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/40/type = "value"
+tracks/40/imported = false
+tracks/40/enabled = true
+tracks/40/path = NodePath("Audios/LolaDialogue:playing")
+tracks/40/interp = 1
+tracks/40/loop_wrap = true
+tracks/40/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/41/type = "value"
+tracks/41/imported = false
+tracks/41/enabled = true
+tracks/41/path = NodePath("UI/Dialogue1/VBoxContainer/RichTextLabel:text")
+tracks/41/interp = 1
+tracks/41/loop_wrap = true
+tracks/41/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": ["\"Mga bata! Merienda na!\""]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_pvbl2"]
+_data = {
+&"1st_Cutscene": SubResource("Animation_8ye5a"),
+&"RESET": SubResource("Animation_qcoa3")
+}
+
+[node name="Cutscene" type="Node2D"]
+script = ExtResource("1_script")
+modulate = Color(0.033853278, 0.033853278, 0.033853274, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Dialogue1" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 26.0
+offset_right = 577.0
+offset_bottom = 157.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_jyjru")
+
+[node name="Dialogue" type="Sprite2D" parent="UI/Dialogue1"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads" type="Sprite2D" parent="UI/Dialogue1"]
+visible = false
+position = Vector2(980.00006, 115.000015)
+scale = Vector2(0.111375034, 0.11874999)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue1"]
+layout_mode = 0
+offset_left = 113.0
+offset_top = 29.0
+offset_right = 1086.0
+offset_bottom = 175.0
+
+[node name="Label" type="Label" parent="UI/Dialogue1/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_3v3wj")
+theme_override_font_sizes/font_size = 40
+text = "Lola"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue1/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.57993084, 0.27626064, 0.23935065, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_jad71")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Mga bata! Merienda na!\""
+scroll_active = false
+
+[node name="Dialogue2" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 27.0
+offset_right = 577.0
+offset_bottom = 158.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_l2u6u")
+
+[node name="Dialogue2" type="Sprite2D" parent="UI/Dialogue2"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads4" type="Sprite2D" parent="UI/Dialogue2"]
+position = Vector2(937.99994, 135.375)
+scale = Vector2(0.064, 0.071375005)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 3
+
+[node name="CharacterHeads" type="Sprite2D" parent="UI/Dialogue2"]
+position = Vector2(932.00006, 69.5)
+scale = Vector2(0.07499997, 0.071499996)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+
+[node name="CharacterHeads3" type="Sprite2D" parent="UI/Dialogue2"]
+position = Vector2(1025, 69)
+scale = Vector2(0.07000001, 0.07)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 2
+
+[node name="CharacterHeads2" type="Sprite2D" parent="UI/Dialogue2"]
+position = Vector2(1026, 138.875)
+scale = Vector2(0.07100003, 0.07587501)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue2"]
+layout_mode = 0
+offset_left = 113.0
+offset_top = 28.0
+offset_right = 1095.0
+offset_bottom = 174.0
+
+[node name="Label" type="Label" parent="UI/Dialogue2/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_pby01")
+theme_override_font_sizes/font_size = 40
+text = "Mga Bata:"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue2/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_jyjru")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Okay po!\""
+scroll_active = false
+
+[node name="Dialogue3" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 26.0
+offset_right = 577.0
+offset_bottom = 157.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_pby01")
+
+[node name="Dialogue3" type="Sprite2D" parent="UI/Dialogue3"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads" type="Sprite2D" parent="UI/Dialogue3"]
+position = Vector2(974.6875, 112.875)
+scale = Vector2(0.13368754, 0.137875)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue3"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 29.0
+offset_right = 1089.0
+offset_bottom = 175.0
+
+[node name="Label" type="Label" parent="UI/Dialogue3/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_2kv0s")
+theme_override_font_sizes/font_size = 40
+text = "Bata 1:"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue3/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_kw1r5")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Unang makapasok sa bahay, mas maraming 
+makukuhang merienda!\""
+scroll_active = false
+
+[node name="Dialogue4" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 26.0
+offset_right = 577.0
+offset_bottom = 157.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_mlekn")
+
+[node name="Dialogue2" type="Sprite2D" parent="UI/Dialogue4"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads2" type="Sprite2D" parent="UI/Dialogue4"]
+position = Vector2(1018, 67.99999)
+scale = Vector2(0.07499999, 0.083000004)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 4
+
+[node name="CharacterHeads" type="Sprite2D" parent="UI/Dialogue4"]
+position = Vector2(917.00006, 69.5)
+scale = Vector2(0.066000015, 0.065500006)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 2
+
+[node name="CharacterHeads3" type="Sprite2D" parent="UI/Dialogue4"]
+position = Vector2(964.5, 130.375)
+scale = Vector2(0.0625, 0.071375005)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue4"]
+layout_mode = 0
+offset_left = 111.0
+offset_top = 28.0
+offset_right = 1090.0
+offset_bottom = 174.0
+
+[node name="Label" type="Label" parent="UI/Dialogue4/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_doqf5")
+theme_override_font_sizes/font_size = 40
+text = "Mga Bata:"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue4/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_bkhuc")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Bet!\""
+scroll_active = false
+
+[node name="Dialogue5" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 26.0
+offset_right = 577.0
+offset_bottom = 157.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_o856q")
+
+[node name="Dialogue2" type="Sprite2D" parent="UI/Dialogue5"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads3" type="Sprite2D" parent="UI/Dialogue5"]
+position = Vector2(994, 107.875)
+scale = Vector2(0.108, 0.11387501)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue5"]
+layout_mode = 0
+offset_left = 110.0
+offset_top = 30.0
+offset_right = 1089.0
+offset_bottom = 176.0
+
+[node name="Label" type="Label" parent="UI/Dialogue5/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_6evsr")
+theme_override_font_sizes/font_size = 40
+text = "Bata 2:"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue5/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_maqbp")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Tara! Habang papunta tayo kina lola, kunwari 
+muna tayong mga DRRR officers!\""
+scroll_active = false
+
+[node name="Dialogue6" type="Panel" parent="UI"]
+visible = false
+custom_minimum_size = Vector2(250, 100)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.035
+offset_left = -579.0
+offset_top = 25.0
+offset_right = 577.0
+offset_bottom = 156.32
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_3v3wj")
+
+[node name="Dialogue2" type="Sprite2D" parent="UI/Dialogue6"]
+position = Vector2(592.4375, 97)
+scale = Vector2(0.5518384, 0.21747573)
+texture = ExtResource("1_l2u6u")
+
+[node name="CharacterHeads3" type="Sprite2D" parent="UI/Dialogue6"]
+position = Vector2(1004, 68.499985)
+scale = Vector2(0.072000004, 0.07450001)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 3
+
+[node name="CharacterHeads4" type="Sprite2D" parent="UI/Dialogue6"]
+position = Vector2(887.99994, 74.499985)
+scale = Vector2(0.07400002, 0.080500014)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+frame = 4
+
+[node name="CharacterHeads5" type="Sprite2D" parent="UI/Dialogue6"]
+position = Vector2(936.49994, 139.99998)
+scale = Vector2(0.0655, 0.074000016)
+texture = ExtResource("14_ed5nn")
+hframes = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Dialogue6"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 28.0
+offset_right = 1089.0
+offset_bottom = 174.0
+
+[node name="Label" type="Label" parent="UI/Dialogue6/VBoxContainer"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/font = SubResource("FontVariation_mlekn")
+theme_override_font_sizes/font_size = 40
+text = "Mga Bata:"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="UI/Dialogue6/VBoxContainer"]
+custom_minimum_size = Vector2(250, 100)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5803922, 0.27450982, 0.23921569, 1)
+theme_override_fonts/normal_font = SubResource("FontVariation_o856q")
+theme_override_font_sizes/normal_font_size = 30
+text = "\"Sige tara!\""
+scroll_active = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_pvbl2")
+}
+autoplay = "1st_Cutscene"
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="ParkBg2" type="Sprite2D" parent="."]
+position = Vector2(640.5, 359.5)
+scale = Vector2(0.8326823, 0.70214844)
+texture = ExtResource("5_u4yv4")
+
+[node name="Characters" type="Node2D" parent="."]
+
+[node name="Character1" type="Sprite2D" parent="Characters"]
+position = Vector2(692, 387.5)
+scale = Vector2(0.11200001, 0.11050001)
+texture = ExtResource("3_53jq0")
+hframes = 4
+
+[node name="Character2" type="Sprite2D" parent="Characters"]
+position = Vector2(458.09897, 513)
+scale = Vector2(0.13390104, 0.13899998)
+texture = ExtResource("2_p30sb")
+hframes = 6
+
+[node name="Character3" type="Sprite2D" parent="Characters"]
+position = Vector2(240.375, 389.14063)
+scale = Vector2(0.09762502, 0.10814063)
+texture = ExtResource("1_u4yv4")
+hframes = 6
+
+[node name="Character4" type="Sprite2D" parent="Characters"]
+position = Vector2(946.625, 471.74997)
+scale = Vector2(0.13637495, 0.13475)
+texture = ExtResource("4_3q24f")
+hframes = 8
+
+[node name="Character12" type="Sprite2D" parent="Characters"]
+position = Vector2(692, 388.5)
+scale = Vector2(0.11199998, 0.111499995)
+texture = ExtResource("6_3q24f")
+hframes = 5
+frame = 4
+
+[node name="Character22" type="Sprite2D" parent="Characters"]
+position = Vector2(458, 513)
+scale = Vector2(0.134, 0.13900001)
+texture = ExtResource("7_8ye5a")
+hframes = 7
+frame = 6
+
+[node name="ShoutEmote" type="Sprite2D" parent="."]
+position = Vector2(1158.625, 361.4375)
+scale = Vector2(0.19762497, 0.1765625)
+texture = ExtResource("4_p30sb")
+
+[node name="Audios" type="Node2D" parent="."]
+
+[node name="Dialogue2" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("9_8ye5a")
+volume_db = 1.756
+pitch_scale = 1.12
+
+[node name="Dialogue3" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("10_1titf")
+volume_db = -6.582
+pitch_scale = 1.19
+
+[node name="Dialogue4" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("11_ed5nn")
+volume_db = -1.755
+pitch_scale = 1.15
+
+[node name="Dialogue5" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("12_5gysb")
+volume_db = -8.05
+pitch_scale = 1.05
+
+[node name="Dialogue6" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("13_l2u6u")
+pitch_scale = 1.11
+
+[node name="ParkAmbience" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("17_pby01")
+volume_db = -14.92
+
+[node name="ChildrenLaughing" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("18_jyjru")
+volume_db = -16.675
+
+[node name="ChildrenLaughing2" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("19_3v3wj")
+volume_db = -5.211
+
+[node name="LolaDialogue" type="AudioStreamPlayer2D" parent="Audios"]
+stream = ExtResource("20_jad71")
+volume_db = -0.664
+pitch_scale = 1.05

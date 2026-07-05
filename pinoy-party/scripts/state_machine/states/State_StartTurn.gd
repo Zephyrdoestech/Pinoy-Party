@@ -1,6 +1,6 @@
 # scripts/state_machine/states/State_StartTurn.gd
 # ---------------------------------------------------------------------------
-# Phase 1 – Start Turn
+# Phase 1 - Start Turn
 # Identifies the current player, resets per-turn variables, then immediately
 # transitions to State_WaitingForDice.
 # ---------------------------------------------------------------------------
@@ -16,10 +16,8 @@ func enter() -> void:
 	# Reset any per-turn state on the player dictionary.
 	player["state"] = Enums.PlayerState.IDLE
 
-	print("[StartTurn] Player %d (%s) begins their turn." % [player_idx, player["name"]])
-
 	# Notify the UI / other listeners.
 	EventBus.turn_started.emit(player_idx)
 
-	# No waiting needed – move straight to dice phase.
+	# No waiting needed - move straight to dice phase.
 	request_transition(&"State_WaitingForDice")

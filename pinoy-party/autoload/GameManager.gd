@@ -1,10 +1,7 @@
 # autoload/GameManager.gd
 # ---------------------------------------------------------------------------
-# Global game state singleton.
-# The FSM (StateMachine + State_* nodes) lives inside the GameScene (Game.tscn)
-# and reads/writes the properties defined here.  The legacy imperative methods
-# (start_turn, on_dice_rolled, etc.) are kept for backward-compatibility during
-# the migration; they will be removed once the FSM is fully wired in Game.tscn.
+# Global game state singleton. The FSM (StateMachine + State_* nodes)
+# lives inside Game.tscn and reads/writes the properties defined here.
 # ---------------------------------------------------------------------------
 extends Node
 
@@ -52,7 +49,7 @@ func _ready() -> void:
 ## Builds the players array from active_player_count. Called once at
 ## autoload _ready() with the default count (4, for local/offline play),
 ## and called again by NetworkManager once the real LAN player count is
-## known — _ready() runs before the lobby exists, so it can't know that
+## known - _ready() runs before the lobby exists, so it can't know that
 ## count up front.
 func _setup_players() -> void:
 	players.clear()
@@ -67,13 +64,13 @@ func _setup_players() -> void:
 
 func _on_minigame_finished(scores: Dictionary) -> void:
 	for idx in scores:
-		# Guard: a buggy minigame could emit an out-of-range player index — fail
+		# Guard: a buggy minigame could emit an out-of-range player index - fail
 		# loudly here rather than crashing silently inside the array access below.
 		if idx < 0 or idx >= players.size():
 			push_error("[GameManager] _on_minigame_finished: invalid player index %d in scores dict" % idx)
 			continue
 		players[idx]["score"] += scores[idx]
-		print("[GameManager] Player %d earned %d point(s) from minigame." % [idx, scores[idx]])
+		EventBus.score_changed.emit(idx, players[idx]["score"])
 	current_player_index = (current_player_index + 1) % active_player_count
 
 func _on_trivia_finished(scores: Dictionary) -> void:
@@ -81,7 +78,7 @@ func _on_trivia_finished(scores: Dictionary) -> void:
 		add_score(idx, scores[idx])
 
 # ---------------------------------------------------------------------------
-# Legacy API — methods still used by dice.gd and Game.gd during FSM migration.
+# Legacy API - methods still used by dice.gd and Game.gd during FSM migration.
 # on_minigame_finished() and _advance_turn() have been removed: the FSM
 # (State_EndTurn) owns turn advancement and BaseMinigame._finish() routes
 # scores exclusively through EventBus.minigame_finished.

@@ -67,14 +67,12 @@ func _start_broadcasting() -> void:
 func _send_broadcast() -> void:
 	var msg := "PINOYPARTY|%s" % lobby_code
 	_discovery_socket.set_dest_address("255.255.255.255", DISCOVERY_PORT)
-	var err := _discovery_socket.put_packet(msg.to_utf8_buffer())
-	print("Broadcasting lobby code: ", lobby_code, " err=", err)
+	_discovery_socket.put_packet(msg.to_utf8_buffer())
 
 func start_listening_for_lobbies() -> void:
 	discovered_lobbies.clear()
 	_discovery_socket = PacketPeerUDP.new()
-	var err := _discovery_socket.bind(DISCOVERY_PORT)
-	print("Discovery bind result: ", err)
+	_discovery_socket.bind(DISCOVERY_PORT)
 	set_process(true)
 
 func _process(_delta: float) -> void:
@@ -91,7 +89,10 @@ func _process(_delta: float) -> void:
 func join_lobby_by_code(code: String, player_name: String) -> void:
 	code = code.to_upper()
 	if not discovered_lobbies.has(code):
-		join_failed.emit("No lobby found with that code on this network")
+		if OS.has_feature("debug"):
+			join_lobby(code, "127.0.0.1", player_name)
+		else:
+			join_failed.emit("Lobby not found! (Check code or enter IP manually)")
 		return
 	join_lobby(code, discovered_lobbies[code]["ip"], player_name)
 
@@ -104,30 +105,29 @@ func stop_discovery() -> void:
 		_broadcast_timer.queue_free()
 
 func join_lobby(code: String, ip: String, player_name: String) -> void:
-	print("join_lobby called: code=", code, " ip=", ip, " name=", player_name)
 	lobby_code = code.to_upper()
 	is_host = false
 	_pending_name = player_name
 
+	if not ip.is_valid_ip_address() and ip != "localhost":
+		join_failed.emit("Invalid IP Address format")
+		return
+
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
-	print("create_client result: ", err)
 	if err != OK:
 		join_failed.emit("Could not reach host")
 		return
 	multiplayer.multiplayer_peer = peer
 
 func _on_connected_ok() -> void:
-	print("Connected to host, registering as: ", _pending_name)
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
-	print("Connection failed")
-	join_failed.emit("Connection failed")
+	join_failed.emit("Lobby not found or unreachable")
 
 @rpc("any_peer", "reliable")
 func _register_player(player_name: String, code: String) -> void:
-	print("_register_player called on host: name=", player_name, " code=", code)
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
@@ -151,7 +151,7 @@ func _sync_player_list(players: Dictionary) -> void:
 	connected_players = players
 	roster_updated.emit()
 
-func _on_peer_connected(id: int) -> void:
+func _on_peer_connected(_id: int) -> void:
 	if not is_host:
 		stop_discovery()
 
@@ -163,7 +163,7 @@ func _on_peer_disconnected(id: int) -> void:
 			# A player dropped mid-match. We don't try to keep the game
 			# running without them (their turn/minigame slot would hang
 			# forever, same failure shape as every other silent-freeze bug
-			# in this project) — tell every remaining peer and let the
+			# in this project) - tell every remaining peer and let the
 			# scene decide how to end gracefully.
 			rpc("_notify_player_left_mid_match", id, leaving_name)
 		elif is_host:
@@ -186,7 +186,7 @@ func start_game() -> void:
 func _on_game_start() -> void:
 	match_in_progress = true
 	game_starting.emit()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://cutscene.tscn")
 
 # --- Player index <-> peer id mapping ---
 # Built once on the host when the match starts, then broadcast to everyone.
@@ -232,24 +232,19 @@ func request_roll() -> void:
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
-	print("request_roll received, raw sender_id=", sender_id)
 	if sender_id == 0:
 		sender_id = multiplayer.get_unique_id()
 	_process_roll_request(sender_id)
 
 func _process_roll_request(sender_id: int) -> void:
 	var sender_player_idx: int = peer_to_player_index.get(sender_id, -1)
-	print("Resolved sender_id=", sender_id, " to player_idx=", sender_player_idx, " (current turn=", GameManager.current_player_index, ")")
 	if sender_player_idx != GameManager.current_player_index:
-		print("Rejected roll — not this peer's turn")
 		return
 	var result := randi_range(1, Constants.DICE_FACES)
-	print("Rolled: ", result, " — broadcasting to all peers")
 	rpc("_apply_roll_result", result)
 
 @rpc("authority", "reliable", "call_local")
 func _apply_roll_result(result: int) -> void:
-	print("_apply_roll_result received: ", result)
 	GameManager.on_dice_rolled(result)
 
 # --- Minigame launch sync ---
@@ -265,7 +260,6 @@ func start_minigame_synced(participating_players: Array[int]) -> void:
 
 @rpc("authority", "reliable", "call_local")
 func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
-	print("Launching synced minigame: ", minigame_id)
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
 
@@ -274,7 +268,7 @@ func _launch_minigame(minigame_id: String, participating_players: Array) -> void
 # controls, the host validates it, then broadcasts so every peer's copy of
 # the minigame advances that player's progress identically and at the same
 # moment. Host calls process_sack_race_hop() directly (self-targeted RPCs
-# aren't allowed — see the dice roll gotcha), clients go through the RPC.
+# aren't allowed - see the dice roll gotcha), clients go through the RPC.
 @rpc("any_peer", "reliable")
 func request_sack_race_hop(player_idx: int) -> void:
 	if not is_host:
@@ -284,7 +278,7 @@ func request_sack_race_hop(player_idx: int) -> void:
 		sender_id = multiplayer.get_unique_id()
 	var sender_player_idx: int = peer_to_player_index.get(sender_id, -1)
 	if sender_player_idx != player_idx:
-		return  # client tried to hop for a player it doesn't control — ignore
+		return  # client tried to hop for a player it doesn't control - ignore
 	process_sack_race_hop(player_idx)
 
 func process_sack_race_hop(player_idx: int) -> void:
@@ -308,12 +302,12 @@ func request_luksong_jump(player_idx: int, client_marker_t: float) -> void:
 		return  # client tried to jump for a player it doesn't control
 	process_luksong_jump(player_idx, client_marker_t)
 
-func process_luksong_jump(player_idx: int, client_marker_t: float) -> void:
+func process_luksong_jump(player_idx: int, _client_marker_t: float) -> void:
 	var scene := get_tree().current_scene
 	if not scene is LuksongBaka:
 		return
 	# Host evaluates using its own marker_t, not the client's, so the
-	# in_zone decision is always authoritative — client_marker_t is only
+	# in_zone decision is always authoritative - client_marker_t is only
 	# used as a fallback if the host scene somehow has no marker state.
 	var host_marker_t: float = scene.marker_t
 	var zone_start: float = scene.zone_start
@@ -341,14 +335,7 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 
 # --- LangitLupa sync ---
 
-# Host picked a random layout seed — every peer generates the identical platforms locally.
-@rpc("authority", "reliable", "call_local")
-func sync_langitlupa_platforms(seed_value: int) -> void:
-	var scene := get_tree().current_scene
-	if scene is LangitLupa:
-		scene._generate_platforms(seed_value)
-		if is_host:
-			sync_langitlupa_start.rpc()  
+
 
 # Host broadcasts it_player and area positions once at match start.
 @rpc("authority", "reliable", "call_local")
@@ -359,7 +346,7 @@ func sync_langitlupa_start() -> void:
 
 # Client sends its position to host each sync tick.
 # Host calls process_langitlupa_position() directly (avoids self-RPC throw).
-@rpc("any_peer", "unreliable")  # unreliable is fine — positions update at 20Hz anyway
+@rpc("any_peer", "unreliable")  # unreliable is fine - positions update at 20Hz anyway
 func send_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 	if not is_host:
 		return
@@ -376,18 +363,17 @@ func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		# Don't overwrite local player's position — they own it locally
 		if player_idx != scene.local_player_index:
 			scene._get_player_node(player_idx).position = pos
 
-# Host detected a player caught by the flood — broadcast to all peers.
+# Host detected a player caught by the flood - broadcast to all peers.
 @rpc("authority", "reliable", "call_local")
 func broadcast_langitlupa_elimination(player_idx: int) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
 		scene.apply_elimination(player_idx)
 
-# Host decided the round is over — broadcast to all peers.
+# Host decided the round is over - broadcast to all peers.
 @rpc("authority", "reliable", "call_local")
 func sync_langitlupa_end(scores: Dictionary) -> void:
 	var scene := get_tree().current_scene
@@ -410,7 +396,11 @@ func _load_trivia_questions() -> void:
 	_trivia_questions = parsed if parsed is Array else []
 
 func start_trivia_synced(answering_player_idx: int) -> void:
-	if not is_host:
+	# In a local/offline debug session, host_lobby() is never called so
+	# is_host stays false.  Treat the session as host if no real peer exists.
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if not is_host and not offline:
 		return
 	_load_trivia_questions()
 	if _trivia_questions.is_empty():
@@ -420,20 +410,26 @@ func start_trivia_synced(answering_player_idx: int) -> void:
 	_trivia_answering_player = answering_player_idx
 	_trivia_round_id += 1
 	var this_round_id: int = _trivia_round_id
-	rpc("_apply_trivia_start", _current_trivia["question"], _current_trivia["options"], answering_player_idx)
+
+	if offline:
+		# No ENet peer - call directly instead of via RPC.
+		_apply_trivia_start(_current_trivia["question"], _current_trivia["options"], answering_player_idx)
+	else:
+		rpc("_apply_trivia_start", _current_trivia["question"], _current_trivia["options"], answering_player_idx)
 
 	# Auto-reveal after the answer window, regardless of whether everyone
-	# answered — mirrors SackRace's RACE_TIMEOUT pattern (don't let one
+	# answered - mirrors SackRace's RACE_TIMEOUT pattern (don't let one
 	# silent/AFK client hang the round forever).
 	await get_tree().create_timer(Constants.TRIVIA_ANSWER_TIME_SEC).timeout
 	# Only reveal if this is still the current round. If a new round already
 	# started before this timer fired, this timer belongs to a round that's
-	# already over — firing it now would force-end the NEW round early,
+	# already over - firing it now would force-end the NEW round early,
 	# before the player even got to answer. Same stale-coroutine shape as
-	# State_Moving's signal theft — a leftover async call from an earlier
+	# State_Moving's signal theft - a leftover async call from an earlier
 	# round bleeding into a later one.
 	if this_round_id == _trivia_round_id:
 		_reveal_trivia_results()
+
 
 @rpc("authority", "reliable", "call_local")
 func _apply_trivia_start(question: String, options: Array, answering_player_idx: int) -> void:
@@ -458,7 +454,7 @@ func process_trivia_answer(player_idx: int, option_idx: int) -> void:
 	if _trivia_answers.has(player_idx):
 		return  # already answered, ignore duplicate/late submissions
 	_trivia_answers[player_idx] = option_idx
-	_reveal_trivia_results()  # only one player answers now — reveal right away
+	_reveal_trivia_results()  # only one player answers now - reveal right away
 
 func _reveal_trivia_results() -> void:
 	if _current_trivia.is_empty():
@@ -468,11 +464,20 @@ func _reveal_trivia_results() -> void:
 	for idx in _trivia_answers:
 		if _trivia_answers[idx] == correct_idx:
 			scores[idx] = Constants.TRIVIA_POINTS
-	rpc("_apply_trivia_reveal", scores, correct_idx)
 	_current_trivia = {}  # guard against double-reveal
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_apply_trivia_reveal(scores, correct_idx)
+	else:
+		rpc("_apply_trivia_reveal", scores, correct_idx)
 
 @rpc("authority", "reliable", "call_local")
 func _apply_trivia_reveal(scores: Dictionary, correct_idx: int) -> void:
+	if TriviaController == null or not TriviaController.visible:
+		# Overlay was never shown on this peer - just propagate the score signal.
+		EventBus.trivia_finished.emit(scores)
+		return
 	TriviaController.show_results(scores, correct_idx)
 	EventBus.trivia_finished.emit(scores)
 
@@ -482,3 +487,15 @@ func _generate_code() -> String:
 	for i in 5:
 		code += CHARS[randi() % CHARS.length()]
 	return code
+
+@rpc("any_peer", "call_local", "reliable")
+func request_restart() -> void:
+	if not is_host:
+		return
+	_apply_restart.rpc()
+
+@rpc("authority", "call_local", "reliable")
+func _apply_restart() -> void:
+	match_in_progress = false
+	GameManager.reset_for_new_game()
+	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")

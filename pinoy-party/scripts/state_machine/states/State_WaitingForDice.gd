@@ -1,16 +1,16 @@
 # scripts/state_machine/states/State_WaitingForDice.gd
 # ---------------------------------------------------------------------------
-# Phase 2 – Waiting For Dice
+# Phase 2 - Waiting For Dice
 #
 # This state PAUSES the FSM and waits for an external signal from the dice UI.
 # Nothing progresses until the player presses the Roll button, which causes
 # the Dice node to emit EventBus.dice_rolled(player_index, result).
 #
 # Flow:
-#   enter()  → subscribe to EventBus.dice_rolled
-#   (idle…)  → player presses Roll button → Dice node rolls → emits signal
-#   _on_dice_rolled() → store result on GameManager → transition to Moving
-#   exit()   → unsubscribe from EventBus.dice_rolled
+#   enter()  -> subscribe to EventBus.dice_rolled
+#   (idle…)  -> player presses Roll button -> Dice node rolls -> emits signal
+#   _on_dice_rolled() -> store result on GameManager -> transition to Moving
+#   exit()   -> unsubscribe from EventBus.dice_rolled
 # ---------------------------------------------------------------------------
 class_name State_WaitingForDice
 extends State
@@ -18,9 +18,6 @@ extends State
 
 func enter() -> void:
 	var gm: GameManager = GameManager
-	var player_idx: int = gm.current_player_index
-
-	print("[WaitingForDice] Waiting for Player %d to roll…" % player_idx)
 
 	# Update the GameManager's legacy state enum so Game.gd's roll-guard still
 	# works while we migrate to the FSM incrementally.
@@ -37,7 +34,7 @@ func exit() -> void:
 		EventBus.dice_rolled.disconnect(_on_dice_rolled)
 
 
-# tick() is intentionally omitted – this state is fully event-driven.
+# tick() is intentionally omitted - this state is fully event-driven.
 
 
 # ---------------------------------------------------------------------------
@@ -51,12 +48,10 @@ func _on_dice_rolled(player_index: int, result: int) -> void:
 	# with proper UI guards, but belt-and-suspenders).
 	if player_index != gm.current_player_index:
 		push_warning(
-			"[WaitingForDice] dice_rolled for player %d but current is %d – ignoring."
+			"[WaitingForDice] dice_rolled for player %d but current is %d - ignoring."
 			% [player_index, gm.current_player_index]
 		)
 		return
-
-	print("[WaitingForDice] Player %d rolled a %d." % [player_index, result])
 
 	# Store the roll result so State_Moving can read it.
 	gm.pending_roll = result

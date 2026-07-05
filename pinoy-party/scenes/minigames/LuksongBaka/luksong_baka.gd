@@ -8,121 +8,78 @@ const ROUND_SPEEDUP := 0.85        # multiply sweep time by this each round
 const ZONE_WIDTH_START := 0.30     # green zone width as % of bar (round 1)
 const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ever get
 const ZONE_SHRINK := 0.92          # multiply zone width by this each round
-const BAR_WIDTH := 400.0
+const BAR_WIDTH := 200.0
 
 # ---------------------------------------------------------------------------
 # Visual constants
 # ---------------------------------------------------------------------------
-const BUILDING_TEXTURES: Array[String] = [
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building1.png",
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building2.png",
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building3.png",
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building4.png",
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building5.png",
-	"res://assets/minigame_assets/luksong_baka_assets/luksong_baka_building6.png",
-]
-const BUILDING_SCROLL_SPEED: float = 80.0  # pixels/sec at round 1
-const BUILDING_Y: float = 400.0            # y position of building sprites
-const BUILDING_SCALE: float = 4.0          # 160px × 4 = 640px wide per building
-const BUILDING_NATIVE_W: int = 160         # source PNG width in pixels
-const BUILDING_COUNT: int = 10             # sprites to spawn (fills 1280 + overflow)
+const CHAR_SCALE: float = 0.12            # Scale factor for characters
+const CHAR_Y: float = 275.0               # Adjusted vertical alignment relative to quadrant size
 
-# Character spritesheets: 4096×1024 (walk, 4 frames) / 2048×1024 (jump, 2 frames)
-const CHAR_FRAME_W: int = 1024
-const CHAR_FRAME_H: int = 1024
-const CHAR_WALK_FRAMES: int = 4
-const CHAR_JUMP_FRAMES: int = 2
-const CHAR_WALK_FPS: float = 8.0
-const CHAR_JUMP_FPS: float = 8.0
-const CHAR_SCALE: float = 0.12            # 1024px × 0.12 ≈ 123px tall on screen
-const CHAR_Y: float = 500.0               # vertical position of character sprites
-
-@onready var player_bars: Node2D = $PlayerBars
 @onready var round_label: Label = $UI/RoundLabel
 @onready var countdown_label: Label = $UI/CountdownLabel
-@onready var buildings_node: Node2D = $Buildings
-@onready var characters_node: Node2D = $Characters
+@onready var splitscreen_grid: GridContainer = $SplitscreenGrid
+
+const QUADRANT_SCENE = preload("res://scenes/minigames/LuksongBaka/player_quadrant.tscn")
+const PLAYER_SCENES := {
+	0: preload("res://scenes/minigames/LuksongBaka/minigame_character.tscn"),
+	1: preload("res://scenes/minigames/LuksongBaka/minigame_character2.tscn"),
+	2: preload("res://scenes/minigames/LuksongBaka/minigame_character3.tscn"),
+	3: preload("res://scenes/minigames/LuksongBaka/minigame_character4.tscn")
+}
+
+const OBSTACLE_TEXTURES := [
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle1.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle2.png"),
+	preload("res://assets/minigame_assets/luksong_baka_assets/luksong_baka_obstacle3.png")
+]
 
 var current_round := 0
 var round_time := ROUND_TIME_START
 var zone_width := ZONE_WIDTH_START
-var zone_start := 0.0  # 0.0–1.0 position of zone start on the bar
+var zone_start := 0.0  # 0.0-1.0 position of zone start on the bar
 
 var alive_players: Array[int] = []
 var jumped_this_round: Dictionary = {}   # player_index -> bool
-var marker_t := 0.0                      # 0.0–1.0 sweep progress
+var marker_t := 0.0                      # 0.0-1.0 sweep progress
 var sweeping := false
 
 var eliminated_this_round: Array[int] = []
 var elimination_order: Array = []  # Array of Array[int], chronological (earliest round first)
 
-var bars: Dictionary = {}  # player_index -> bar UI nodes
-
-# Visual state
-var building_sprites: Array[Sprite2D] = []
-var building_textures_cache: Array[Texture2D] = []
+var bars: Dictionary = {}          # player_index -> bar UI nodes reference
 var char_sprites: Dictionary = {}  # player_index -> AnimatedSprite2D
+var quadrants: Dictionary = {}     # player_index -> SubViewportContainer reference
+
+func _ready() -> void:
+	randomize()
+	
+	# ️ LOCAL TESTING OVERRIDE GATEWAY:
+	if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+		GameManager.players = [
+			{"name": "Player 1 (You)", "score": 0},
+			{"name": "CPU Player 2", "score": 0},
+			{"name": "CPU Player 3", "score": 0},
+			{"name": "CPU Player 4", "score": 0}
+		]
+		
+		gameplay_locked = false 
+		start_game([0, 1, 2, 3])
 
 func start_game(players: Array[int]) -> void:
 	super(players)
 	alive_players = players.duplicate()
-	_spawn_buildings()
-	_spawn_character_sprites()
-	_spawn_player_bars()
-	await run_intro()
-	_start_countdown()
-
-# ---------------------------------------------------------------------------
-# Existing gameplay functions — UNTOUCHED
-# ---------------------------------------------------------------------------
-
-func _spawn_player_bars() -> void:
-	var spacing := 90
-	var start_y := 0
-	for i in alive_players.size():
-		var player_idx: int = alive_players[i]
-		var bar := _create_bar_ui(player_idx)
-		bar.position = Vector2(0, start_y + i * spacing)
-		player_bars.add_child(bar)
-		bars[player_idx] = bar
-
-func _create_bar_ui(player_idx: int) -> Control:
-	var container := Control.new()
-	container.custom_minimum_size = Vector2(BAR_WIDTH + 120, 70)
-
-	var name_label := Label.new()
-	name_label.text = GameManager.players[player_idx]["name"]
-	name_label.position = Vector2(0, 0)
-	container.add_child(name_label)
-
-	var track := ColorRect.new()
-	track.name = "Track"
-	track.color = Color(0.25, 0.25, 0.25)
-	track.position = Vector2(0, 24)
-	track.size = Vector2(BAR_WIDTH, 24)
-	container.add_child(track)
-
-	var zone := ColorRect.new()
-	zone.name = "Zone"
-	zone.color = Color(0.3, 0.85, 0.4)
-	zone.position = Vector2(0, 24)
-	zone.size = Vector2(BAR_WIDTH * zone_width, 24)
-	track.add_child(zone)
-
-	var marker := ColorRect.new()
-	marker.name = "Marker"
-	marker.color = Color.WHITE
-	marker.position = Vector2(0, 20)
-	marker.size = Vector2(4, 32)
-	track.add_child(marker)
-
-	var status := Label.new()
-	status.name = "Status"
-	status.text = ""
-	status.position = Vector2(BAR_WIDTH + 10, 24)
-	container.add_child(status)
-
-	return container
+	
+	# Initialize our 4 separate isolated viewports
+	_spawn_splitscreen_worlds()
+	
+	if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+		await get_tree().process_frame 
+		_start_countdown()
+		_begin_round(randf_range(0.0, 1.0 - zone_width)) # Kicks off local sandbox with an initial zone position
+	else:
+		await run_intro()
+		_start_countdown()
 
 func _start_countdown() -> void:
 	current_round += 1
@@ -130,104 +87,282 @@ func _start_countdown() -> void:
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
 
-	# Only the host picks the zone position — avoids each client randomizing
-	# independently and disagreeing on where the safe zone actually is.
-	if NetworkManager.is_host:
-		var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
-		NetworkManager.sync_luksong_round.rpc(picked_zone_start)
-	# Non-host clients wait for _apply_luksong_round() to call _begin_round()
-	# via the broadcast — don't call _begin_round() here directly on clients.
+	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
-## Called on every peer once the host has broadcast the zone position for
-## this round. Does the actual bar/zone/marker reset and starts the sweep.
+	#  LOCAL SANDBOX COMPATIBILITY GATEWAY:
+	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	if is_local_test:
+		# Directly run the logic instantly without routing through NetworkManager
+		_begin_round(picked_zone_start)
+	else:
+		# Normal production network execution pathway
+		if NetworkManager.is_host:
+			NetworkManager.sync_luksong_round.rpc(picked_zone_start)
+
+#  UNIFIED ROUND START FUNCTION
 func _begin_round(synced_zone_start: float) -> void:
 	zone_start = synced_zone_start
-	for player_idx in alive_players:
-		var zone_rect: ColorRect = bars[player_idx].get_node("Track/Zone")
-		zone_rect.position.x = BAR_WIDTH * zone_start
-		zone_rect.size.x = BAR_WIDTH * zone_width
-		var marker_rect: ColorRect = bars[player_idx].get_node("Track/Marker")
-		marker_rect.position.x = 0.0
-		var status: Label = bars[player_idx].get_node("Status")
-		status.text = ""
-		status.modulate = Color.WHITE
+	marker_t = 0.0
+	
+	# Force tracking arrays to reset cleanly 
+	jumped_this_round.clear()
+	
+	for player_idx in participating_players:
+		#  CRITICAL FIX: If this player is already eliminated, 
+		# do NOT reset their quadrant! Leave them frozen.
+		if not alive_players.has(player_idx):
+			continue # Skip straight to the next player loop execution
+			
+		if char_sprites.has(player_idx) and bars.has(player_idx):
+			var spr = char_sprites[player_idx]
+			var bar_ui = bars[player_idx]
+			
+			# Reset character state to their walking animation
+			if spr and is_instance_valid(spr):
+				spr.play("walk")
+				spr.modulate = Color.WHITE # Reset gray scale out-outs from prior losses
+			
+			# RANDOMIZED STATIONARY OBSTACLE RESET
+			if quadrants.has(player_idx):
+				var quad = quadrants[player_idx]
+				var obstacle: Sprite2D = quad.get_node_or_null("SubViewport/Obstacle")
+				if obstacle:
+					obstacle.texture = OBSTACLE_TEXTURES.pick_random()
+					obstacle.position.x = 500.0 # Set completely off-screen right at start
+					obstacle.show()
+			
+			# Configure visual track bar nodes safely
+			var track: Control = bar_ui.get_node_or_null("Track")
+			var zone_rect: Control = bar_ui.get_node_or_null("Track/Zone")
+			var marker_rect: Control = bar_ui.get_node_or_null("Track/Marker")
+			var status: Label = bar_ui.get_node_or_null("Status")
+			
+			if track and zone_rect and marker_rect:
+				var current_track_width: float = track.size.x
+				zone_rect.position.x = current_track_width * zone_start
+				zone_rect.size.x = current_track_width * zone_width
+				marker_rect.position.x = 0.0
+				zone_rect.show()
+				
+			if status:
+				status.text = ""
+				status.modulate = Color.WHITE
+				
 	_begin_sweep()
+
+
+func _process(delta: float) -> void:
+	if gameplay_locked:
+		return
+		
+	# Keep updating backgrounds (moving active ones, maintaining freeze states)
+	_scroll_buildings(delta)
+	
+	if not sweeping:
+		return
+
+	# Increment global timeline progression calculation
+	marker_t += delta / round_time
+	if marker_t >= 1.0:
+		marker_t = 1.0
+		_end_round_sweep()
+		return
+
+	# ️ TEST OVERRIDE: Simulate CPU player inputs when running locally
+	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	if is_local_test:
+		for player_idx in alive_players.duplicate():
+			if player_idx == 0: continue
+			if jumped_this_round.has(player_idx): continue
+			
+			# AI Logic: If the sweeping marker enters the safe zone, roll a random chance to jump
+			if marker_t >= zone_start and marker_t <= (zone_start + zone_width):
+				if randf() < 0.05: # 5% frame chance to react while inside the zone
+					_try_jump(player_idx)
+
+	# Update visual timelines, markers, and obstacles for each player grid
+	for player_idx in participating_players:
+		if not bars.has(player_idx):
+			continue
+			
+		# 1.  TIMED OBSTACLE LERP MOVEMENT
+		if alive_players.has(player_idx) and quadrants.has(player_idx):
+			var quad = quadrants[player_idx]
+			var obstacle: Sprite2D = quad.get_node_or_null("SubViewport/Obstacle")
+			
+			if obstacle and is_instance_valid(obstacle):
+				var start_x := 500.0  # Spawn coordinate (off-screen right)
+				var target_x := 80.0   # Character's horizontal position
+				
+				# Normalize marker progress against where the safe zone actually begins
+				if marker_t < zone_start:
+					var t_normalized = marker_t / zone_start
+					obstacle.position.x = lerp(start_x, target_x, t_normalized)
+				else:
+					# If marker passes the target zone, pass through the player to the left off-screen
+					var overshoot = (marker_t - zone_start) / (1.0 - zone_start)
+					obstacle.position.x = lerp(target_x, -100.0, overshoot)
+		
+		if not alive_players.has(player_idx):
+			continue
+		
+		# 2. UI TIMING BAR MARKER MOVEMENT
+		# Freeze visual marker placement instantly if the player has already jumped
+		if jumped_this_round.has(player_idx):
+			continue
+			
+		var track: Control = bars[player_idx].get_node_or_null("Track")
+		var marker_rect: Control = bars[player_idx].get_node_or_null("Track/Marker")
+		
+		if track and marker_rect:
+			var current_track_width: float = track.size.x
+			marker_rect.position.x = marker_t * current_track_width
 
 func _begin_sweep() -> void:
 	marker_t = 0.0
 	sweeping = true
 
-func _process(delta: float) -> void:
-	if gameplay_locked:
-		return
-	if not sweeping:
-		_scroll_buildings(delta)
-		return
-
-	_scroll_buildings(delta)
-
-	marker_t += delta / round_time
-	if marker_t >= 1.0:
-		marker_t = 1.0
-		_end_round_sweep()
-
-	for player_idx in alive_players:
-		if jumped_this_round.has(player_idx):
-			continue
-		var marker_rect: ColorRect = bars[player_idx].get_node("Track/Marker")
-		marker_rect.position.x = marker_t * BAR_WIDTH
-
 func _unhandled_input(event: InputEvent) -> void:
+	# 1. Ignore inputs if the bar isn't actively sweeping
 	if not sweeping:
 		return
+		
+	# 2. Ignore any input that isn't our designated jump action
 	if not event.is_action_pressed("jump"):
 		return
+		
+	print(" Jump action detected!")
+
+	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
+	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	if is_local_test:
+		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
+		_try_jump(0)
+		return #  CRITICAL: This MUST be here so it stops execution right now!
+
+	# 4. GATEWAY B: Production Network Mode (F5 Running Main Game)
 	var my_idx: int = NetworkManager.get_my_player_index()
+	print(" Network Mode: My Player Index = ", my_idx, " | Is Alive = ", alive_players.has(my_idx))
+	
 	if my_idx == -1 or not alive_players.has(my_idx):
 		return
 	if jumped_this_round.has(my_idx):
 		return
+		
 	if NetworkManager.is_host:
 		NetworkManager.process_luksong_jump(my_idx, marker_t)
 	else:
 		NetworkManager.request_luksong_jump.rpc_id(1, my_idx, marker_t)
 
 func _try_jump(player_idx: int) -> void:
-	if not alive_players.has(player_idx) or jumped_this_round.has(player_idx):
+	print(" Checking _try_jump guards for player: ", player_idx)
+	
+	if not alive_players.has(player_idx):
+		print("❌ Guard failed: player_idx is not in alive_players! current alive: ", alive_players)
+		return
+	if jumped_this_round.has(player_idx):
+		print("❌ Guard failed: player already jumped this round!")
+		return
+	if not bars.has(player_idx):
+		print("❌ Guard failed: bars dictionary is missing player_idx!")
+		return
+	if not char_sprites.has(player_idx):
+		print("❌ Guard failed: char_sprites dictionary is missing player_idx!")
 		return
 
+	print("✅ All guards passed! Processing jump calculations...")
 	jumped_this_round[player_idx] = true
 	var in_zone: bool = marker_t >= zone_start and marker_t <= (zone_start + zone_width)
-	var status: Label = bars[player_idx].get_node("Status")
+	var status: Label = bars[player_idx].get_node_or_null("Status")
 
 	if in_zone:
-		status.text = "Cleared!"
-		status.modulate = Color(0.3, 0.9, 0.4)
+		if status:
+			status.text = "Cleared!"
+			status.modulate = Color(0.3, 0.9, 0.4)
 		GameManager.add_score(player_idx, 1)
-		# Visual: play jump animation once, then return to walk
-		if char_sprites.has(player_idx):
-			var spr: AnimatedSprite2D = char_sprites[player_idx]
-			spr.play("jump")
-			spr.animation_finished.connect(func():
-				if is_instance_valid(spr) and alive_players.has(player_idx):
-					spr.play("walk")
-			, CONNECT_ONE_SHOT)
+		
+		var spr: AnimatedSprite2D = char_sprites[player_idx]
+		spr.play("jump")
+		var tween = create_tween().set_parallel(false)
+		var jump_height := 100.0  # Increase this number to jump even higher!
+		var jump_duration := 0.25 # How fast they reach the peak
+		
+		# 1. Animate upward relative to the base CHAR_Y alignment
+		tween.tween_property(spr, "position:y", CHAR_Y - jump_height, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+# 2. Animate back down to the ground
+		tween.tween_property(spr, "position:y", CHAR_Y, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+# Return to walk state when the distinct resource finishes playing
+		spr.animation_finished.connect(func():
+			if is_instance_valid(spr) and alive_players.has(player_idx):
+				spr.play("walk"), 
+		CONNECT_ONE_SHOT)
+
+		# Return to walk state when the distinct resource finishes playing
+		spr.animation_finished.connect(func():
+			if is_instance_valid(spr) and alive_players.has(player_idx):
+				spr.play("walk")
+		, CONNECT_ONE_SHOT)
 	else:
-		status.text = "Caught!"
-		status.modulate = Color(0.9, 0.3, 0.3)
-		# Visual: grey out eliminated player
-		if char_sprites.has(player_idx):
-			var spr: AnimatedSprite2D = char_sprites[player_idx]
-			spr.stop()
-			spr.modulate = Color(0.4, 0.4, 0.4)
-		_eliminate(player_idx)
+		if status:
+			status.text = "Caught!"
+			status.modulate = Color(0.9, 0.3, 0.3)
+		
+		var spr: AnimatedSprite2D = char_sprites[player_idx]
+		spr.stop()
+		spr.modulate = Color(0.4, 0.4, 0.4)
+			
+		if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+			alive_players.erase(player_idx)
+		else:
+			_eliminate(player_idx)
 
 func _end_round_sweep() -> void:
 	sweeping = false
-	if not NetworkManager.is_host:
-		return  # only host drives round-end logic; results arrive via RPC
+	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	
+	# ️ HARD SANDBOX RESET FOR F6 TESTING
+	if is_local_test:
+		print("--- ROUND ENDED (SANDBOX) ---")
+		
+		# Eliminate anyone who didn't trigger a jump callback
+		for player_idx in alive_players.duplicate():
+			if not jumped_this_round.has(player_idx):
+				if bars.has(player_idx):
+					var status: Label = bars[player_idx].get_node_or_null("Status")
+					if status:
+						status.text = "Caught!"
+						status.modulate = Color(0.9, 0.3, 0.3)
+				
+				if char_sprites.has(player_idx):
+					var spr: AnimatedSprite2D = char_sprites[player_idx]
+					spr.stop()
+					spr.modulate = Color(0.4, 0.4, 0.4)
+				
+				alive_players.erase(player_idx)
+		
+		# Evaluate Game Over conditions natively inside the sandbox
+		if alive_players.size() == 0:
+			print("--- GAME OVER: ALL PLAYERS ELIMINATED ---")
+			countdown_label.text = "GAME OVER"
+			return
+			
+		await get_tree().create_timer(1.0).timeout
 
-	# Find anyone who never jumped — auto-eliminated this round
+		jumped_this_round.clear()
+		eliminated_this_round.clear()
+		
+		round_time = max(ROUND_TIME_MIN, round_time * ROUND_SPEEDUP)
+		zone_width = max(ZONE_WIDTH_MIN, zone_width * ZONE_SHRINK)
+		
+		_start_countdown()
+		_begin_round(randf_range(0.0, 1.0 - zone_width))
+		return
+
+	# --- ORIGINAL BACKEND LOBBY MULTIPLAYER CODE ---
+	if not NetworkManager.is_host:
+		return
+
 	var auto_eliminated: Array[int] = []
 	for player_idx in alive_players.duplicate():
 		if not jumped_this_round.has(player_idx):
@@ -235,34 +370,50 @@ func _end_round_sweep() -> void:
 
 	NetworkManager.sync_luksong_round_end.rpc(auto_eliminated)
 
-## Called on every peer by NetworkManager._apply_luksong_jump().
-## in_zone was evaluated by the host using its authoritative marker_t.
 func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 	if not alive_players.has(player_idx):
 		return
 	jumped_this_round[player_idx] = true
-	var status: Label = bars[player_idx].get_node("Status")
-	if in_zone:
-		status.text = "Cleared!"
-		status.modulate = Color(0.3, 0.9, 0.4)
-	else:
-		status.text = "Caught!"
-		status.modulate = Color(0.9, 0.3, 0.3)
+	var status: Label = bars[player_idx].get_node_or_null("Status")
+	if status:
+		status.text = "Cleared!" if in_zone else "Caught!"
+		status.modulate = Color(0.3, 0.9, 0.4) if in_zone else Color(0.9, 0.3, 0.3)
+		
+	if not in_zone:
+		if char_sprites.has(player_idx):
+			char_sprites[player_idx].stop()
+			char_sprites[player_idx].modulate = Color(0.4, 0.4, 0.4)
+			
+		#  FIX: Added 'var' to properly declare the obstacle variable
+		if quadrants.has(player_idx):
+			var obstacle = quadrants[player_idx].get_node_or_null("SubViewport/Obstacle")
+			if obstacle:
+				obstacle.hide()
+				
 		_eliminate(player_idx)
 
-## Called on every peer by NetworkManager._apply_luksong_round_end().
-## auto_eliminated contains players who never jumped before the sweep finished.
 func apply_round_end(auto_eliminated: Array) -> void:
 	for player_idx in auto_eliminated:
-		var status: Label = bars[player_idx].get_node("Status")
-		status.text = "Caught!"
-		status.modulate = Color(0.9, 0.3, 0.3)
+		var status: Label = bars[player_idx].get_node_or_null("Status")
+		if status:
+			status.text = "Caught!"
+			status.modulate = Color(0.9, 0.3, 0.3)
+		if char_sprites.has(player_idx):
+			char_sprites[player_idx].stop()
+			char_sprites[player_idx].modulate = Color(0.4, 0.4, 0.4)
+			
+		#  FIXED: Moved inside the loop so player_idx and obstacle are in scope
+		if quadrants.has(player_idx):
+			var obstacle = quadrants[player_idx].get_node_or_null("SubViewport/Obstacle")
+			if obstacle:
+				obstacle.hide() # Hides the hurdle instantly on failure
+				
 		_eliminate(player_idx)
 
-
+	# This logic runs after the loop finishes processing all players
 	if eliminated_this_round.size() > 0:
 		elimination_order.append(eliminated_this_round.duplicate())
-
+	
 	_check_game_over()
 
 func _eliminate(player_idx: int) -> void:
@@ -270,21 +421,24 @@ func _eliminate(player_idx: int) -> void:
 	eliminated_this_round.append(player_idx)
 
 func _check_game_over() -> void:
+	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+
 	if alive_players.size() <= 1:
-		_end_game()
+		print("--- GAME OVER (No players left or 1 winner) ---")
+		if not is_local_test:
+			_end_game()
 		return
 
-	# Speed up + shrink zone for next round
 	round_time = max(ROUND_TIME_MIN, round_time * ROUND_SPEEDUP)
 	zone_width = max(ZONE_WIDTH_MIN, zone_width * ZONE_SHRINK)
 
-	await get_tree().create_timer(1.0).timeout
-	_start_countdown()
+	if is_local_test:
+		_start_countdown()
+	else:
+		await get_tree().create_timer(1.0).timeout
+		_start_countdown()
 
 func _end_game() -> void:
-	# Build placement groups, BEST placement first: a lone survivor (if any)
-	# is 1st on their own, then each elimination round's group in reverse
-	# chronological order (most recently eliminated = better placement).
 	var groups: Array = []
 	if alive_players.size() == 1:
 		groups.append(alive_players.duplicate())
@@ -296,102 +450,65 @@ func _end_game() -> void:
 	_finish(scores)
 
 # ---------------------------------------------------------------------------
-# Visual helpers — no gameplay logic here
+# Visual helpers - Handles targeted viewport processing and dynamic instantiation
 # ---------------------------------------------------------------------------
 
-## Spawn 10 building Sprite2Ds across the screen, filling from x=0 to ~1600.
-func _spawn_buildings() -> void:
-	# Pre-load all 6 building textures.
-	for path in BUILDING_TEXTURES:
-		building_textures_cache.append(load(path) as Texture2D)
+## Cleanly instantiates viewports and drops in unique character scene copies
+func _spawn_splitscreen_worlds() -> void:
+	for child in splitscreen_grid.get_children():
+		child.queue_free()
+		
+	quadrants.clear()
+	char_sprites.clear()
+	bars.clear()
 
-	var scaled_w: float = BUILDING_NATIVE_W * BUILDING_SCALE
-	for i in BUILDING_COUNT:
-		var spr := Sprite2D.new()
-		spr.texture = building_textures_cache[randi() % building_textures_cache.size()]
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		# Sprite2D origin is center; offset so bottom-left aligns with position.
-		spr.centered = false
-		spr.scale = Vector2(BUILDING_SCALE, BUILDING_SCALE)
-		spr.position = Vector2(i * scaled_w, BUILDING_Y)
-		buildings_node.add_child(spr)
-		building_sprites.append(spr)
+	for player_idx in participating_players:
+		var quad = QUADRANT_SCENE.instantiate()
+		splitscreen_grid.add_child(quad)
+		quadrants[player_idx] = quad
+		
+		var viewport: SubViewport = quad.get_node("SubViewport")
+		
+		# 1. Clear out the placeholder character inside the base quadrant file
+		var old_char = viewport.get_node_or_null("Character")
+		if old_char:
+			old_char.queue_free()
+			
+		# 2. Drop in the player-specific custom scene node branch
+		if PLAYER_SCENES.has(player_idx):
+			var character_scene: PackedScene = PLAYER_SCENES[player_idx]
+			var spr = character_scene.instantiate() as AnimatedSprite2D
+			
+			viewport.add_child(spr)
+			spr.name = "Character" # Rename to keep code references consistent across scripts
+			
+			# Apply standard scale layouts
+			spr.scale = Vector2(CHAR_SCALE, CHAR_SCALE)
+			#spr.position.x = 200.0 
+			spr.position = Vector2(80.0, CHAR_Y)
+			
+			spr.play("walk")
+			char_sprites[player_idx] = spr
+		
+		var bar_ui = quad.get_node_or_null("PlayerBarUI")
+		if bar_ui:
+			bars[player_idx] = bar_ui
 
-## Move all building sprites left each frame. When one exits left, wrap it right.
-func _scroll_buildings(delta: float) -> void:
-	if building_sprites.is_empty():
-		return
-
-	# Current speed scales with ROUND_SPEEDUP (faster each round).
-	# round_time shrinks each round; speed is inversely proportional.
+## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
+## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
+func _scroll_buildings(_delta: float) -> void:
 	var speed_mult: float = ROUND_TIME_START / max(round_time, ROUND_TIME_MIN)
-	var speed: float = BUILDING_SCROLL_SPEED * speed_mult
-	var scaled_w: float = BUILDING_NATIVE_W * BUILDING_SCALE
-
-	# Find current rightmost x for wrapping.
-	var max_x: float = -INF
-	for spr in building_sprites:
-		if spr.position.x > max_x:
-			max_x = spr.position.x
-
-	for spr: Sprite2D in building_sprites:
-		spr.position.x -= speed * delta
-		if spr.position.x < -scaled_w:
-			# Teleport to right of the pack with random extra gap.
-			spr.position.x = max_x + randf_range(10.0, 60.0)
-			spr.texture = building_textures_cache[randi() % building_textures_cache.size()]
-			# Recalculate max_x after moving this sprite.
-			max_x = spr.position.x
-
-## Build a SpriteFrames for a minigame character at runtime (no .tres bake).
-## walk: 4096×1024 → 4 frames. jump: 2048×1024 → 2 frames.
-func _build_char_frames(charac_num: int) -> SpriteFrames:
-	var base := "res://assets/characters/minigame_characs/mg_c%d/mg_charac%d_" % [charac_num, charac_num]
-	var walk_tex: Texture2D = load(base + "walkRight.PNG")
-	var jump_tex: Texture2D = load(base + "jumpRight.PNG")
-
-	var frames := SpriteFrames.new()
-	frames.remove_animation("default")
-
-	# "walk" — 4 frames, looping
-	frames.add_animation("walk")
-	frames.set_animation_loop("walk", true)
-	frames.set_animation_speed("walk", CHAR_WALK_FPS)
-	for i in CHAR_WALK_FRAMES:
-		var atlas := AtlasTexture.new()
-		atlas.atlas = walk_tex
-		atlas.region = Rect2(i * CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H)
-		frames.add_frame("walk", atlas)
-
-	# "jump" — 2 frames, non-looping (plays once then stops)
-	frames.add_animation("jump")
-	frames.set_animation_loop("jump", false)
-	frames.set_animation_speed("jump", CHAR_JUMP_FPS)
-	for i in CHAR_JUMP_FRAMES:
-		var atlas := AtlasTexture.new()
-		atlas.atlas = jump_tex
-		atlas.region = Rect2(i * CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H)
-		frames.add_frame("jump", atlas)
-
-	return frames
-
-## Spawn one AnimatedSprite2D per player, spread horizontally near bottom of screen.
-func _spawn_character_sprites() -> void:
-	var count: int = participating_players.size()
-	var x_positions: Array[float] = []
-	for i in count:
-		x_positions.append(100.0 + (1000.0 / max(count - 1, 1)) * i)
-
-	for i in count:
-		var player_idx: int = participating_players[i]
-		var charac_num: int = player_idx + 1  # player 0 → charac1, etc.
-
-		var spr := AnimatedSprite2D.new()
-		spr.sprite_frames = _build_char_frames(charac_num)
-		spr.scale = Vector2(CHAR_SCALE, CHAR_SCALE)
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		spr.position = Vector2(x_positions[i], CHAR_Y)
-		spr.play("walk")
-
-		characters_node.add_child(spr)
-		char_sprites[player_idx] = spr
+	var base_speed: float = -400.0 
+	
+	for player_idx in participating_players:
+		if quadrants.has(player_idx):
+			var quad = quadrants[player_idx]
+			var bg: Parallax2D = quad.get_node_or_null("SubViewport/Parallax2D")
+			
+			if bg:
+				#  If the player is alive AND the game is actively sweeping, scroll!
+				if alive_players.has(player_idx) and sweeping and not gameplay_locked:
+					bg.autoscroll.x = base_speed * speed_mult
+				else:
+					#  Otherwise, freeze their background completely
+					bg.autoscroll.x = 0.0
