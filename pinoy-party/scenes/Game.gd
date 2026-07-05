@@ -8,6 +8,7 @@ extends Node2D
 @onready var state_machine: StateMachine = $StateMachine
 
 var tokens: Array[Node2D] = []
+const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_game.png"
 
 # ---------------------------------------------------------------------------
 # Board character spritesheets - one per player (0-indexed).
@@ -35,7 +36,58 @@ func _ready() -> void:
 	NetworkManager.player_left_mid_match.connect(_on_player_left_mid_match)
 	call_deferred(&"_update_roll_button")
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
-
+	_show_tutorial_overlay()
+	
+func _show_tutorial_overlay() -> void:
+	# Freeze the gameplay loop underneath
+	get_tree().paused = true
+	
+	# Create the canvas layer wrapper
+	var overlay := CanvasLayer.new()
+	overlay.layer = 100
+	overlay.process_mode = PROCESS_MODE_ALWAYS 
+	add_child(overlay)
+	
+	# Create blur
+	var blur_rect := ColorRect.new()
+	blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	
+	# Create a runtime canvas shader to process the background pixels safely
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item;\n" + \
+				  "uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;\n" + \
+				  "uniform float lod: hint_range(0.0, 5.0) = 1.0;\n" + \
+				  "void fragment() {\n" + \
+				  "    COLOR = textureLod(screen_texture, SCREEN_UV, lod);\n" + \
+				  "}"
+	
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	blur_rect.material = mat
+	overlay.add_child(blur_rect)
+	
+	# Create a clickable, full-screen background controller
+	var click_zone := TextureButton.new()
+	click_zone.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(click_zone)
+	
+	# Display the tutorial graphic layout
+	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
+	if tut_texture:
+		var tut_rect := TextureRect.new()
+		tut_rect.texture = tut_texture
+		tut_rect.set_anchors_preset(Control.PRESET_CENTER)
+		tut_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
+		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		click_zone.add_child(tut_rect)
+	
+	# Click to clean up and unpause execution layout
+	click_zone.pressed.connect(func():
+		overlay.queue_free() # Destroys the image and the blur rect
+		get_tree().paused = false
+	)
+	
 func _spawn_tokens() -> void:
 	for i in GameManager.active_player_count:
 		var token: Node2D = player_token_scene.instantiate()

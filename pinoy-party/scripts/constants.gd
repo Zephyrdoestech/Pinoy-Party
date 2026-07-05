@@ -13,7 +13,7 @@ const MOVEMENT_TIMEOUT_SEC := 5.0   # max wait for movement_finished before forc
 const DICE_ROLL_TICKS   := 15
 
 # Mini-game IDs - matches folder names under scenes/minigames/
-const MINIGAMES := ["LuksongBaka"]
+const MINIGAMES := ["SackRace"]
 
 # Trivia
 const TRIVIA_QUESTIONS_PATH := "res://data/trivia_questions.json"
