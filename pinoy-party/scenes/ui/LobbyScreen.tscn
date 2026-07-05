@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://dbfm3smj58raw"]
+[gd_scene format=3 uid="uid://dbfm3smj58raw"]
 
 [ext_resource type="Script" uid="uid://cwkpf155ser33" path="res://scenes/ui/lobby_screen.gd" id="1_3dmo6"]
 [ext_resource type="Texture2D" uid="uid://c31a7g0kx3gxj" path="res://assets/screens/default_bg.png" id="2_24fv3"]
@@ -35,10 +35,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3dmo6")
 
-[node name="TypingSfx" type="AudioStreamPlayer" parent="."]
+[node name="TypingSfx" type="AudioStreamPlayer" parent="." unique_id=588914186]
 stream = ExtResource("18_typing")
 
-[node name="ButtonSfx" type="AudioStreamPlayer" parent="."]
+[node name="ButtonSfx" type="AudioStreamPlayer" parent="." unique_id=1942394486]
 stream = ExtResource("19_click")
 
 [node name="UIContainer" type="CenterContainer" parent="." unique_id=259206432]
@@ -103,7 +103,7 @@ texture_hover = ExtResource("10_wudpn")
 
 [node name="JoinStatusLabel" type="Label" parent="UIContainer/UIControl/HostJoinPanel" unique_id=987162983]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.15, 0.15, 1)
+theme_override_colors/font_color = Color(0.9889876, 0.49327546, 0.4446264, 1)
 horizontal_alignment = 1
 autowrap_mode = 3
 
