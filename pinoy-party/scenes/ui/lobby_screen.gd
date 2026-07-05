@@ -95,6 +95,14 @@ func _rebuild_cards() -> void:
 	var player_count := NetworkManager.connected_players.size()
 	start_button.visible = lobby_container.visible and NetworkManager.is_host
 	start_button.disabled = player_count < 2
+	
+	if NetworkManager.is_host:
+		if player_count < 2:
+			status_label.text = "Cannot start game: Waiting for other players..."
+		else:
+			status_label.text = "All players ready! You may start."
+	else:
+		status_label.text = "Waiting for Host to start the game..."
 
 func _build_card(player_name: String) -> Control:
 	var vbox := VBoxContainer.new()
