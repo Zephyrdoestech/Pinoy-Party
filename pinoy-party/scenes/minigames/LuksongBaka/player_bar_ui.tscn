@@ -1,4 +1,4 @@
-[gd_scene load_steps=0 format=3 uid="uid://cwhh1x44g3c3n"]
+[gd_scene format=3 uid="uid://cwhh1x44g3c3n"]
 
 [node name="PlayerBarUI" type="Control" unique_id=991425365]
 layout_mode = 3
