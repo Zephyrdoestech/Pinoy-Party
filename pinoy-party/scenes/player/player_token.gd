@@ -1,12 +1,12 @@
 extends Node2D
 
 # Spritesheet constants matching the exported PNG format from Pixsquare.
-const FRAME_WIDTH  := 1024   # each frame is 1024×1024px
+const FRAME_WIDTH  := 1024   # each frame is 1024x1024px
 const FRAME_HEIGHT := 1024
 const HFRAMES      := 4      # 4 frames in a single horizontal row
 const FPS          := 8      # playback speed
 
-# Scale: 1024px native → ~51px on screen, fits within the 70px tile spacing.
+# Scale: 1024px native -> ~51px on screen, fits within the 70px tile spacing.
 const SPRITE_SCALE := Vector2(0.05, 0.05)
 
 
@@ -18,7 +18,7 @@ signal movement_finished(player_index: int)
 @onready var sprite: AnimatedSprite2D = $Sprite
 
 ## Called by Game.gd after instancing.
-## `front_sheet` is the walkFront Texture2D for this player — the other three
+## `front_sheet` is the walkFront Texture2D for this player - the other three
 ## directional sheets are loaded internally using the same path pattern.
 func setup(index: int, board: Node2D, front_sheet: Texture2D) -> void:
 	player_index = index
@@ -38,7 +38,7 @@ func setup(index: int, board: Node2D, front_sheet: Texture2D) -> void:
 func _build_frames(charac_num: int, front_sheet: Texture2D) -> SpriteFrames:
 	var base := "res://assets/characters/board_characs/charac%d/charac%d_" % [charac_num, charac_num]
 
-	# Map animation name → Texture2D source.
+	# Map animation name -> Texture2D source.
 	# walkFront is already loaded (passed in); the rest are loaded here.
 	var sheet_map: Dictionary = {
 		"walkFront": front_sheet,
@@ -66,7 +66,7 @@ func _build_frames(charac_num: int, front_sheet: Texture2D) -> SpriteFrames:
 
 ## Returns the animation name matching the direction of movement from
 ## `from_index` to `to_index`, determined by comparing their world positions
-## on the board. This is robust to any board shape — no hardcoded index ranges.
+## on the board. This is robust to any board shape - no hardcoded index ranges.
 func _get_direction_animation(from_index: int, to_index: int) -> String:
 	if board_ref == null:
 		return "walkFront"

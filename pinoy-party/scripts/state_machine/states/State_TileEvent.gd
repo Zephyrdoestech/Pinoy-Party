@@ -1,19 +1,19 @@
 # scripts/state_machine/states/State_TileEvent.gd
 # ---------------------------------------------------------------------------
-# Phase 4 – Tile Event
+# Phase 4 - Tile Event
 #
 # Reads the tile the current player just landed on from GameManager, then
 # dispatches to the appropriate sub-system:
 #
-#   TileType.BLANK        → no effect, go straight to EndTurn.
-#   TileType.GAME_TRIGGER → load a random mini-game via SceneLoader.
-#   (future)              → Sari-Sari trivia, penalty, bonus, etc.
+#   TileType.BLANK        -> no effect, go straight to EndTurn.
+#   TileType.GAME_TRIGGER -> load a random mini-game via SceneLoader.
+#   (future)              -> Sari-Sari trivia, penalty, bonus, etc.
 #
 # For mini-games: score application + advancing the turn is handled by
 # GameManager._on_minigame_finished(), NOT by this node. This node (and its
 # whole StateMachine) is destroyed by SceneLoader's change_scene_to_file()
 # before EventBus.minigame_finished can ever fire, so it cannot safely await
-# the result itself — only an autoload (GameManager) survives that scene
+# the result itself - only an autoload (GameManager) survives that scene
 # change. See GameManager.gd.
 # ---------------------------------------------------------------------------
 class_name State_TileEvent
@@ -36,14 +36,14 @@ func enter() -> void:
 		Enums.TileType.TRIVIA:
 			_handle_trivia()
 		_:
-			# Unknown tile type – treat as blank to avoid softlocking.
-			push_warning("[TileEvent] Unhandled tile type %d – defaulting to BLANK." % tile_type)
+			# Unknown tile type - treat as blank to avoid softlocking.
+			push_warning("[TileEvent] Unhandled tile type %d - defaulting to BLANK." % tile_type)
 			_handle_blank()
 # ---------------------------------------------------------------------------
 # Tile handlers
 # ---------------------------------------------------------------------------
 func _handle_blank() -> void:
-	# Nothing happens – go straight to EndTurn.
+	# Nothing happens - go straight to EndTurn.
 	request_transition(&"State_EndTurn")
 func _handle_minigame() -> void:
 	# All 4 players compete simultaneously (per design decision)
@@ -51,24 +51,24 @@ func _handle_minigame() -> void:
 	for i in GameManager.players.size():
 		all_players.append(i)
 	# Every client calls this, but only the host's instance actually picks
-	# the minigame ID and broadcasts it — see NetworkManager.start_minigame_synced().
+	# the minigame ID and broadcasts it - see NetworkManager.start_minigame_synced().
 	# This replaces calling Utils.random_minigame() + SceneLoader.go_to_minigame()
 	# directly, which let each client pick a different minigame independently.
 	NetworkManager.start_minigame_synced(all_players)
-	# Deliberately NOT awaiting EventBus.minigame_finished here — this node
+	# Deliberately NOT awaiting EventBus.minigame_finished here - this node
 	# is destroyed by the scene change above before the signal can fire.
 	# GameManager._on_minigame_finished() (autoload, survives the scene
 	# change) applies scores and advances current_player_index instead.
 	# The board scene that rebuilds after the minigame starts a brand-new
 	# StateMachine at State_StartTurn, which reads the now-already-advanced
-	# current_player_index — so the turn correctly moves to the next player.
+	# current_player_index - so the turn correctly moves to the next player.
 func _handle_trivia() -> void:
 	NetworkManager.start_trivia_synced(GameManager.current_player_index)
 	# Unlike _handle_minigame(), this node is NOT destroyed while trivia
-	# runs (no scene change involved) — so it's safe to just await the
+	# runs (no scene change involved) - so it's safe to just await the
 	# result directly here, instead of relying on GameManager to advance
 	# the turn in the background. Only one trivia round is ever active at
-	# a time (by design — only the landing player answers), so a plain
+	# a time (by design - only the landing player answers), so a plain
 	# await is safe with no signal-filtering needed.
 	await EventBus.trivia_finished
 	request_transition(&"State_EndTurn")
@@ -78,6 +78,6 @@ func _handle_trivia() -> void:
 ## Returns the TileType for the given board tile index.
 func _get_tile_type(tile_index: int) -> Enums.TileType:
 	if GameManager.board_ref == null:
-		push_warning("[TileEvent] board_ref not set — defaulting to BLANK.")
+		push_warning("[TileEvent] board_ref not set - defaulting to BLANK.")
 		return Enums.TileType.BLANK
 	return GameManager.board_ref.get_tile_type(tile_index) as Enums.TileType
