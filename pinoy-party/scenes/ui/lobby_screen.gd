@@ -102,6 +102,8 @@ func _on_roster_changed(_id: int = -1) -> void:
 	host_join_panel.visible = false
 	lobby_container.visible = true
 	lobby_panel.visible = true
+	if NetworkManager.lobby_code != "":
+		code_label.text = "Code: %s" % NetworkManager.lobby_code
 	_rebuild_cards()
 
 func _rebuild_cards() -> void:
