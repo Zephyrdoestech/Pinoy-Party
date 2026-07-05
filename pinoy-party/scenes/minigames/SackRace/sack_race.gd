@@ -5,15 +5,12 @@ const FINISH_DISTANCE := 48.0      # "hops" needed to win
 const HOP_DISTANCE := 1.0          # progress per press
 const RACE_TIMEOUT := 15.0         # seconds, safety net
 const HOP_PIXELS := 30.0           # how many pixels each ColorRect moves per press
+const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_sack_race.png"
 
 var progress: Dictionary = {}      # player_idx -> float progress
 var finished_order: Array[int] = []
 var race_active := false
 var timeout_timer := 0.0
-
-
-#func _get_track_node(player_idx: int) -> Node2D:
-	#return get_node("Tracks/Player %d" % (player_idx + 1))
 
 func _get_track_node(player_idx: int) -> Node2D:
 	var path := "SplitScreenContainer/P%d_Container/Viewport%d/Track%d/Player%d" % [
@@ -27,16 +24,81 @@ func _get_track_node(player_idx: int) -> Node2D:
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
+	
+	# If we are online, the host tells everyone to execute the visual positioning logic
+	if multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+		if NetworkManager.is_host:
+			rpc("_sync_local_client_setup", players)
+	else:
+		# Offline fallback
+		_sync_local_client_setup(players)
+
+
+# synchronized RPC function that configures the UI for each client player
+@rpc("authority", "call_local", "reliable")
+func _sync_local_client_setup(players: Array[int]) -> void:
+	# Move variables to local scope for everyone
 	for idx in players:
 		progress[idx] = 0.0
 		var node := _get_track_node(idx)
 		if node:
-			node.position.x = 0.0  # reset to start line each race
+			node.position.x = 0.0  
+			
 	finished_order.clear()
-	race_active = true
 	timeout_timer = 0.0
 	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
+
+	var countdown_label = get_node_or_null("UI/CountdownLabel") 
+	if countdown_label:
+		countdown_label.position.y += 400.0 
+
+	var tutorial_overlay := _show_intro_tutorial()
+	
+	_manage_client_intro_lifecycle(tutorial_overlay)
+
+
+# Helper tool to await completion locally without stalling the RPC network threat pipeline
+func _manage_client_intro_lifecycle(overlay: CanvasLayer) -> void:
 	await run_intro()
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	
+	# Only flip the active game state flag locally when the intro concludes
+	race_active = true
+
+func _show_intro_tutorial() -> CanvasLayer:
+	var overlay := CanvasLayer.new()
+	overlay.layer = 128
+	add_child(overlay)
+	
+	# Background Blur 
+	var blur_rect := ColorRect.new()
+	blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item;\n" + \
+				  "uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;\n" + \
+				  "uniform float lod: hint_range(0.0, 5.0) = 2.0;\n" + \
+				  "void fragment() {\n" + \
+				  "    COLOR = textureLod(screen_texture, SCREEN_UV, lod);\n" + \
+				  "}"
+	
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	blur_rect.material = mat
+	overlay.add_child(blur_rect)
+	
+	# Tutorial Graphic Panel
+	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
+	if tut_texture:
+		var tut_rect := TextureRect.new()
+		tut_rect.texture = tut_texture
+		tut_rect.set_anchors_preset(Control.PRESET_CENTER)
+		tut_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
+		overlay.add_child(tut_rect)
+		
+	return overlay
 
 func _process(delta: float) -> void:
 	if not race_active or gameplay_locked:

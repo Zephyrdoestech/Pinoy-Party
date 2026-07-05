@@ -19,14 +19,16 @@ func _ready() -> void:
 	EventBus.score_changed.connect(_on_score_changed)
 	EventBus.turn_started.connect(_on_turn_started)
 	
-	if GameManager.players.size() >= rows.size():
-		_refresh_all()
+	_refresh_all()
 
 func _refresh_all() -> void:
-	for i in GameManager.active_player_count:
+	var display_count = min(GameManager.players.size(), rows.size())
+	for i in display_count:
 		_update_score_text(i)
 
 func _update_score_text(player_index: int) -> void:
+	if player_index >= GameManager.players.size():
+		return
 	var p: Dictionary = GameManager.players[player_index]
 	var score_label: Label = rows[player_index]["score"]
 	score_label.text = "%s: %d" % [p["name"], p["score"]]
@@ -36,6 +38,7 @@ func _on_score_changed(player_index: int, _new_score: int) -> void:
 	_update_score_text(player_index)
 
 func _on_turn_started(current_player_index: int) -> void:
-	for i in GameManager.active_player_count:
+	var display_count = min(GameManager.players.size(), rows.size())
+	for i in display_count:
 		var marker: Label = rows[i]["marker"]
 		marker.text = "▶" if i == current_player_index else ""
