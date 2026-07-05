@@ -5,28 +5,8 @@ extends Control
 # "Name: score" label, colored to match that player's token color.
 var rows: Array = []  # [{marker: Label, score: Label}]
 
-#func _ready() -> void:
-	#for i in GameManager.active_player_count:
-		#var row := HBoxContainer.new()
-		#row.position = Vector2(0, i * 28)
-#
-		#var marker := Label.new()
-		#marker.custom_minimum_size = Vector2(20, 0)
-		#marker.text = ""
-		#row.add_child(marker)
-#
-		#var score_label := Label.new()
-		#row.add_child(score_label)
-#
-		#add_child(row)
-		#rows.append({"marker": marker, "score": score_label})
-#
-	#EventBus.score_changed.connect(_on_score_changed)
-	#EventBus.turn_started.connect(_on_turn_started)
-	#_refresh_all()
-
 func _ready() -> void:
-	var container = $RowsContainer # double check this path matches your layout!
+	var container = $RowsContainer
 	
 	# Loop through the actual visual rows you built in the editor
 	for row_rect in container.get_children():
@@ -36,15 +16,11 @@ func _ready() -> void:
 		if marker and score_label:
 			rows.append({"marker": marker, "score": score_label})
 			
-	# Connect your networks
 	EventBus.score_changed.connect(_on_score_changed)
 	EventBus.turn_started.connect(_on_turn_started)
 	
-	# Only refresh if GameManager actually has player data loaded
 	if GameManager.players.size() >= rows.size():
 		_refresh_all()
-	else:
-		print("Scoreboard idling: Waiting for real players to connect.")
 
 func _refresh_all() -> void:
 	for i in GameManager.active_player_count:

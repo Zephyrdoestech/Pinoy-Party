@@ -23,7 +23,7 @@
 [ext_resource type="Texture2D" uid="uid://bqnfcc3gafeua" path="res://assets/board_assets/DIce/3d/rolling_dice-sheet.png" id="12_i4jil"]
 [ext_resource type="PackedScene" uid="uid://c2hbad6cv4qhg" path="res://scenes/ui/GameOverScreen.tscn" id="12_mcffj"]
 [ext_resource type="Texture2D" uid="uid://b16cipce2a2vi" path="res://assets/board_assets/board_background.png" id="13_2rd6h"]
-[ext_resource type="PackedScene" uid="uid://05p1lmwlynfu" path="res://scenes/ui/ScoreBoard.tscn" id="17_vjgi4"]
+[ext_resource type="PackedScene" uid="uid://btf61rmswu0yb" path="res://scenes/ui/ScoreBoard.tscn" id="17_vjgi4"]
 [ext_resource type="Texture2D" uid="uid://cr6xkhabksb7f" path="res://assets/board_assets/Roll_Button/roll_dice_button.png" id="19_jai3c"]
 [ext_resource type="Texture2D" uid="uid://dqmrqeul7ha8i" path="res://assets/board_assets/Roll_Button/roll_dice_button_rolling.png" id="20_1gdd5"]
 [ext_resource type="Texture2D" uid="uid://clc02ahavc0jv" path="res://assets/board_assets/Roll_Button/roll_dice_button_disabled.png" id="21_426vi"]

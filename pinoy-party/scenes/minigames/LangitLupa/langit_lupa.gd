@@ -14,10 +14,12 @@ const PLATFORM_WIDTH := 150.0
 # Set from NetworkManager.get_my_player_index() at start_game() — replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
-
+var facing_right := true
 var alive_players: Array[int] = []
 var elimination_order: Array = []      # Array[Array[int]] — tie-groups, in elimination order
 var flood_start_y: float
+@onready var flood: Area2D = $Flood
+@onready var flood_sprite: AnimatedSprite2D = $"Flood/flood sprite"
 var round_start_msec: int
 var round_active: bool = false
 var _coyote_timer: float = 0.
@@ -42,6 +44,7 @@ func start_game(players: Array[int]) -> void:
 	_hide_inactive_players()
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
+	flood_sprite.play("default") 
 	await run_intro("")
 	if NetworkManager.is_host:
 		NetworkManager.sync_langitlupa_start.rpc()
@@ -52,7 +55,6 @@ func _position_players() -> void:
 		var idx: int = participating_players[i]
 		var node := _get_player_node(idx)
 		node.position = spawn_pos + Vector2(i * 40.0 - 60.0, -30.0)
-	var spawn_collider: CollisionShape2D = $Platforms/SpawnPlatform/CollisionShape2D
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
@@ -140,24 +142,31 @@ func _process(delta: float) -> void:
 				NetworkManager.process_langitlupa_position(local_player_index, my_pos)
 			else:
 				NetworkManager.send_langitlupa_position.rpc_id(1, local_player_index, my_pos)
-
 	# Flood visual — every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
-	# Authoritative elimination check runs on host only.
-	if NetworkManager.is_host:
+	# Authoritative elimination check runs on host only (or offline debug mode).
+	if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 		_check_flood()
 		_check_goal()
 
 func _physics_process(delta: float) -> void:
 	if gameplay_locked:
-		print("[LangitLupa] blocked: gameplay_locked")
 		return
 	if local_player_index == -1 or not alive_players.has(local_player_index):
-		print("[LangitLupa] blocked: local_player_index=%s alive=%s" % [local_player_index, alive_players])
 		return
 
 	var player := _get_player_node(local_player_index)
+	var sprite: AnimatedSprite2D
+	match local_player_index:
+		0:
+			sprite = player.get_node("player1node")
+		1:
+			sprite = player.get_node("player2node")
+		2:
+			sprite = player.get_node("player3node")
+		3:
+			sprite = player.get_node("player4node")
 	player.velocity.y += GRAVITY * delta
 
 	if player.is_on_floor():
@@ -166,20 +175,45 @@ func _physics_process(delta: float) -> void:
 		_coyote_timer -= delta
 
 	var direction := 0.0
+
 	if Input.is_action_pressed("move_left"):
-		direction -= 1.0
-	if Input.is_action_pressed("move_right"):
-		direction += 1.0
+		direction = -1.0
+	elif Input.is_action_pressed("move_right"):
+		direction = 1.0
+
 	player.velocity.x = direction * MOVE_SPEED
+	if direction > 0:
+		facing_right = true
+	elif direction < 0:
+		facing_right = false
 
 	if Input.is_action_just_pressed("jump") and _coyote_timer > 0.0:
 		player.velocity.y = JUMP_VELOCITY
 		_coyote_timer = 0.0   # consume it so you can't double-jump off the same window
-
+	
+	if not player.is_on_floor():
+		if facing_right:
+			if sprite.animation != "jumpRight":
+				sprite.play("jumpRight")
+		else:
+			if sprite.animation != "jumpLeft":
+				sprite.play("jumpLeft")
+	elif direction != 0:
+		if facing_right:
+			if sprite.animation != "walkRight":
+				sprite.play("walkRight")
+		else:
+			if sprite.animation != "walkLeft":
+				sprite.play("walkLeft")
+	else:
+		if facing_right:
+			if sprite.animation != "idleRight":
+				sprite.play("idleRight")
+		else:
+			if sprite.animation != "idleLeft":
+				sprite.play("idleLeft")
+				
 	player.move_and_slide()
-	if player.get_slide_collision_count() > 0:
-		var col := player.get_slide_collision(0)
-		print("[LangitLupa] landed on: %s at %s" % [col.get_collider().name, col.get_collider().global_position])
 
 func _get_flood_y() -> float:
 	var elapsed_sec := (Time.get_ticks_msec() - round_start_msec) / 1000.0
@@ -216,7 +250,6 @@ func _finish_player(idx: int) -> void:
 		return  # already finished or already flooded — guard against double-fire
 	alive_players.erase(idx)
 	finished_players.append(idx)
-	print("[LangitLupa] Player %d reached the goal! (place %d)" % [idx, finished_players.size()])
 	if alive_players.size() <= 1:
 		NetworkManager.sync_langitlupa_end.rpc(_compute_final_scores())
 
@@ -233,16 +266,26 @@ func _eliminate_player(idx: int) -> void:
 ## Called on every peer (including host) when NetworkManager broadcasts an elimination.
 func apply_elimination(player_idx: int) -> void:
 	_get_player_node(player_idx).modulate.a = 0.3
-	print("[LangitLupa] Player %d caught by the flood!" % player_idx)
 
 func _compute_final_scores() -> Dictionary:
 	var placement_points := [3, 2, 1]
 	var scores := {}
-	for i in finished_players.size():
+	
+	var ranking: Array[int] = []
+	# 1. Players who reached the goal
+	ranking.append_array(finished_players)
+	# 2. Any remaining alive players who survived until the end
+	ranking.append_array(alive_players)
+	# 3. Eliminated players (last to die ranks higher than first to die)
+	var reversed_eliminations = elimination_order.duplicate()
+	reversed_eliminations.reverse()
+	for group in reversed_eliminations:
+		ranking.append_array(group)
+		
+	for i in ranking.size():
 		if i < placement_points.size():
-			scores[finished_players[i]] = placement_points[i]
-	# Anyone flooded, or the one remaining player who never finished, simply has no
-	# entry in the dict — GameManager treats a missing entry as 0 points automatically.
+			scores[ranking[i]] = placement_points[i]
+			
 	return scores
 
 func _end_game(scores: Dictionary) -> void:

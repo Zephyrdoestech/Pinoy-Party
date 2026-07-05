@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqnfcc3gafeua"
-path="res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"
+uid="uid://k81ypclk5l7e"
+path="res://.godot/imported/GoalPlatform.png-f98d158fb7d59f891afd538396e57eba.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/DIce/3d/rolling_dice-sheet.png"
-dest_files=["res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"]
+source_file="res://assets/minigame_assets/langit_lupa_assets/GoalPlatform.png"
+dest_files=["res://.godot/imported/GoalPlatform.png-f98d158fb7d59f891afd538396e57eba.ctex"]
 
 [params]
 

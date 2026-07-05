@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cu0g8o0w81t50"]
+[gd_scene format=3 uid="uid://ck6ap86n2agun"]
 
 [ext_resource type="Texture2D" uid="uid://lu85r0oplr0p" path="res://assets/minigame_assets/luksong_baka_assets/luksong_baka_bg.png" id="1_t7tip"]
 [ext_resource type="Script" uid="uid://378cqxjrclsc" path="res://sprite_2d.gd" id="2_tv015"]
