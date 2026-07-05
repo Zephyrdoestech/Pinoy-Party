@@ -53,13 +53,12 @@ func start_game(players: Array[int]) -> void:
 	if NetworkManager.is_host:
 		NetworkManager.sync_langitlupa_start.rpc()
 
-## Builds the blurring layout wrapper on every client machine locally
+# Builds the blurring layout wrapper on every client machine locally
 func _show_intro_tutorial_synced() -> void:
 	var overlay := CanvasLayer.new()
-	overlay.layer = 128 # High sorting layer priority to keep it on top
+	overlay.layer = 128
 	add_child(overlay)
 	
-	# 1. Background Blur Shield
 	var blur_rect := ColorRect.new()
 	blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	
@@ -76,12 +75,10 @@ func _show_intro_tutorial_synced() -> void:
 	blur_rect.material = mat
 	overlay.add_child(blur_rect)
 	
-	# 2. Invisible Full-Screen Click Target Area
 	var click_zone := TextureButton.new()
 	click_zone.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(click_zone)
 	
-	# 3. Tutorial Graphical Slide Image
 	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
 	if tut_texture:
 		var tut_rect := TextureRect.new()
@@ -92,7 +89,6 @@ func _show_intro_tutorial_synced() -> void:
 		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		click_zone.add_child(tut_rect)
 		
-	# 4. Interactive Notice Label
 	var flash_label := Label.new()
 	flash_label.set_anchors_preset(Control.PRESET_CENTER)
 	flash_label.position.y += 250
@@ -123,20 +119,19 @@ func _show_intro_tutorial_synced() -> void:
 		click_zone.disabled = true
 
 
-# 🌟 Synced network execution broadcast
 @rpc("authority", "call_local", "reliable")
 func _sync_dismiss_tutorial_and_start() -> void:
-	# 1. Clean up the custom tutorial CanvasLayer on everyone's screen
+	# Cleans up the custom tutorial CanvasLayer on everyone's screen
 	for child in get_children():
 		if child is CanvasLayer and child.layer == 128:
 			child.queue_free()
 			
-	# 2. Lift the block so physics engine and loops run together on the same frame
+	# Lifts the block so physics engine and loops run together on the same frame
 	gameplay_locked = false
 	round_start_msec = Time.get_ticks_msec()
 	round_active = true
 	
-	# 3. Host signals the underlying server network state to listen for inputs
+	# Host signals the underlying server network state to listen for inputs
 	if NetworkManager.is_host and multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		NetworkManager.sync_langitlupa_start.rpc()
 
