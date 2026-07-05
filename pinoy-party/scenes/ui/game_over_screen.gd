@@ -18,6 +18,8 @@ func _ready() -> void:
 
 	var panel := VBoxContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	panel.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(panel)
 
@@ -48,7 +50,10 @@ func _ready() -> void:
 	add_child(restart_button)
 	
 	restart_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	restart_button.position.y -= 60
+	restart_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	restart_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	restart_button.offset_bottom = -60
+	restart_button.offset_top = -108
 
 	EventBus.game_over.connect(_on_game_over)
 
@@ -57,13 +62,17 @@ func _on_game_over(winner_index: int) -> void:
 	headline.text = "%s Wins!" % winner_data["name"]
 	headline.modulate = winner_data["color"]
 
-	for i in GameManager.active_player_count:
-		var p: Dictionary = GameManager.players[i]
+	for i in Constants.MAX_PLAYERS:
 		var label: Label = score_rows[i]
-		label.text = "%s: %d" % [p["name"], p["score"]]
-		label.modulate = p["color"]
-		# Make the winner's row stand out among the rest.
-		label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
+		if i < GameManager.active_player_count:
+			var p: Dictionary = GameManager.players[i]
+			label.text = "%s: %d" % [p["name"], p["score"]]
+			label.modulate = p["color"]
+			# Make the winner's row stand out among the rest.
+			label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
+			label.show()
+		else:
+			label.hide()
 
 	visible = true
 
