@@ -55,10 +55,17 @@ func _ready() -> void:
 	host_join_panel.get_node("HostButton").pressed.connect(_on_host_pressed)
 	host_join_panel.get_node("JoinButton").pressed.connect(_on_join_pressed)
 
-	host_join_panel.visible = true
-	lobby_container.visible = false
-	lobby_panel.visible = false
-	start_button.visible = false
+	if multiplayer.has_multiplayer_peer() and NetworkManager.lobby_code != "":
+		if NetworkManager.is_host:
+			_on_lobby_created(NetworkManager.lobby_code)
+			NetworkManager._start_broadcasting()
+		else:
+			_on_roster_changed()
+	else:
+		host_join_panel.visible = true
+		lobby_container.visible = false
+		lobby_panel.visible = false
+		start_button.visible = false
 	_show_error("")
 	status_label.add_theme_font_override("font", LOBBY_FONT)
 	status_label.add_theme_font_size_override("font_size", 24)

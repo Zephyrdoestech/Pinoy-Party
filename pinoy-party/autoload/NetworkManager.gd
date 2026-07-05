@@ -493,5 +493,6 @@ func request_restart() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _apply_restart() -> void:
+	match_in_progress = false
 	GameManager.reset_for_new_game()
-	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
