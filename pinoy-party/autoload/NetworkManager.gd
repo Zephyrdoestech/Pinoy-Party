@@ -120,7 +120,7 @@ func _on_connected_ok() -> void:
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
-	join_failed.emit("Connection failed")
+	join_failed.emit("Lobby not found or unreachable")
 
 @rpc("any_peer", "reliable")
 func _register_player(player_name: String, code: String) -> void:
