@@ -1,6 +1,6 @@
 # scripts/state_machine/states/State_StartTurn.gd
 # ---------------------------------------------------------------------------
-# Phase 1 – Start Turn
+# Phase 1 - Start Turn
 # Identifies the current player, resets per-turn variables, then immediately
 # transitions to State_WaitingForDice.
 # ---------------------------------------------------------------------------
@@ -19,5 +19,5 @@ func enter() -> void:
 	# Notify the UI / other listeners.
 	EventBus.turn_started.emit(player_idx)
 
-	# No waiting needed – move straight to dice phase.
+	# No waiting needed - move straight to dice phase.
 	request_transition(&"State_WaitingForDice")

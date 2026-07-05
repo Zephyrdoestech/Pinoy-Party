@@ -22,7 +22,7 @@ const QUESTION_SIZE := Vector2(702, 102)
 const ANSWER_SIZE := Vector2(708, 48)
 const STATUS_SIZE := Vector2(192, 96)
 
-var _current_question: Dictionary = {}
+
 var _submitted_answers: Dictionary = {}  # player_idx -> option_index
 var _overlay: Control
 var _status_texture: TextureRect

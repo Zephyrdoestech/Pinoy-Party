@@ -44,9 +44,9 @@ func roll() -> void:
 			label.text = str(randi_range(1, Constants.DICE_FACES))
 		await get_tree().create_timer(0.05).timeout
 
-	# Don't generate the result locally anymore — ask the host for the
+	# Don't generate the result locally anymore - ask the host for the
 	# real roll so every peer ends up with the identical number.
-	# If we're the host, call directly — Godot blocks rpc_id(1) on yourself.
+	# If we're the host, call directly - Godot blocks rpc_id(1) on yourself.
 	# If we're a client, send the request to the host (peer 1).
 	if my_player_index == -1:
 		GameManager.on_dice_rolled(randi_range(1, Constants.DICE_FACES))
@@ -126,7 +126,7 @@ func _add_rolling_animation(frames: SpriteFrames) -> void:
 
 	for i in ROLLING_FRAME_COUNT:
 		var column := i % ROLLING_COLUMNS
-		var row := i / ROLLING_COLUMNS
+		var row := int(i / float(ROLLING_COLUMNS))
 		var atlas := AtlasTexture.new()
 		atlas.atlas = texture
 		atlas.region = Rect2(
