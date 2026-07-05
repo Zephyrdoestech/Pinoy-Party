@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://c45uj3bohns1k" path="res://assets/board_assets/LeaderBoard/leaderboard_char4.png" id="5_yvrsk"]
 
 [node name="ScoreBoard" type="Control" unique_id=1160043138]
+process_mode = 3
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

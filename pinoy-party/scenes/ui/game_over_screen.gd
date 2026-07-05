@@ -45,7 +45,10 @@ func _ready() -> void:
 	restart_button.text = "Play Again"
 	restart_button.custom_minimum_size = Vector2(160, 48)
 	restart_button.pressed.connect(_on_restart_pressed)
-	panel.add_child(restart_button)
+	add_child(restart_button)
+	
+	restart_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	restart_button.position.y -= 60
 
 	EventBus.game_over.connect(_on_game_over)
 

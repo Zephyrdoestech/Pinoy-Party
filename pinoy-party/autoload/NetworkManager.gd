@@ -344,27 +344,26 @@ func sync_langitlupa_start() -> void:
 	if scene is LangitLupa:
 		scene.start_round_synced()
 
-# Client sends its position to host each sync tick.
-# Host calls process_langitlupa_position() directly (avoids self-RPC throw).
+# Client sends its state to host each sync tick.
+# Host calls process_langitlupa_state() directly (avoids self-RPC throw).
 @rpc("any_peer", "unreliable")  # unreliable is fine - positions update at 20Hz anyway
-func send_langitlupa_position(player_idx: int, pos: Vector2) -> void:
+func send_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	if peer_to_player_index.get(sender_id, -1) != player_idx:
 		return  # client tried to move a player it doesn't control
-	process_langitlupa_position(player_idx, pos)
+	process_langitlupa_state(player_idx, pos, anim_name)
 
-# Host receives a position update and broadcasts it to all peers.
-func process_langitlupa_position(player_idx: int, pos: Vector2) -> void:
-	rpc("_apply_langitlupa_position", player_idx, pos)
+# Host receives a state update and broadcasts it to all peers.
+func process_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
+	rpc("_apply_langitlupa_state", player_idx, pos, anim_name)
 
 @rpc("authority", "unreliable", "call_local")
-func _apply_langitlupa_position(player_idx: int, pos: Vector2) -> void:
+func _apply_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
-		if player_idx != scene.local_player_index:
-			scene._get_player_node(player_idx).position = pos
+		scene.apply_remote_state(player_idx, pos, anim_name)
 
 # Host detected a player caught by the flood - broadcast to all peers.
 @rpc("authority", "reliable", "call_local")
