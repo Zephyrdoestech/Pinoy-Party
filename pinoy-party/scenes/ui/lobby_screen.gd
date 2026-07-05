@@ -13,6 +13,7 @@ var player_cards: HBoxContainer
 var code_label: Label
 var start_button: TextureButton
 var status_label: Label
+var join_status_label: Label
 var typing_sfx: AudioStreamPlayer
 var button_click_sfx: AudioStreamPlayer
 
@@ -193,8 +194,10 @@ func _on_host_left() -> void:
 	start_button.visible = false
 
 func _show_error(msg: String) -> void:
-	status_label.text = msg
-	join_status_label.text = msg
+	if status_label != null:
+		status_label.text = msg
+	if join_status_label != null:
+		join_status_label.text = msg
 
 func _on_start_pressed() -> void:
 	_play_button_click_sfx()
