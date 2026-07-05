@@ -8,6 +8,7 @@ const ROUND_SPEEDUP := 0.85        # multiply sweep time by this each round
 const ZONE_WIDTH_START := 0.30     # green zone width as % of bar (round 1)
 const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ever get
 const ZONE_SHRINK := 0.92          # multiply zone width by this each round
+const DEBUG_FORCE_LOCAL_TEST := false
 const BAR_WIDTH := 200.0
 
 # ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ func _ready() -> void:
 	randomize()
 	
 	# ️ LOCAL TESTING OVERRIDE GATEWAY:
-	if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+	if DEBUG_FORCE_LOCAL_TEST :
 		GameManager.players = [
 			{"name": "Player 1 (You)", "score": 0},
 			{"name": "CPU Player 2", "score": 0},
@@ -73,7 +74,7 @@ func start_game(players: Array[int]) -> void:
 	# Initialize our 4 separate isolated viewports
 	_spawn_splitscreen_worlds()
 	
-	if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+	if DEBUG_FORCE_LOCAL_TEST :
 		await get_tree().process_frame 
 		_start_countdown()
 		_begin_round(randf_range(0.0, 1.0 - zone_width)) # Kicks off local sandbox with an initial zone position
@@ -90,7 +91,7 @@ func _start_countdown() -> void:
 	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
 	#  LOCAL SANDBOX COMPATIBILITY GATEWAY:
-	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
 	if is_local_test:
 		# Directly run the logic instantly without routing through NetworkManager
 		_begin_round(picked_zone_start)
@@ -168,9 +169,7 @@ func _process(delta: float) -> void:
 		_end_round_sweep()
 		return
 
-	# ️ TEST OVERRIDE: Simulate CPU player inputs when running locally
-	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		for player_idx in alive_players.duplicate():
 			if player_idx == 0: continue
 			if jumped_this_round.has(player_idx): continue
@@ -181,7 +180,11 @@ func _process(delta: float) -> void:
 					_try_jump(player_idx)
 
 	# Update visual timelines, markers, and obstacles for each player grid
-	for player_idx in participating_players:
+	var visible_players: Array = participating_players
+	if not DEBUG_FORCE_LOCAL_TEST:
+		visible_players = [NetworkManager.get_my_player_index()]
+
+	for player_idx in visible_players:
 		if not bars.has(player_idx):
 			continue
 			
@@ -221,6 +224,7 @@ func _process(delta: float) -> void:
 func _begin_sweep() -> void:
 	marker_t = 0.0
 	sweeping = true
+	gameplay_locked = false
 
 func _unhandled_input(event: InputEvent) -> void:
 	# 1. Ignore inputs if the bar isn't actively sweeping
@@ -234,8 +238,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	print(" Jump action detected!")
 
 	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
-	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
-	if is_local_test:
+	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
+	if DEBUG_FORCE_LOCAL_TEST:
 		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
 		_try_jump(0)
 		return #  CRITICAL: This MUST be here so it stops execution right now!
@@ -312,14 +316,14 @@ func _try_jump(player_idx: int) -> void:
 		spr.stop()
 		spr.modulate = Color(0.4, 0.4, 0.4)
 			
-		if scene_file_path != ProjectSettings.get_setting("application/run/main_scene"):
+		if DEBUG_FORCE_LOCAL_TEST :
 			alive_players.erase(player_idx)
 		else:
 			_eliminate(player_idx)
 
 func _end_round_sweep() -> void:
 	sweeping = false
-	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
 	
 	# ️ HARD SANDBOX RESET FOR F6 TESTING
 	if is_local_test:
@@ -374,7 +378,9 @@ func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 	if not alive_players.has(player_idx):
 		return
 	jumped_this_round[player_idx] = true
-	var status: Label = bars[player_idx].get_node_or_null("Status")
+	var status: Label = null
+	if bars.has(player_idx):
+		status = bars[player_idx].get_node_or_null("Status")
 	if status:
 		status.text = "Cleared!" if in_zone else "Caught!"
 		status.modulate = Color(0.3, 0.9, 0.4) if in_zone else Color(0.9, 0.3, 0.3)
@@ -394,7 +400,9 @@ func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 
 func apply_round_end(auto_eliminated: Array) -> void:
 	for player_idx in auto_eliminated:
-		var status: Label = bars[player_idx].get_node_or_null("Status")
+		var status: Label = null
+		if bars.has(player_idx):
+			status = bars[player_idx].get_node_or_null("Status")
 		if status:
 			status.text = "Caught!"
 			status.modulate = Color(0.9, 0.3, 0.3)
@@ -421,7 +429,7 @@ func _eliminate(player_idx: int) -> void:
 	eliminated_this_round.append(player_idx)
 
 func _check_game_over() -> void:
-	var is_local_test: bool = scene_file_path != ProjectSettings.get_setting("application/run/main_scene")
+	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
 
 	if alive_players.size() <= 1:
 		print("--- GAME OVER (No players left or 1 winner) ---")
@@ -462,8 +470,15 @@ func _spawn_splitscreen_worlds() -> void:
 	char_sprites.clear()
 	bars.clear()
 
-	for player_idx in participating_players:
+	var visible_players: Array = participating_players
+	splitscreen_grid.columns = visible_players.size()
+	if not DEBUG_FORCE_LOCAL_TEST:
+		visible_players = [NetworkManager.get_my_player_index()]
+
+	for player_idx in visible_players:
 		var quad = QUADRANT_SCENE.instantiate()
+		quad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		quad.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		splitscreen_grid.add_child(quad)
 		quadrants[player_idx] = quad
 		
@@ -500,7 +515,11 @@ func _scroll_buildings(_delta: float) -> void:
 	var speed_mult: float = ROUND_TIME_START / max(round_time, ROUND_TIME_MIN)
 	var base_speed: float = -400.0 
 	
-	for player_idx in participating_players:
+	var visible_players: Array = participating_players
+	if not DEBUG_FORCE_LOCAL_TEST:
+		visible_players = [NetworkManager.get_my_player_index()]
+
+	for player_idx in visible_players:
 		if quadrants.has(player_idx):
 			var quad = quadrants[player_idx]
 			var bg: Parallax2D = quad.get_node_or_null("SubViewport/Parallax2D")
