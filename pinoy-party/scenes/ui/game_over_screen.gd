@@ -66,4 +66,7 @@ func _on_game_over(winner_index: int) -> void:
 
 func _on_restart_pressed() -> void:
 	visible = false
-	NetworkManager.request_restart.rpc_id(1)
+	if NetworkManager.is_host:
+		NetworkManager.request_restart()
+	else:
+		NetworkManager.request_restart.rpc_id(1)
