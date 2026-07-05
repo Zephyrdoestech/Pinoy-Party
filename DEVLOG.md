@@ -4,7 +4,7 @@
 
 **Engine:** Godot 4.6 (GDScript, Forward Plus renderer, D3D12 on Windows)  
 **Branch:** `Lancer` (active development branch, pushes to `Zephyrdoestech/Pinoy-Party`)  
-**Last Updated:** 2026-07-02 (Trivia tile system added — new TileType, host-authoritative single-answerer flow, keyboard-navigable overlay UI; movement-poll timeout, duplicate game_over emission, mid-match disconnect handling, and player-name propagation from the lobby also added/fixed)
+**Last Updated:** 2026-07-04 (LangitLupa fully reworked from top-down tag into a side-view platformer with rising flood and goal-touch placement scoring)
 
 ---
 
@@ -530,7 +530,69 @@ A timed mash-race minigame. All players race simultaneously on parallel tracks. 
 
 > **✅ Double-scoring + missing tie-handling — FIXED (2026-06-27).** `_end_race()` previously called `GameManager.add_score()` directly *and* passed the same scores through `_finish()` — which (via `GameManager._on_minigame_finished()`) applies them a second time, silently doubling every player's points from this minigame. It also had zero tie handling: two players with identical progress at the 15s timeout were given an arbitrary order by `sort_custom` instead of being treated as tied. **Fix:** finishers (who crossed the line) keep their strict order — simultaneous finishes aren't physically possible since only one key-press event ever fires per advance. Anyone who didn't finish is now grouped by `is_equal_approx(progress[a], progress[b])` into real tie-groups, then the whole placement list is fed through `BaseMinigame.compute_placement_scores()` exactly once.
 
-### Implemented Minigame: `LangitLupa`
+### Implemented Minigame: `LangitLupa` (reworked 2026-07-04 — now a side-view platformer)
+
+**Full rework from the original top-down tag minigame.** No more IT/tagging, no more
+random elevated safe-zones, no more round timer. New design: a side-view platformer
+where players climb from a fixed spawn platform (bottom-left) to a fixed goal platform
+(top-right) while a rising flood eliminates anyone it catches.
+
+**Mechanics:**
+- Movement is `move_left`/`move_right` + `jump` (coyote-jump window: `COYOTE_TIME` =
+  0.15s after leaving a platform edge still allows a jump).
+- `SpawnPlatform`/`GoalPlatform` positions are computed every round from the viewport
+  size (`_auto_position_spawn_and_goal()`), not manually placed — bottom-left / top-right
+  with a `SCREEN_MARGIN` inset.
+- Middle platforms are a **static, deterministic zigzag grid** (`_generate_platforms()`),
+  not randomized — since it's fully deterministic from `SpawnPlatform`/`GoalPlatform`'s
+  positions, every peer generates the identical layout locally with **no network sync
+  needed** for platform placement at all (this replaced an earlier randomized-with-seed
+  version that proved unreliable — see Recent Bug Fixes).
+- The flood (`Flood` node) rises at `FLOOD_RISE_SPEED` px/sec, computed identically on
+  every peer from a synced `round_start_msec` — no per-frame position sync needed either,
+  same "compute locally from a shared timestamp" pattern as the trivia timer.
+- **Scoring:** touching the top of `GoalPlatform` awards placement points (3/2/1 for
+  1st/2nd/3rd), tracked via `finished_players`. Flood-caught players are removed from
+  `alive_players` with no score. Round ends once only one player remains un-finished and
+  un-flooded (`alive_players.size() <= 1`), reusing the same end-check for both flood
+  elimination and goal-finish.
+- Non-participating player slots (2-player matches) are hidden via
+  `_hide_inactive_players()` rather than left visibly idle on screen.
+
+**Folder/naming:** unchanged — `res://scenes/minigames/LangitLupa/langit_lupa.gd` +
+`LangitLupa.tscn`.
+
+> **✅ Major bug — `Players` container had a nonzero saved Position offset (2026-07-04).**
+> After the platformer rework, players consistently "fell through the floor" and were
+> instantly caught by the flood, with debug prints showing physically impossible
+> teleports to a fixed, unexplained position. Root cause, found only after ruling out
+> every other script in the call chain (`NetworkManager`, `BaseMinigame`, `SceneLoader`,
+> `State_TileEvent`, collision shapes, node instance identity): `_position_players()`
+> wrote each player's **local** `.position`, but `_physics_process()`/`_check_flood()`
+> read **global** `.global_position` — normally identical, except the `Players` node
+> itself had a leftover nonzero Position from earlier editor work, so every player's
+> real global position was offset by a constant amount from what the spawn code assumed.
+> **Fix:** reset `Players`' own Position to `(0, 0)` in the editor. No script changes
+> needed. **Process takeaway:** when local vs. global position diverge unexpectedly,
+> check every ancestor node's transform, not just the node being scripted — this class
+> of bug produces numbers that look computed/mysterious but are actually just a constant
+> offset hiding in the scene tree.
+
+> **✅ Gotcha — `WorldBoundaryShape2D` left on hand-placed platform colliders (2026-07-04).**
+> `SpawnPlatform`, `GoalPlatform`, and `Flood`'s `CollisionShape2D` nodes defaulted to
+> `WorldBoundaryShape2D` (an infinite physics plane) instead of `RectangleShape2D` when
+> first created in the editor. Symptom looked like falling through solid-looking
+> platforms. Fixed by explicitly setting Shape to `RectangleShape2D` sized to match each
+> platform's visual `ColorRect`.
+
+> **✅ Gotcha — visual child nodes dragged independently of their parent (2026-07-04).**
+> Multiple times during this rework, a `ColorRect`/`CollisionShape2D` child was dragged
+> in the 2D editor while its parent (`SpawnPlatform`, `GoalPlatform`, a `Player`) stayed
+> at its original position — meaning script-driven repositioning of the parent had no
+> visible effect, since the rendered/collided geometry was really anchored to the
+> child's own independent offset. **Process takeaway:** when something "won't move" via
+> script despite the code being correct, check whether the visible piece is actually a
+> child with its own manually-set Position, not the node being scripted.
 
 A real-time tag minigame — meaningfully different from the other two since it requires continuous movement rather than single-button input, and currently only supports one human-controlled player (`local_player_index`) with the rest driven by a temporary wandering-AI stub. See "Mini-game Movement & Input Scope" and "Area Size" sections under Design Decisions & Gotchas for full detail.
 
@@ -818,6 +880,8 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 | 2026-07-01 | *(pending)* | Added `Constants.MOVEMENT_TIMEOUT_SEC` cap to `State_Moving`'s movement-completion poll loop, closing the previously-flagged "no timeout" gap. Removed the redundant `game_over` emission from `GameManager.add_score()` and collapsed `State_EndTurn._check_game_over()` to delegate to `GameManager._is_game_over()` instead of maintaining a second copy of the win condition. |
 | 2026-07-02 | *(pending)* | Implemented the Trivia tile system end-to-end: new `Enums.TileType.TRIVIA` (replacing unused `SARI_SARI`), `res://data/trivia_questions.json`, new `TriviaController` autoload (runtime-built overlay, W/S/arrow + Space/Enter keyboard nav), and host-authoritative single-answerer sync in `NetworkManager` (`start_trivia_synced`, `request_trivia_answer`/`process_trivia_answer`, `_apply_trivia_reveal`). See "Trivia Tile System" for full design and the two gotchas found during implementation (turn-advancement pattern copied incorrectly from minigames; stale round-timer bleeding into a player's next trivia round). |
 | 2026-07-02 | *(pending)* | Propagated real lobby-entered player names into `GameManager.players[i]["name"]` via a new `NetworkManager.get_player_name()` reverse lookup, replacing the hardcoded `"Player %d"` used everywhere previously (HUD, ScoreBoard, trivia results all picked this up automatically). Also fixed `score_board.gd` iterating hardcoded `Constants.MAX_PLAYERS` instead of `GameManager.active_player_count`, the same category of bug already fixed elsewhere for 2-player matches. |
+| 2026-07-04 | *(pending)* | Reworked `LangitLupa` from top-down tag minigame into a side-view platformer: left/right + coyote-jump movement, fixed spawn/goal platforms auto-positioned from viewport size, static deterministic zigzag platform grid (no more random layout, no seed sync needed), rising flood hazard replacing the round timer, and goal-touch placement scoring (3/2/1) replacing tag-based scoring. |
+| 2026-07-04 | *(pending)* | Fixed a major "instant death" bug in reworked `LangitLupa` — the `Players` container node had a leftover nonzero saved Position, causing local vs. global position mismatches between `_position_players()` (writes local) and the physics/flood-check code (reads global). Also fixed `WorldBoundaryShape2D` left on several hand-placed platform colliders (should have been `RectangleShape2D`), and multiple cases of visual/collision child nodes dragged independently of their parent in the editor, masking script-correct repositioning. |
 ---
 
 ## Planned Minigames
@@ -826,6 +890,6 @@ This filters the signal by `player_idx` before considering the wait satisfied, a
 |----|--------|-------------|
 | `LuksongBaka` | ✅ Implemented | Jump the rope timing minigame |
 | `SackRace` | ✅ Implemented | Mash-to-race sack race |
-| `LangitLupa` | ✅ Implemented, in rotation, fully LAN-synced | Real-time tag with elevated safe-zones. Fully networked (2026-06-30): it_player and area positions host-authoritative, 20Hz position broadcast, host-authoritative tagging/area-unsafe/round-end. IT player indicated by a red ▼ arrow above their node (replaces the broken color scheme). |
+| `LangitLupa` | ✅ Implemented, in rotation, side-view platformer | Reworked 2026-07-04 from the original top-down tag minigame into a climbing platformer with a rising flood hazard and goal-touch placement scoring (3/2/1). Static deterministic platform grid, no network sync needed for layout. |host-authoritative, 20Hz position broadcast, host-authoritative tagging/area-unsafe/round-end. IT player indicated by a red ▼ arrow above their node (replaces the broken color scheme). |
 | `BatoLata` (Labay Lata) | 🚫 Cut (2026-06-25) | Hit-the-can-and-run minigame; two prototype passes (lane-based, then free-movement w/ AI) were built and discarded before the decision to cut. No longer planned. |
 | `AgawBase` | 🚫 Cut (2026-06-25) | Base stealing — never started, no longer planned. |
