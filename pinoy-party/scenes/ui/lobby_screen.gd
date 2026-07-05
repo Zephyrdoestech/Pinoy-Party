@@ -56,6 +56,8 @@ func _ready() -> void:
 	lobby_panel.visible = false
 	start_button.visible = false
 	status_label.text = ""
+	status_label.add_theme_font_override("font", LOBBY_FONT)
+	status_label.add_theme_font_size_override("font_size", 34)
 
 	NetworkManager.start_listening_for_lobbies()
 
