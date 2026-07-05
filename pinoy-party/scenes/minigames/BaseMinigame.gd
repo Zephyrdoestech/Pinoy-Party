@@ -5,6 +5,9 @@ extends Node2D
 ## Player indices participating (set externally before start_game(), or read here)
 var participating_players: Array[int] = []
 
+const JUMP_SFX := preload("res://assets/sfx/minigame/jump_sfx.mp3")
+const MINIGAME_FINISH_SFX := preload("res://assets/sfx/minigame/minigame_finish_sfx.mp3")
+
 # ---------------------------------------------------------------------------
 # Shared pre-round intro: optional announcement (e.g. "Player 2 is IT!"),
 # then a dimmed-background 3-2-1 countdown, before gameplay is allowed.
@@ -157,10 +160,37 @@ func _build_intro_overlay() -> void:
 	_intro_label.add_theme_font_size_override("font_size", 48)
 	_intro_layer.add_child(_intro_label)
 
+func play_jump_sfx() -> void:
+	_play_minigame_sfx("JumpSfx", JUMP_SFX)
+
+func play_minigame_finish_sfx() -> void:
+	_play_minigame_sfx("MinigameFinishSfx", MINIGAME_FINISH_SFX)
+
+func _play_minigame_sfx(player_name: String, stream: AudioStream) -> void:
+	var player := _get_or_create_minigame_sfx_player(player_name, stream)
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _get_or_create_minigame_sfx_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
+
 
 ## Call this when the minigame is fully resolved.
 ## Emits through EventBus so State_TileEvent's await catches it.
 func _finish(scores: Dictionary) -> void:
+	play_minigame_finish_sfx()
 	EventBus.minigame_finished.emit(scores)
 	await run_results(scores)
 	SceneLoader.return_to_board()

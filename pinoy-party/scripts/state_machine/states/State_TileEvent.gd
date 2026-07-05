@@ -18,6 +18,12 @@
 # ---------------------------------------------------------------------------
 class_name State_TileEvent
 extends State
+
+const MINIGAME_TILE_SFX := preload("res://assets/sfx/board/plus_tile_sfx.mp3")
+const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.mp3")
+const TILE_EVENT_SFX_FALLBACK_DURATION := 0.8
+const TILE_EVENT_SFX_EXTRA_PADDING := 0.05
+
 func enter() -> void:
 	var gm: GameManager  = GameManager
 	var player_idx: int  = gm.current_player_index
@@ -26,8 +32,11 @@ func enter() -> void:
 	var tile_type: Enums.TileType = _get_tile_type(tile_idx)
 	print("[TileEvent] Player %d landed on tile %d (type: %s)."
 		% [player_idx, tile_idx, Enums.TileType.keys()[tile_type]])
-	# Notify listeners (e.g. UI highlights, board animations).
-	EventBus.tile_landed.emit(player_idx, tile_type)
+	if tile_type == Enums.TileType.BLANK:
+		EventBus.tile_landed.emit(player_idx, tile_type)
+	else:
+		EventBus.tile_landed.emit(player_idx, tile_type)
+		await _wait_for_tile_sfx_duration(tile_type)
 	match tile_type:
 		Enums.TileType.BLANK:
 			_handle_blank()
@@ -42,6 +51,21 @@ func enter() -> void:
 # ---------------------------------------------------------------------------
 # Tile handlers
 # ---------------------------------------------------------------------------
+func _wait_for_tile_sfx_duration(tile_type: int) -> void:
+	var stream := _get_tile_sfx_stream(tile_type)
+	var duration := TILE_EVENT_SFX_FALLBACK_DURATION
+	if stream != null and stream.get_length() > 0.0:
+		duration = stream.get_length() + TILE_EVENT_SFX_EXTRA_PADDING
+	await get_tree().create_timer(duration).timeout
+
+func _get_tile_sfx_stream(tile_type: int) -> AudioStream:
+	match tile_type:
+		Enums.TileType.GAME_TRIGGER:
+			return MINIGAME_TILE_SFX
+		Enums.TileType.TRIVIA:
+			return SARI_SARI_TILE_SFX
+	return null
+
 func _handle_blank() -> void:
 	# Nothing happens - go straight to EndTurn.
 	request_transition(&"State_EndTurn")

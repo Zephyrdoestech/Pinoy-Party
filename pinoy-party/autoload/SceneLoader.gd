@@ -2,7 +2,9 @@
 extends Node
 
 func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
-	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id.to_snake_case()]
+	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id]
+	if not ResourceLoader.exists(path):
+		path = "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id.to_snake_case()]
 	var err := get_tree().change_scene_to_file(path)
 	if err != OK:
 		push_error("[SceneLoader] Failed to load minigame scene '%s': error code %d" % [path, err])

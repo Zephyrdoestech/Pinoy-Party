@@ -2,6 +2,8 @@ extends Control
 
 const LOBBY_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
 const PLAYER_ICON_TEXTURE := preload("res://assets/screens/lobby/player_icon.png")
+const TYPING_SFX := preload("res://assets/sfx/type_sfx.mp3")
+const BUTTON_CLICK_SFX := preload("res://assets/sfx/button_click_sfx.mp3")
 const PLAYER_NAME_COLOR := Color(0.12, 0.20, 0.34)
 
 var host_join_panel: VBoxContainer
@@ -12,6 +14,8 @@ var code_label: Label
 var start_button: TextureButton
 var status_label: Label
 var join_status_label: Label
+var typing_sfx: AudioStreamPlayer
+var button_click_sfx: AudioStreamPlayer
 
 func _ready() -> void:
 	host_join_panel = _find_required_node("HostJoinPanel", ["UIContainer/UIControl/HostJoinPanel"]) as VBoxContainer
@@ -47,6 +51,9 @@ func _ready() -> void:
 	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null or join_status_label == null:
 		return
 
+	button_click_sfx = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
+	typing_sfx = _get_or_create_audio_player("TypingSfx", TYPING_SFX)
+
 	NetworkManager.lobby_created.connect(_on_lobby_created)
 	NetworkManager.roster_updated.connect(_on_roster_changed)
 	NetworkManager.join_failed.connect(_on_join_failed)
@@ -54,6 +61,9 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	host_join_panel.get_node("HostButton").pressed.connect(_on_host_pressed)
 	host_join_panel.get_node("JoinButton").pressed.connect(_on_join_pressed)
+	_connect_typing_sfx(host_join_panel.get_node("NameInput") as LineEdit)
+	_connect_typing_sfx(host_join_panel.get_node("JoinIPInput") as LineEdit)
+	_connect_typing_sfx(host_join_panel.get_node("JoinCodeInput") as LineEdit)
 
 	if multiplayer.has_multiplayer_peer() and NetworkManager.lobby_code != "":
 		if NetworkManager.is_host:
@@ -77,6 +87,7 @@ func _ready() -> void:
 	NetworkManager.start_listening_for_lobbies()
 
 func _on_host_pressed() -> void:
+	_play_button_click_sfx()
 	var name_input: LineEdit = host_join_panel.get_node("NameInput")
 	var player_name: String = name_input.text.strip_edges()
 	if player_name.is_empty():
@@ -85,6 +96,7 @@ func _on_host_pressed() -> void:
 	NetworkManager.host_lobby(player_name)
 
 func _on_join_pressed() -> void:
+	_play_button_click_sfx()
 	var join_ip_input: LineEdit = host_join_panel.get_node("JoinIPInput")
 	var join_code_input: LineEdit = host_join_panel.get_node("JoinCodeInput")
 	var name_input: LineEdit = host_join_panel.get_node("NameInput")
@@ -182,11 +194,49 @@ func _on_host_left() -> void:
 	start_button.visible = false
 
 func _show_error(msg: String) -> void:
-	status_label.text = msg
-	join_status_label.text = msg
+	if status_label != null:
+		status_label.text = msg
+	if join_status_label != null:
+		join_status_label.text = msg
 
 func _on_start_pressed() -> void:
+	_play_button_click_sfx()
 	NetworkManager.start_game()
+
+func _connect_typing_sfx(input: LineEdit) -> void:
+	if input == null:
+		return
+	input.text_changed.connect(_on_input_text_changed.bind(input))
+
+func _on_input_text_changed(_new_text: String, input: LineEdit) -> void:
+	if input == null or not input.has_focus():
+		return
+	_play_typing_sfx()
+
+func _play_typing_sfx() -> void:
+	if typing_sfx == null or typing_sfx.stream == null:
+		return
+	typing_sfx.stop()
+	typing_sfx.play()
+
+func _play_button_click_sfx() -> void:
+	if button_click_sfx == null or button_click_sfx.stream == null:
+		return
+	button_click_sfx.stop()
+	button_click_sfx.play()
+
+func _get_or_create_audio_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
 
 func _find_required_node(node_name: String, paths: Array[String]) -> Node:
 	for path in paths:
