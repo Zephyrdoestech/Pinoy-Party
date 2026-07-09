@@ -4,6 +4,7 @@ const LOBBY_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
 const PLAYER_ICON_TEXTURE := preload("res://assets/screens/lobby/player_icon.png")
 const TYPING_SFX := preload("res://assets/sfx/type_sfx.mp3")
 const BUTTON_CLICK_SFX := preload("res://assets/sfx/button_click_sfx.mp3")
+const HOVER_SFX := preload("res://assets/sfx/hover_sfx.mp3")
 const PLAYER_NAME_COLOR := Color(0.12, 0.20, 0.34)
 
 var host_join_panel: VBoxContainer
@@ -16,6 +17,7 @@ var status_label: Label
 var join_status_label: Label
 var typing_sfx: AudioStreamPlayer
 var button_click_sfx: AudioStreamPlayer
+var hover_sfx: AudioStreamPlayer
 
 func _ready() -> void:
 	host_join_panel = _find_required_node("HostJoinPanel", ["UIContainer/UIControl/HostJoinPanel"]) as VBoxContainer
@@ -53,14 +55,20 @@ func _ready() -> void:
 
 	button_click_sfx = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
 	typing_sfx = _get_or_create_audio_player("TypingSfx", TYPING_SFX)
+	hover_sfx = _get_or_create_audio_player("HoverSfx", HOVER_SFX)
 
 	NetworkManager.lobby_created.connect(_on_lobby_created)
 	NetworkManager.roster_updated.connect(_on_roster_changed)
 	NetworkManager.join_failed.connect(_on_join_failed)
 	NetworkManager.host_left.connect(_on_host_left)
 	start_button.pressed.connect(_on_start_pressed)
-	host_join_panel.get_node("HostButton").pressed.connect(_on_host_pressed)
-	host_join_panel.get_node("JoinButton").pressed.connect(_on_join_pressed)
+	var host_button := host_join_panel.get_node("HostButton") as BaseButton
+	var join_button := host_join_panel.get_node("JoinButton") as BaseButton
+	host_button.pressed.connect(_on_host_pressed)
+	join_button.pressed.connect(_on_join_pressed)
+	_connect_hover_sfx(start_button)
+	_connect_hover_sfx(host_button)
+	_connect_hover_sfx(join_button)
 	_connect_typing_sfx(host_join_panel.get_node("NameInput") as LineEdit)
 	_connect_typing_sfx(host_join_panel.get_node("JoinIPInput") as LineEdit)
 	_connect_typing_sfx(host_join_panel.get_node("JoinCodeInput") as LineEdit)
@@ -224,6 +232,17 @@ func _play_button_click_sfx() -> void:
 		return
 	button_click_sfx.stop()
 	button_click_sfx.play()
+
+func _play_hover_sfx() -> void:
+	if hover_sfx == null or hover_sfx.stream == null:
+		return
+	hover_sfx.stop()
+	hover_sfx.play()
+
+func _connect_hover_sfx(button: BaseButton) -> void:
+	if button == null:
+		return
+	button.mouse_entered.connect(_play_hover_sfx)
 
 func _get_or_create_audio_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
 	var existing := get_node_or_null(player_name) as AudioStreamPlayer

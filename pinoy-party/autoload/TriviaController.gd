@@ -10,6 +10,7 @@ const INCORRECT_BG := preload("res://assets/board_assets/Trivia/incorrect_contai
 const CORRECT_ANSWER_SFX := preload("res://assets/sfx/board/correct_answer_sfx.mp3")
 const WRONG_ANSWER_SFX := preload("res://assets/sfx/board/wrong_answer_sfx.mp3")
 const TIME_TICKING_SFX := preload("res://assets/sfx/board/time_ticking_sfx.mp3")
+const TRIVIA_SELECT_ANSWER_SFX := preload("res://assets/sfx/board/trivia_select_answer_sfx.mp3")
 const ANSWER_BGS: Array[Texture2D] = [
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_1.png"),
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_2.png"),
@@ -212,6 +213,7 @@ func _on_option_pressed(option_idx: int) -> void:
 	_has_submitted = true
 	_selected_option = option_idx
 	_current_selection = option_idx
+	_play_trivia_sfx("TriviaSelectAnswerSfx", TRIVIA_SELECT_ANSWER_SFX)
 	_show_only_selected_option()
 
 	var offline: bool = not multiplayer.has_multiplayer_peer() \
