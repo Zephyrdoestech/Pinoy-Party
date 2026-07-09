@@ -5,6 +5,8 @@ var headline: Label
 var score_rows: Array = []  # [{score: Label}] per player, indexed by player_index
 var restart_button: Button
 const CUSTOM_FONT_PATH := "res://assets/fonts/GrapeSoda.ttf"
+const VICTORY_SFX := preload("res://assets/sfx/board/victory_sfx.mp3")
+const GAME_OVER_SFX := preload("res://assets/sfx/board/game_over_sfx.mp3")
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -69,6 +71,7 @@ func _ready() -> void:
 	EventBus.game_over.connect(_on_game_over)
 
 func _on_game_over(winner_index: int) -> void:
+	_play_game_over_sfx(winner_index)
 	var winner_data: Dictionary = GameManager.players[winner_index]
 	headline.text = "%s Wins!" % winner_data["name"]
 	headline.modulate = winner_data["color"]
@@ -91,3 +94,28 @@ func _on_restart_pressed() -> void:
 		NetworkManager.request_restart()
 	else:
 		NetworkManager.request_restart.rpc_id(1)
+
+func _play_game_over_sfx(winner_index: int) -> void:
+	var my_player_index := NetworkManager.get_my_player_index()
+	var is_local_or_winner := my_player_index == -1 or my_player_index == winner_index
+	_play_sfx("GameOverResultSfx", VICTORY_SFX if is_local_or_winner else GAME_OVER_SFX)
+
+func _play_sfx(player_name: String, stream: AudioStream) -> void:
+	var player := _get_or_create_sfx_player(player_name, stream)
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _get_or_create_sfx_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
