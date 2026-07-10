@@ -37,6 +37,17 @@ var players: Array[Dictionary] = []
 var pending_roll: int = 0
 var board_ref: Node2D = null
 
+## Tracks which tutorial overlays have already been shown this session.
+## Key: tutorial ID string (e.g. "main_board", "sack_race").
+## Resets when the game restarts; not persisted to disk.
+var tutorials_shown: Dictionary = {}
+
+func has_shown_tutorial(tutorial_id: String) -> bool:
+	return tutorials_shown.get(tutorial_id, false)
+
+func mark_tutorial_shown(tutorial_id: String) -> void:
+	tutorials_shown[tutorial_id] = true
+
 # ---------------------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------------------
@@ -121,6 +132,7 @@ func _get_winner() -> int:
 func reset_for_new_game() -> void:
 	current_player_index = 0
 	state = Enums.GameState.WAITING
+	tutorials_shown.clear()
 	for p: Dictionary in players:
 		p["tile_index"] = 0
 		p["score"] = 0

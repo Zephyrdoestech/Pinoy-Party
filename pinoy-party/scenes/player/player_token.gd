@@ -88,6 +88,12 @@ func move_to(target_tile_index: int) -> void:
 
 func _step_toward(current_idx: int, target_idx: int) -> void:
 	if current_idx >= target_idx:
+		# Freeze the walk animation on the current frame so the token appears
+		# still after landing. pause() halts the loop without resetting the
+		# frame counter; stop() resets to frame 0 which can cause a visible
+		# pop on the first frame of a different animation direction.
+		sprite.pause()
+		sprite.frame = 0
 		movement_finished.emit(player_index)
 		return
 
