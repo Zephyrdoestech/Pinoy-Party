@@ -3,7 +3,9 @@ extends Node2D
 @export var player_token_scene: PackedScene = preload("res://scenes/player/PlayerToken.tscn")
 
 const BUTTON_CLICK_SFX := preload("res://assets/sfx/button_click_sfx.mp3")
+const HOVER_SFX := preload("res://assets/sfx/hover_sfx.mp3")
 const DICE_ROLL_SFX := preload("res://assets/sfx/board/dice_roll_sfx.mp3")
+const DICE_ROLLED_SFX := preload("res://assets/sfx/board/dice_rolled_sfx.mp3")
 const WALKING_SFX := preload("res://assets/sfx/board/walking_sfx.mp3")
 const MINIGAME_TILE_SFX := preload("res://assets/sfx/board/plus_tile_sfx.mp3")
 const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.mp3")
@@ -13,7 +15,9 @@ const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.m
 @onready var roll_button: TextureButton = $UI/RollButton
 @onready var state_machine: StateMachine = $StateMachine
 @onready var button_click_sfx: AudioStreamPlayer = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
+@onready var hover_sfx: AudioStreamPlayer = _get_or_create_audio_player("HoverSfx", HOVER_SFX)
 @onready var dice_roll_sfx: AudioStreamPlayer = _get_or_create_audio_player("DiceRollSfx", DICE_ROLL_SFX)
+@onready var dice_rolled_sfx: AudioStreamPlayer = _get_or_create_audio_player("DiceRolledSfx", DICE_ROLLED_SFX)
 @onready var walking_sfx: AudioStreamPlayer = _get_or_create_audio_player("WalkingSfx", WALKING_SFX)
 @onready var minigame_tile_sfx: AudioStreamPlayer = _get_or_create_audio_player("MinigameTileSfx", MINIGAME_TILE_SFX)
 @onready var sari_sari_tile_sfx: AudioStreamPlayer = _get_or_create_audio_player("SariSariTileSfx", SARI_SARI_TILE_SFX)
@@ -39,6 +43,7 @@ func _ready() -> void:
 	_spawn_tokens()
 	roll_button.disabled = true
 	roll_button.pressed.connect(_on_roll_pressed)
+	_connect_hover_sfx(roll_button)
 	EventBus.turn_started.connect(_on_turn_started)
 	EventBus.dice_rolled.connect(_on_dice_rolled)
 	EventBus.game_over.connect(_on_game_over)
@@ -48,7 +53,9 @@ func _ready() -> void:
 	NetworkManager.player_left_mid_match.connect(_on_player_left_mid_match)
 	call_deferred(&"_update_roll_button")
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
-	_show_tutorial_overlay()
+	if not GameManager.has_shown_tutorial("main_board"):
+		GameManager.mark_tutorial_shown("main_board")
+		_show_tutorial_overlay()
 	
 func _show_tutorial_overlay() -> void:
 	get_tree().paused = true
@@ -133,6 +140,7 @@ func _on_turn_started(_player_index: int) -> void:
 	call_deferred(&"_update_roll_button")
 
 func _on_dice_rolled(_player_index: int, _result: int) -> void:
+	_play_audio(dice_rolled_sfx)
 	_update_roll_button()
 
 func _on_game_over(_winner_index: int) -> void:
@@ -152,6 +160,9 @@ func _can_local_player_roll() -> bool:
 
 func _play_button_click_sfx() -> void:
 	_play_audio(button_click_sfx)
+
+func _play_hover_sfx() -> void:
+	_play_audio(hover_sfx)
 
 func _play_audio(player: AudioStreamPlayer) -> void:
 	if player == null or player.stream == null:
@@ -175,6 +186,11 @@ func _get_or_create_audio_player(player_name: String, stream: AudioStream) -> Au
 	player.stream = stream
 	add_child(player)
 	return player
+
+func _connect_hover_sfx(button: BaseButton) -> void:
+	if button == null:
+		return
+	button.mouse_entered.connect(_play_hover_sfx)
 
 func _on_player_moved(player_index: int, new_tile_index: int) -> void:
 	# Tell the token to animate to its new tile.
@@ -212,7 +228,9 @@ func _on_match_ended(message: String) -> void:
 
 	var back_button := Button.new()
 	back_button.text = "Back to Lobby"
+	_connect_hover_sfx(back_button)
 	back_button.pressed.connect(func():
+		_play_button_click_sfx()
 		multiplayer.multiplayer_peer = null
 		get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
 	)

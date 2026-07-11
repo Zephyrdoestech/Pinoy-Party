@@ -7,6 +7,8 @@ var participating_players: Array[int] = []
 
 const JUMP_SFX := preload("res://assets/sfx/minigame/jump_sfx.mp3")
 const MINIGAME_FINISH_SFX := preload("res://assets/sfx/minigame/minigame_finish_sfx.mp3")
+const APPLAUSE_SFX := preload("res://assets/sfx/minigame/applause_sfx.mp3")
+const COUNTDOWN_SFX := preload("res://assets/sfx/board/3_seconds_countdown_sfx.mp3")
 
 # ---------------------------------------------------------------------------
 # Shared pre-round intro: optional announcement (e.g. "Player 2 is IT!"),
@@ -80,6 +82,7 @@ func run_intro(announcement_text: String = "") -> void:
 	var remaining := int(COUNTDOWN_DURATION)
 	while remaining > 0:
 		_intro_label.text = str(remaining)
+		play_countdown_sfx()
 		await get_tree().create_timer(1.0).timeout
 		remaining -= 1
 
@@ -107,6 +110,7 @@ func run_results(scores: Dictionary) -> void:
 	# Phase 1: winner announcement
 	var winner_idx := _get_winner_index(scores)
 	label.text = "Player %d Wins!" % (winner_idx + 1) if winner_idx != -1 else "It's a Tie!"
+	play_applause_sfx()
 	await get_tree().create_timer(2.0).timeout
 
 	# Phase 2: points breakdown
@@ -165,6 +169,12 @@ func play_jump_sfx() -> void:
 
 func play_minigame_finish_sfx() -> void:
 	_play_minigame_sfx("MinigameFinishSfx", MINIGAME_FINISH_SFX)
+
+func play_applause_sfx() -> void:
+	_play_minigame_sfx("ApplauseSfx", APPLAUSE_SFX)
+
+func play_countdown_sfx() -> void:
+	_play_minigame_sfx("CountdownSfx", COUNTDOWN_SFX)
 
 func _play_minigame_sfx(player_name: String, stream: AudioStream) -> void:
 	var player := _get_or_create_minigame_sfx_player(player_name, stream)

@@ -7,6 +7,10 @@ const QUESTION_BG := preload("res://assets/board_assets/Trivia/trivia_questions_
 const TIMER_BG := preload("res://assets/board_assets/Trivia/timer_container.png")
 const CORRECT_BG := preload("res://assets/board_assets/Trivia/correct_container.png")
 const INCORRECT_BG := preload("res://assets/board_assets/Trivia/incorrect_container.png")
+const CORRECT_ANSWER_SFX := preload("res://assets/sfx/board/correct_answer_sfx.mp3")
+const WRONG_ANSWER_SFX := preload("res://assets/sfx/board/wrong_answer_sfx.mp3")
+const TIME_TICKING_SFX := preload("res://assets/sfx/board/time_ticking_sfx.mp3")
+const TRIVIA_SELECT_ANSWER_SFX := preload("res://assets/sfx/board/trivia_select_answer_sfx.mp3")
 const ANSWER_BGS: Array[Texture2D] = [
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_1.png"),
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_2.png"),
@@ -27,6 +31,7 @@ var _submitted_answers: Dictionary = {}  # player_idx -> option_index
 var _overlay: Control
 var _status_texture: TextureRect
 var _timer_label: Label
+var _score_label: Label  # shows answering player's current total score
 var _option_buttons: Array[TextureButton] = []
 var _option_labels: Array[Label] = []
 var _current_selection: int = 0
@@ -35,6 +40,7 @@ var _has_submitted: bool = false
 var _answering_player_idx: int = -1
 var _timer_remaining: float = 0.0
 var _timer_active: bool = false
+var _last_timer_second: int = -1
 
 func _ready() -> void:
 	EventBus.trivia_started.connect(_on_trivia_started)
@@ -58,6 +64,7 @@ func _on_trivia_started(question: String, options: Array, answering_player_idx: 
 	visible = true
 	_timer_remaining = Constants.TRIVIA_ANSWER_TIME_SEC
 	_timer_active = true
+	_last_timer_second = -1
 	set_process(true)
 	_update_timer_label()
 
@@ -93,6 +100,25 @@ func _build_overlay(question: String, options: Array) -> void:
 	_timer_label = _make_label(36, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_CENTER)
 	_timer_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	status_holder.add_child(_timer_label)
+
+	# Score label — shows the answering player's current total score.
+	# Displayed below the timer/result box so players can see their running tally.
+	var score_holder := Control.new()
+	score_holder.custom_minimum_size = Vector2(STATUS_SIZE.x, 36)
+	score_holder.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	score_holder.offset_left = -STATUS_SIZE.x * 0.5
+	score_holder.offset_top = 44.0 + STATUS_SIZE.y + 4.0
+	score_holder.offset_right = STATUS_SIZE.x * 0.5
+	score_holder.offset_bottom = 44.0 + STATUS_SIZE.y + 40.0
+	_overlay.add_child(score_holder)
+
+	_score_label = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_CENTER)
+	if _answering_player_idx >= 0 and _answering_player_idx < GameManager.players.size():
+		var current_score: int = GameManager.players[_answering_player_idx]["score"]
+		var player_name: String = GameManager.players[_answering_player_idx]["name"]
+		_score_label.text = "%s's Score: %d" % [player_name, current_score]
+	_score_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	score_holder.add_child(_score_label)
 
 	var panel_holder := Control.new()
 	panel_holder.custom_minimum_size = PANEL_SIZE
@@ -207,6 +233,7 @@ func _on_option_pressed(option_idx: int) -> void:
 	_has_submitted = true
 	_selected_option = option_idx
 	_current_selection = option_idx
+	_play_trivia_sfx("TriviaSelectAnswerSfx", TRIVIA_SELECT_ANSWER_SFX)
 	_show_only_selected_option()
 
 	var offline: bool = not multiplayer.has_multiplayer_peer() \
@@ -251,10 +278,23 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 	set_process(false)
 
 	var answered_correctly := scores.has(_answering_player_idx)
+	_play_trivia_sfx("TriviaResultSfx", CORRECT_ANSWER_SFX if answered_correctly else WRONG_ANSWER_SFX)
 	if _status_texture != null:
 		_status_texture.texture = CORRECT_BG if answered_correctly else INCORRECT_BG
 	if _timer_label != null:
 		_timer_label.text = "CORRECT" if answered_correctly else "WRONG"
+
+	# Show a brief score-change indicator during the reveal window.
+	# The score has already been applied to GameManager by the time show_results() runs,
+	# so we can read the updated total directly to show the new running score.
+	if _score_label != null and _answering_player_idx >= 0 and _answering_player_idx < GameManager.players.size():
+		var new_score: int = GameManager.players[_answering_player_idx]["score"]
+		if answered_correctly:
+			_score_label.text = "+%d point! Score: %d" % [Constants.TRIVIA_POINTS, new_score]
+			_score_label.add_theme_color_override("font_color", Color(0.08, 0.55, 0.15))
+		else:
+			_score_label.text = "Incorrect! Score: %d" % new_score
+			_score_label.add_theme_color_override("font_color", Color(0.70, 0.12, 0.10))
 
 	if correct_index >= 0 and correct_index < _option_labels.size():
 		_option_labels[correct_index].add_theme_color_override("font_color", Color(0.08, 0.45, 0.12))
@@ -269,8 +309,12 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 		_overlay = null
 
 func _update_timer_label() -> void:
+	var displayed_second := ceili(_timer_remaining)
 	if _timer_label != null:
-		_timer_label.text = str(ceili(_timer_remaining))
+		_timer_label.text = str(displayed_second)
+	if _timer_active and displayed_second > 0 and displayed_second != _last_timer_second:
+		_last_timer_second = displayed_second
+		_play_trivia_sfx("TimeTickingSfx", TIME_TICKING_SFX)
 
 func _make_label(font_size: int, h_align: HorizontalAlignment, v_align: VerticalAlignment) -> Label:
 	var label := Label.new()
@@ -281,3 +325,23 @@ func _make_label(font_size: int, h_align: HorizontalAlignment, v_align: Vertical
 	label.vertical_alignment = v_align
 	label.clip_text = true
 	return label
+
+func _play_trivia_sfx(player_name: String, stream: AudioStream) -> void:
+	var player := _get_or_create_trivia_sfx_player(player_name, stream)
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _get_or_create_trivia_sfx_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
