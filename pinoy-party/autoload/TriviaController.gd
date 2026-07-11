@@ -7,6 +7,10 @@ const QUESTION_BG := preload("res://assets/board_assets/Trivia/trivia_questions_
 const TIMER_BG := preload("res://assets/board_assets/Trivia/timer_container.png")
 const CORRECT_BG := preload("res://assets/board_assets/Trivia/correct_container.png")
 const INCORRECT_BG := preload("res://assets/board_assets/Trivia/incorrect_container.png")
+const CORRECT_ANSWER_SFX := preload("res://assets/sfx/board/correct_answer_sfx.mp3")
+const WRONG_ANSWER_SFX := preload("res://assets/sfx/board/wrong_answer_sfx.mp3")
+const TIME_TICKING_SFX := preload("res://assets/sfx/board/time_ticking_sfx.mp3")
+const TRIVIA_SELECT_ANSWER_SFX := preload("res://assets/sfx/board/trivia_select_answer_sfx.mp3")
 const ANSWER_BGS: Array[Texture2D] = [
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_1.png"),
 	preload("res://assets/board_assets/Trivia/trivia_answer_container_2.png"),
@@ -36,6 +40,7 @@ var _has_submitted: bool = false
 var _answering_player_idx: int = -1
 var _timer_remaining: float = 0.0
 var _timer_active: bool = false
+var _last_timer_second: int = -1
 
 func _ready() -> void:
 	EventBus.trivia_started.connect(_on_trivia_started)
@@ -59,6 +64,7 @@ func _on_trivia_started(question: String, options: Array, answering_player_idx: 
 	visible = true
 	_timer_remaining = Constants.TRIVIA_ANSWER_TIME_SEC
 	_timer_active = true
+	_last_timer_second = -1
 	set_process(true)
 	_update_timer_label()
 
@@ -227,6 +233,7 @@ func _on_option_pressed(option_idx: int) -> void:
 	_has_submitted = true
 	_selected_option = option_idx
 	_current_selection = option_idx
+	_play_trivia_sfx("TriviaSelectAnswerSfx", TRIVIA_SELECT_ANSWER_SFX)
 	_show_only_selected_option()
 
 	var offline: bool = not multiplayer.has_multiplayer_peer() \
@@ -271,6 +278,7 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 	set_process(false)
 
 	var answered_correctly := scores.has(_answering_player_idx)
+	_play_trivia_sfx("TriviaResultSfx", CORRECT_ANSWER_SFX if answered_correctly else WRONG_ANSWER_SFX)
 	if _status_texture != null:
 		_status_texture.texture = CORRECT_BG if answered_correctly else INCORRECT_BG
 	if _timer_label != null:
@@ -301,8 +309,12 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 		_overlay = null
 
 func _update_timer_label() -> void:
+	var displayed_second := ceili(_timer_remaining)
 	if _timer_label != null:
-		_timer_label.text = str(ceili(_timer_remaining))
+		_timer_label.text = str(displayed_second)
+	if _timer_active and displayed_second > 0 and displayed_second != _last_timer_second:
+		_last_timer_second = displayed_second
+		_play_trivia_sfx("TimeTickingSfx", TIME_TICKING_SFX)
 
 func _make_label(font_size: int, h_align: HorizontalAlignment, v_align: VerticalAlignment) -> Label:
 	var label := Label.new()
@@ -313,3 +325,23 @@ func _make_label(font_size: int, h_align: HorizontalAlignment, v_align: Vertical
 	label.vertical_alignment = v_align
 	label.clip_text = true
 	return label
+
+func _play_trivia_sfx(player_name: String, stream: AudioStream) -> void:
+	var player := _get_or_create_trivia_sfx_player(player_name, stream)
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _get_or_create_trivia_sfx_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player

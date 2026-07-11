@@ -5,6 +5,9 @@
 # ---------------------------------------------------------------------------
 extends Node
 
+const PLUS_TILE_SFX := preload("res://assets/sfx/board/plus_tile_sfx.mp3")
+const MINUS_TILE_SFX := preload("res://assets/sfx/board/minus_tile_sfx.mp3")
+
 # ---------------------------------------------------------------------------
 # Game-wide state
 # ---------------------------------------------------------------------------
@@ -74,6 +77,8 @@ func _setup_players() -> void:
 		})
 
 func _on_minigame_finished(scores: Dictionary) -> void:
+	var has_positive_delta := false
+	var has_negative_delta := false
 	for idx in scores:
 		# Guard: a buggy minigame could emit an out-of-range player index - fail
 		# loudly here rather than crashing silently inside the array access below.
@@ -81,7 +86,10 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 			push_error("[GameManager] _on_minigame_finished: invalid player index %d in scores dict" % idx)
 			continue
 		players[idx]["score"] += scores[idx]
+		has_positive_delta = has_positive_delta or scores[idx] > 0
+		has_negative_delta = has_negative_delta or scores[idx] < 0
 		EventBus.score_changed.emit(idx, players[idx]["score"])
+	_play_score_delta_sfx(1 if has_positive_delta else -1 if has_negative_delta else 0)
 	current_player_index = (current_player_index + 1) % active_player_count
 
 func _on_trivia_finished(scores: Dictionary) -> void:
@@ -113,6 +121,7 @@ func on_move_complete() -> void:
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points
 	EventBus.score_changed.emit(player_index, players[player_index]["score"])
+	_play_score_delta_sfx(points)
 
 
 func _is_game_over() -> bool:
@@ -137,3 +146,29 @@ func reset_for_new_game() -> void:
 		p["tile_index"] = 0
 		p["score"] = 0
 		p["state"] = Enums.PlayerState.IDLE
+
+func _play_score_delta_sfx(points: int) -> void:
+	if points > 0:
+		_play_sfx("PlusTileSfx", PLUS_TILE_SFX)
+	elif points < 0:
+		_play_sfx("MinusTileSfx", MINUS_TILE_SFX)
+
+func _play_sfx(player_name: String, stream: AudioStream) -> void:
+	var player := _get_or_create_sfx_player(player_name, stream)
+	if player == null or player.stream == null:
+		return
+	player.stop()
+	player.play()
+
+func _get_or_create_sfx_player(player_name: String, stream: AudioStream) -> AudioStreamPlayer:
+	var existing := get_node_or_null(player_name) as AudioStreamPlayer
+	if existing != null:
+		if existing.stream == null:
+			existing.stream = stream
+		return existing
+
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	add_child(player)
+	return player
