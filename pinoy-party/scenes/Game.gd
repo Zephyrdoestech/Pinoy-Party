@@ -39,6 +39,7 @@ const CHARACTER_SHEETS: Array[String] = [
 ]
 
 func _ready() -> void:
+	BgmManager.play_board()
 	GameManager.board_ref = board
 	_spawn_tokens()
 	roll_button.disabled = true
@@ -142,6 +143,7 @@ func _on_dice_rolled(_player_index: int, _result: int) -> void:
 	_update_roll_button()
 
 func _on_game_over(_winner_index: int) -> void:
+	BgmManager.play_game_over()
 	roll_button.disabled = true
 	_stop_audio(walking_sfx)
 
