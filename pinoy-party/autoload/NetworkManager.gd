@@ -186,6 +186,7 @@ func start_game() -> void:
 func _on_game_start() -> void:
 	match_in_progress = true
 	game_starting.emit()
+	BgmManager.stop()
 	get_tree().change_scene_to_file("res://cutscene.tscn")
 
 # --- Player index <-> peer id mapping ---
