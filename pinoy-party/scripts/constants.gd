@@ -20,3 +20,6 @@ const TRIVIA_QUESTIONS_PATH := "res://data/trivia_questions.json"
 const TRIVIA_POINTS := 1
 const TRIVIA_ANSWER_TIME_SEC := 15.0   # how long players have to answer
 const TRIVIA_REVEAL_TIME_SEC := 3.0    # how long results stay on screen
+
+# Finish line
+const FINISH_LINE_BONUS: int = 5  # bonus points awarded on first arrival at tile TOTAL_TILES - 1

@@ -11,6 +11,7 @@ const HOVER_SFX := preload("res://assets/sfx/hover_sfx.mp3")
 var _is_transitioning := false
 
 func _ready() -> void:
+	BgmManager.play_default()
 	play_button.pressed.connect(_on_play_pressed)
 	exit_button.pressed.connect(_on_exit_pressed)
 	play_button.mouse_entered.connect(_play_hover_sfx)

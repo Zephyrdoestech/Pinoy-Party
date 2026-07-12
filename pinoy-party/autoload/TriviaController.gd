@@ -58,6 +58,7 @@ func _process(delta: float) -> void:
 		_timer_active = false
 
 func _on_trivia_started(question: String, options: Array, answering_player_idx: int) -> void:
+	BgmManager.play_trivia()
 	_submitted_answers.clear()
 	_answering_player_idx = answering_player_idx
 	_build_overlay(question, options)
@@ -276,6 +277,11 @@ func _show_only_selected_option() -> void:
 func show_results(scores: Dictionary, correct_index: int) -> void:
 	_timer_active = false
 	set_process(false)
+	# Kill any in-flight tick sound immediately — the AudioStreamPlayer keeps
+	# playing to the end of the clip even after _process is disabled.
+	var tick_player := get_node_or_null("TimeTickingSfx") as AudioStreamPlayer
+	if tick_player:
+		tick_player.stop()
 
 	var answered_correctly := scores.has(_answering_player_idx)
 	_play_trivia_sfx("TriviaResultSfx", CORRECT_ANSWER_SFX if answered_correctly else WRONG_ANSWER_SFX)
@@ -307,6 +313,7 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 	if _overlay:
 		_overlay.queue_free()
 		_overlay = null
+	BgmManager.play_board()
 
 func _update_timer_label() -> void:
 	var displayed_second := ceili(_timer_remaining)

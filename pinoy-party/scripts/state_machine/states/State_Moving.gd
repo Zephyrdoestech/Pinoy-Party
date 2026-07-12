@@ -22,6 +22,15 @@ func enter() -> void:
  
 	var new_tile: int = old_tile + roll
  
+	# Detect first arrival at the finish tile and award the bonus.
+	# We check here (pre-animation) so the flag is set before State_TileEvent
+	# or State_EndTurn can run. add_score() emits score_changed, which updates
+	# the HUD immediately once the token lands.
+	if new_tile == Constants.TOTAL_TILES - 1 and not gm.players[player_idx]["finished"]:
+		gm.players[player_idx]["finished"] = true
+		gm.add_score(player_idx, Constants.FINISH_LINE_BONUS)
+		EventBus.player_finished.emit(player_idx)
+ 
 	_animate_and_advance.call_deferred(player_idx, new_tile)
 
 func _animate_and_advance(player_idx: int, new_tile: int) -> void:

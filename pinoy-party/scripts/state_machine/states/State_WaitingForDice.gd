@@ -19,6 +19,18 @@ extends State
 func enter() -> void:
 	var gm: GameManager = GameManager
 
+	# Defensive guard: Step 5's skip logic in State_EndTurn should prevent a
+	# finished player from ever reaching this state, but if they do (e.g. due
+	# to a future code path we haven't anticipated), eject immediately rather
+	# than leaving the UI waiting for a roll that shouldn't happen.
+	if gm.players[gm.current_player_index]["finished"]:
+		push_warning(
+			"[WaitingForDice] player %d is finished but was given a turn - skipping to EndTurn."
+			% gm.current_player_index
+		)
+		request_transition(&"State_EndTurn")
+		return
+
 	# Update the GameManager's legacy state enum so Game.gd's roll-guard still
 	# works while we migrate to the FSM incrementally.
 	gm.state = Enums.GameState.ROLLING

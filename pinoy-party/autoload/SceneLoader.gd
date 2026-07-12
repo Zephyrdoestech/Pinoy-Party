@@ -2,6 +2,7 @@
 extends Node
 
 func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
+	BgmManager.play_minigame()
 	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id]
 	if not ResourceLoader.exists(path):
 		path = "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id.to_snake_case()]
@@ -23,4 +24,5 @@ func _start_minigame_deferred(players: Array[int]) -> void:
 		push_error("SceneLoader: loaded scene is not a BaseMinigame, cannot start_game(). Got: %s" % minigame)
 
 func return_to_board() -> void:
+	BgmManager.play_board()
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")

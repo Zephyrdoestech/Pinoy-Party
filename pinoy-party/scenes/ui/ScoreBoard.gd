@@ -15,6 +15,13 @@ func _ready() -> void:
 		
 		if marker and score_label:
 			rows.append({"marker": marker, "score": score_label})
+
+	# Hide rows that have no player in this match.
+	# The scene always has MAX_PLAYERS (4) rows; in a 2-player game
+	# rows[2] and rows[3] would show as empty blanks without this.
+	var active := GameManager.active_player_count
+	for i in rows.size():
+		rows[i]["marker"].get_parent().get_parent().visible = i < active
 			
 	EventBus.score_changed.connect(_on_score_changed)
 	EventBus.turn_started.connect(_on_turn_started)
