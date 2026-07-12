@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bbwp2d0q4i7x4"
+path="res://.godot/imported/player_icons.aseprite-fc1c34cbfb7023b122c2c74e7dde4ea4.res"
+
+[deps]
+
+source_file="res://assets/board_assets/LeaderBoard/player_icons.aseprite"
+dest_files=["res://.godot/imported/player_icons.aseprite-fc1c34cbfb7023b122c2c74e7dde4ea4.res"]
+
+[params]
+
