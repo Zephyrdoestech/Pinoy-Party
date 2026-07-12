@@ -31,8 +31,17 @@ func enter() -> void:
 		# Do NOT loop back - the game is finished.
 		return
 
-	# 4. Advance the player index (wrap around with modulo).
-	gm.current_player_index = (player_idx + 1) % gm.active_player_count
+	# 4. Advance to the next player who has not yet finished.
+	# The simple modulo is replaced with a loop so players who have already
+	# reached the finish tile are skipped entirely. The attempts cap is a
+	# safety net against an infinite loop if _is_game_over() somehow missed
+	# that every player is finished (should never happen in practice).
+	var next_index: int = (player_idx + 1) % gm.active_player_count
+	var attempts: int = 0
+	while gm.players[next_index]["finished"] and attempts < gm.active_player_count:
+		next_index = (next_index + 1) % gm.active_player_count
+		attempts += 1
+	gm.current_player_index = next_index
 
 	# 5. Loop back to the start of the next player's turn.
 	request_transition(&"State_StartTurn")

@@ -277,6 +277,11 @@ func _show_only_selected_option() -> void:
 func show_results(scores: Dictionary, correct_index: int) -> void:
 	_timer_active = false
 	set_process(false)
+	# Kill any in-flight tick sound immediately — the AudioStreamPlayer keeps
+	# playing to the end of the clip even after _process is disabled.
+	var tick_player := get_node_or_null("TimeTickingSfx") as AudioStreamPlayer
+	if tick_player:
+		tick_player.stop()
 
 	var answered_correctly := scores.has(_answering_player_idx)
 	_play_trivia_sfx("TriviaResultSfx", CORRECT_ANSWER_SFX if answered_correctly else WRONG_ANSWER_SFX)
