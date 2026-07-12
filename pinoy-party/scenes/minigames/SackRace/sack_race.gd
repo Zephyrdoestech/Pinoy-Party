@@ -52,7 +52,10 @@ func _sync_local_client_setup(players: Array[int]) -> void:
 	if countdown_label:
 		countdown_label.position.y += 400.0 
 
-	var tutorial_overlay := _show_intro_tutorial()
+	var tutorial_overlay: CanvasLayer = null
+	if not GameManager.has_shown_tutorial("sack_race"):
+		GameManager.mark_tutorial_shown("sack_race")
+		tutorial_overlay = _show_intro_tutorial()
 	
 	_manage_client_intro_lifecycle(tutorial_overlay)
 

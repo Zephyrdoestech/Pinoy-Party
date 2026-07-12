@@ -79,7 +79,9 @@ func start_game(players: Array[int]) -> void:
 	# Initialize our 4 separate isolated viewports
 	_spawn_splitscreen_worlds()
 	
-	_show_tutorial_png()
+	if not GameManager.has_shown_tutorial("luksong_baka"):
+		GameManager.mark_tutorial_shown("luksong_baka")
+		_show_tutorial_png()
 	
 	if DEBUG_FORCE_LOCAL_TEST :
 		await get_tree().process_frame 

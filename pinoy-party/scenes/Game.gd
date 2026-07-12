@@ -54,7 +54,9 @@ func _ready() -> void:
 	NetworkManager.player_left_mid_match.connect(_on_player_left_mid_match)
 	call_deferred(&"_update_roll_button")
 	# StateMachine auto-starts itself via call_deferred in its own _ready().
-	_show_tutorial_overlay()
+	if not GameManager.has_shown_tutorial("main_board"):
+		GameManager.mark_tutorial_shown("main_board")
+		_show_tutorial_overlay()
 	
 func _show_tutorial_overlay() -> void:
 	get_tree().paused = true
