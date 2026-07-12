@@ -32,6 +32,7 @@ var active_player_count: int = Constants.MAX_PLAYERS
 ##     "score":      int,
 ##     "color":      Color,
 ##     "state":      Enums.PlayerState,
+##     "finished":   bool,   # true once the player has landed on TOTAL_TILES - 1
 ##   }
 var players: Array[Dictionary] = []
 
@@ -74,6 +75,7 @@ func _setup_players() -> void:
 			"score":      0,
 			"color":      [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW][i],
 			"state":      Enums.PlayerState.IDLE,
+			"finished":   false,
 		})
 
 func _on_minigame_finished(scores: Dictionary) -> void:
@@ -90,7 +92,21 @@ func _on_minigame_finished(scores: Dictionary) -> void:
 		has_negative_delta = has_negative_delta or scores[idx] < 0
 		EventBus.score_changed.emit(idx, players[idx]["score"])
 	_play_score_delta_sfx(1 if has_positive_delta else -1 if has_negative_delta else 0)
-	current_player_index = (current_player_index + 1) % active_player_count
+	# Check game-over before advancing the turn, mirroring State_EndTurn.
+	# Without this, if the last player finishes during a minigame the FSM
+	# returns to the board and loops turns forever instead of ending the game.
+	if _is_game_over():
+		state = Enums.GameState.GAME_OVER
+		EventBus.game_over.emit(_get_winner())
+		return
+	# Mirror State_EndTurn's skip-finished logic so turn order stays consistent
+	# when returning to the board after a minigame.
+	var next_index: int = (current_player_index + 1) % active_player_count
+	var attempts: int = 0
+	while players[next_index]["finished"] and attempts < active_player_count:
+		next_index = (next_index + 1) % active_player_count
+		attempts += 1
+	current_player_index = next_index
 
 func _on_trivia_finished(scores: Dictionary) -> void:
 	for idx in scores:
@@ -113,11 +129,6 @@ func on_dice_rolled(result: int) -> void:
 	EventBus.dice_rolled.emit(current_player_index, result)
 
 
-func on_move_complete() -> void:
-	var tile_idx: int = players[current_player_index]["tile_index"]
-	EventBus.player_moved.emit(current_player_index, tile_idx)
-
-
 func add_score(player_index: int, points: int) -> void:
 	players[player_index]["score"] += points
 	EventBus.score_changed.emit(player_index, players[player_index]["score"])
@@ -125,10 +136,14 @@ func add_score(player_index: int, points: int) -> void:
 
 
 func _is_game_over() -> bool:
-	for p: Dictionary in players:
-		if p["tile_index"] >= Constants.TOTAL_TILES - 1:
-			return true
-	return false
+	# The game is only over once every active player has reached the finish tile.
+	# A single arrival no longer ends the game immediately; players who finish
+	# early sit out future turns (handled in State_EndTurn and here in
+	# _on_minigame_finished) until the last player also finishes.
+	for i in range(active_player_count):
+		if not players[i]["finished"]:
+			return false
+	return true
 
 
 func _get_winner() -> int:
@@ -146,6 +161,7 @@ func reset_for_new_game() -> void:
 		p["tile_index"] = 0
 		p["score"] = 0
 		p["state"] = Enums.PlayerState.IDLE
+		p["finished"] = false
 
 func _play_score_delta_sfx(points: int) -> void:
 	if points > 0:

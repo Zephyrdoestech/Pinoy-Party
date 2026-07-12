@@ -38,7 +38,7 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 24)
 	panel.add_child(spacer)
 
-	for i in Constants.MAX_PLAYERS:
+	for i in GameManager.active_player_count:
 		var score_label := Label.new()
 		score_label.add_theme_font_size_override("font_size", 24)
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -76,16 +76,14 @@ func _on_game_over(winner_index: int) -> void:
 	headline.text = "%s Wins!" % winner_data["name"]
 	headline.modulate = winner_data["color"]
 
-	for i in Constants.MAX_PLAYERS:
+	# score_rows was built for active_player_count, so index directly with no
+	# hide/show branching needed — every row corresponds to a real player.
+	for i in GameManager.active_player_count:
 		var label: Label = score_rows[i]
-		if i < GameManager.active_player_count:
-			var p: Dictionary = GameManager.players[i]
-			label.text = "%s: %d" % [p["name"], p["score"]]
-			label.modulate = p["color"]
-			label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
-			label.show()
-		else:
-			label.hide()
+		var p: Dictionary = GameManager.players[i]
+		label.text = "%s: %d" % [p["name"], p["score"]]
+		label.modulate = p["color"]
+		label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
 	visible = true
 
 func _on_restart_pressed() -> void:

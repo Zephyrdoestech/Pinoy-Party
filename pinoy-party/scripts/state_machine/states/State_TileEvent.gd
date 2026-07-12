@@ -28,15 +28,27 @@ func enter() -> void:
 	var gm: GameManager  = GameManager
 	var player_idx: int  = gm.current_player_index
 	var tile_idx: int    = gm.players[player_idx]["tile_index"]
+
+	# If this player already finished (reached the final tile this turn),
+	# skip tile-event resolution entirely and go straight to EndTurn.
+	# State_Moving sets finished = true before _animate_and_advance runs,
+	# so by the time we reach here the flag is already authoritative.
+	if gm.players[player_idx]["finished"]:
+		request_transition(&"State_EndTurn")
+		return
+
 	# Resolve tile type. Swap this lookup for your actual Board / TileMap API.
 	var tile_type: Enums.TileType = _get_tile_type(tile_idx)
 	print("[TileEvent] Player %d landed on tile %d (type: %s)."
 		% [player_idx, tile_idx, Enums.TileType.keys()[tile_type]])
-	if tile_type == Enums.TileType.BLANK:
-		EventBus.tile_landed.emit(player_idx, tile_type)
-	else:
-		EventBus.tile_landed.emit(player_idx, tile_type)
+
+	# Emit once — the if/else previously emitted the identical signal in
+	# both branches, which was redundant. Moved here before the await so
+	# listeners always receive it regardless of tile type.
+	EventBus.tile_landed.emit(player_idx, tile_type)
+	if tile_type != Enums.TileType.BLANK:
 		await _wait_for_tile_sfx_duration(tile_type)
+
 	match tile_type:
 		Enums.TileType.BLANK:
 			_handle_blank()
