@@ -55,6 +55,8 @@ func start_game(players: Array[int]) -> void:
 	if not GameManager.has_shown_tutorial("langit_lupa"):
 		GameManager.mark_tutorial_shown("langit_lupa")
 		_show_intro_tutorial_synced()
+	else:
+		_show_intro_tutorial_synced()
 	
 	await run_intro("")
 	if NetworkManager.is_host:
