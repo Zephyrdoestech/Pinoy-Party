@@ -20,6 +20,7 @@ var elimination_order: Array = []      # Array[Array[int]] - tie-groups, in elim
 var flood_start_y: float
 @onready var flood: Area2D = $Flood
 @onready var flood_sprite: AnimatedSprite2D = $"Flood/flood sprite"
+@onready var anim_player: AnimationPlayer = $Dog/AnimationPlayer
 var round_start_msec: int
 var round_active: bool = false
 var _coyote_timer: float = 0.
@@ -45,6 +46,10 @@ func start_game(players: Array[int]) -> void:
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
 	flood_sprite.play("default") 
+	
+	var active_anim_player = get_node_or_null("Dog/AnimationPlayer")
+	if active_anim_player:
+		active_anim_player.play("idle")
 	
 	gameplay_locked = true
 	if not GameManager.has_shown_tutorial("langit_lupa"):
@@ -154,7 +159,12 @@ func _hide_inactive_players() -> void:
 func _auto_position_spawn_and_goal() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	$Platforms/SpawnPlatform.position = Vector2(SCREEN_MARGIN, viewport_size.y - SCREEN_MARGIN)
-	$Platforms/GoalPlatform.position = Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN)
+	var goal_pos := Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN + 20)
+	$Platforms/GoalPlatform.position = goal_pos
+	
+	if has_node("Dog"):
+		$Dog.position = goal_pos + Vector2(0, -30.0) # Adjust Y offset so the dog sits cleanly on the surface
+
 	$Flood.position = Vector2(-viewport_size.x, viewport_size.y + 60.0)
 	$Flood.get_node("ColorRect").size = Vector2(viewport_size.x * 3.0, 40.0)
 
@@ -387,5 +397,4 @@ func _end_game(scores: Dictionary) -> void:
 	gameplay_locked = true
 	_clear_generated_platforms()
 
-	print("[LangitLupa] Round over. Elimination order: %s" % [elimination_order])
 	_finish(scores)

@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://c13y7pwwlisfp"]
 
 [ext_resource type="Script" uid="uid://752x48f588ww" path="res://scenes/minigames/LuksongBaka/luksong_baka.gd" id="1_3p3bn"]
+[ext_resource type="FontFile" uid="uid://dchskkvpjy4f" path="res://assets/fonts/GrapeSoda.ttf" id="2_4dha5"]
 
 [node name="LuksongBaka" type="Node2D" unique_id=763183193]
 script = ExtResource("1_3p3bn")
@@ -30,6 +31,8 @@ offset_bottom = 11.5
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_4dha5")
+theme_override_font_sizes/font_size = 64
 
 [node name="CountdownLabel" type="Label" parent="UI" unique_id=1930423118]
 anchors_preset = 8
