@@ -5,6 +5,7 @@ const UI_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
 const TRIVIA_BG := preload("res://assets/board_assets/Trivia/trivia_bg.png")
 const QUESTION_BG := preload("res://assets/board_assets/Trivia/trivia_questions_container_bg.png")
 const TIMER_BG := preload("res://assets/board_assets/Trivia/timer_container.png")
+const SCORE_BG := preload("res://assets/board_assets/Trivia/score_container.png")
 const CORRECT_BG := preload("res://assets/board_assets/Trivia/correct_container.png")
 const INCORRECT_BG := preload("res://assets/board_assets/Trivia/incorrect_container.png")
 const CORRECT_ANSWER_SFX := preload("res://assets/sfx/board/correct_answer_sfx.mp3")
@@ -25,13 +26,15 @@ const PANEL_SIZE := Vector2(768, 384)
 const QUESTION_SIZE := Vector2(702, 102)
 const ANSWER_SIZE := Vector2(708, 48)
 const STATUS_SIZE := Vector2(192, 96)
+const SCORE_SIZE := Vector2(320, 64)
 
 
 var _submitted_answers: Dictionary = {}  # player_idx -> option_index
 var _overlay: Control
 var _status_texture: TextureRect
 var _timer_label: Label
-var _score_label: Label  # shows answering player's current total score
+var _score_holder: Control
+var _score_label: Label
 var _option_buttons: Array[TextureButton] = []
 var _option_labels: Array[Label] = []
 var _current_selection: int = 0
@@ -102,24 +105,28 @@ func _build_overlay(question: String, options: Array) -> void:
 	_timer_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	status_holder.add_child(_timer_label)
 
-	# Score label — shows the answering player's current total score.
-	# Displayed below the timer/result box so players can see their running tally.
-	var score_holder := Control.new()
-	score_holder.custom_minimum_size = Vector2(STATUS_SIZE.x, 36)
-	score_holder.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	score_holder.offset_left = -STATUS_SIZE.x * 0.5
-	score_holder.offset_top = 44.0 + STATUS_SIZE.y + 4.0
-	score_holder.offset_right = STATUS_SIZE.x * 0.5
-	score_holder.offset_bottom = 44.0 + STATUS_SIZE.y + 40.0
-	_overlay.add_child(score_holder)
+	_score_holder = Control.new()
+	_score_holder.custom_minimum_size = SCORE_SIZE
+	_score_holder.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_score_holder.offset_left = -SCORE_SIZE.x * 0.5
+	_score_holder.offset_top = 44.0 + STATUS_SIZE.y - 2.0
+	_score_holder.offset_right = SCORE_SIZE.x * 0.5
+	_score_holder.offset_bottom = 44.0 + STATUS_SIZE.y - 2.0 + SCORE_SIZE.y
+	_score_holder.visible = false
+	_overlay.add_child(_score_holder)
 
-	_score_label = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_CENTER)
-	if _answering_player_idx >= 0 and _answering_player_idx < GameManager.players.size():
-		var current_score: int = GameManager.players[_answering_player_idx]["score"]
-		var player_name: String = GameManager.players[_answering_player_idx]["name"]
-		_score_label.text = "%s's Score: %d" % [player_name, current_score]
+	var score_bg := TextureRect.new()
+	score_bg.texture = SCORE_BG
+	score_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	score_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	score_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	_score_holder.add_child(score_bg)
+
+	_score_label = _make_label(30, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_CENTER)
 	_score_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	score_holder.add_child(_score_label)
+	_score_label.offset_left = 18.0
+	_score_label.offset_right = -18.0
+	_score_holder.add_child(_score_label)
 
 	var panel_holder := Control.new()
 	panel_holder.custom_minimum_size = PANEL_SIZE
@@ -290,16 +297,15 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 	if _timer_label != null:
 		_timer_label.text = "CORRECT" if answered_correctly else "WRONG"
 
-	# Show a brief score-change indicator during the reveal window.
-	# The score has already been applied to GameManager by the time show_results() runs,
-	# so we can read the updated total directly to show the new running score.
-	if _score_label != null and _answering_player_idx >= 0 and _answering_player_idx < GameManager.players.size():
-		var new_score: int = GameManager.players[_answering_player_idx]["score"]
+	if _score_holder != null:
+		_score_holder.visible = true
+	if _score_label != null:
 		if answered_correctly:
-			_score_label.text = "+%d point! Score: %d" % [Constants.TRIVIA_POINTS, new_score]
+			var point_word := "Point" if Constants.TRIVIA_POINTS == 1 else "Points"
+			_score_label.text = "+%d %s" % [Constants.TRIVIA_POINTS, point_word]
 			_score_label.add_theme_color_override("font_color", Color(0.08, 0.55, 0.15))
 		else:
-			_score_label.text = "Incorrect! Score: %d" % new_score
+			_score_label.text = "No Points"
 			_score_label.add_theme_color_override("font_color", Color(0.70, 0.12, 0.10))
 
 	if correct_index >= 0 and correct_index < _option_labels.size():

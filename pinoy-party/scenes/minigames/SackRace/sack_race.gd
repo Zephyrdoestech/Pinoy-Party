@@ -6,11 +6,16 @@ const HOP_DISTANCE := 1.0          # progress per press
 const RACE_TIMEOUT := 15.0         # seconds, safety net
 const HOP_PIXELS := 30.0           # how many pixels each ColorRect moves per press
 const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_sack_race.png"
+const SACK_RACE_UI_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
+const TIMER_BG := preload("res://assets/board_assets/Trivia/timer_container.png")
+const TIMER_SIZE := Vector2(160, 46)
 
 var progress: Dictionary = {}      # player_idx -> float progress
 var finished_order: Array[int] = []
 var race_active := false
 var timeout_timer := 0.0
+var _timer_container: TextureRect = null
+@onready var timer_label: Label = $UI/TimerLabel
 
 func _get_track_node(player_idx: int) -> Node2D:
 	var path := "SplitScreenContainer/P%d_Container/Viewport%d/Track%d/Player%d" % [
@@ -46,7 +51,8 @@ func _sync_local_client_setup(players: Array[int]) -> void:
 			
 	finished_order.clear()
 	timeout_timer = 0.0
-	$UI/TimerLabel.text = "Time: %.1f" % RACE_TIMEOUT
+	_style_timer()
+	_update_timer_label(RACE_TIMEOUT)
 
 	var countdown_label = get_node_or_null("UI/CountdownLabel") 
 	if countdown_label:
@@ -108,9 +114,41 @@ func _process(delta: float) -> void:
 		return
 	timeout_timer += delta
 	var time_left := RACE_TIMEOUT - timeout_timer
-	$UI/TimerLabel.text = "Time: %.1f" % max(time_left, 0.0)
+	_update_timer_label(max(time_left, 0.0))
 	if timeout_timer >= RACE_TIMEOUT:
 		_end_race()
+
+func _style_timer() -> void:
+	if timer_label == null:
+		return
+	if _timer_container == null:
+		_timer_container = TextureRect.new()
+		_timer_container.name = "TimerContainer"
+		_timer_container.texture = TIMER_BG
+		_timer_container.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_timer_container.stretch_mode = TextureRect.STRETCH_SCALE
+		_timer_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_timer_container.offset_left = -TIMER_SIZE.x * 0.5
+		_timer_container.offset_top = 0.0
+		_timer_container.offset_right = TIMER_SIZE.x * 0.5
+		_timer_container.offset_bottom = TIMER_SIZE.y
+		$UI.add_child(_timer_container)
+		$UI.move_child(_timer_container, timer_label.get_index())
+
+	timer_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	timer_label.offset_left = -TIMER_SIZE.x * 0.5
+	timer_label.offset_top = 0.0
+	timer_label.offset_right = TIMER_SIZE.x * 0.5
+	timer_label.offset_bottom = TIMER_SIZE.y
+	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	timer_label.add_theme_font_override("font", SACK_RACE_UI_FONT)
+	timer_label.add_theme_font_size_override("font_size", 30)
+	timer_label.add_theme_color_override("font_color", Color(0.12, 0.16, 0.24))
+
+func _update_timer_label(time_left: float) -> void:
+	if timer_label:
+		timer_label.text = "%.1f" % time_left
 
 func _input(event: InputEvent) -> void:
 	if not race_active:

@@ -11,6 +11,11 @@ const LAYER_HEIGHT := 100.0
 const COLUMN_SPACING := 350.0   # must stay <= your real max horizontal jump distance
 const PLATFORM_WIDTH := 150.0
 const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_langit_lupa.png"
+const PLATFORM_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/minigame_assets/langit_lupa_assets/LangitLupa_platform.png"),
+	preload("res://assets/minigame_assets/langit_lupa_assets/LangitLupa_platform2.png")
+]
+const PLATFORM_VISUAL_HEIGHT := 48.0
 # Set from NetworkManager.get_my_player_index() at start_game() - replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
@@ -202,10 +207,16 @@ func _spawn_platform_node(pos: Vector2, layer: int, index: int) -> void:
 	shape.shape = rect
 	plat.add_child(shape)
 
-	var visual := ColorRect.new()
-	visual.size = Vector2(PLATFORM_WIDTH, 20.0)
-	visual.color = Color(0.6, 0.4, 0.2)   
-	visual.position = -visual.size / 2.0
+	var visual := Sprite2D.new()
+	var texture := PLATFORM_TEXTURES[(layer + index) % PLATFORM_TEXTURES.size()]
+	visual.texture = texture
+	visual.centered = true
+	visual.position = Vector2.ZERO
+	if texture:
+		visual.scale = Vector2(
+			PLATFORM_WIDTH / texture.get_width(),
+			PLATFORM_VISUAL_HEIGHT / texture.get_height()
+		)
 	plat.add_child(visual)
 
 	$Platforms.add_child(plat)
