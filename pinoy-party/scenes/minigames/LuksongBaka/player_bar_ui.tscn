@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://cwhh1x44g3c3n"]
+[gd_scene load_steps=2 format=3 uid="uid://cwhh1x44g3c3n"]
+
+[ext_resource type="Texture2D" path="res://assets/minigame_assets/luksong_baka_assets/bar.png" id="1_bar"]
 
 [ext_resource type="FontFile" uid="uid://dchskkvpjy4f" path="res://assets/fonts/GrapeSoda.ttf" id="1_yl8xk"]
 
@@ -27,17 +29,21 @@ custom_minimum_size = Vector2(200, 40)
 layout_mode = 0
 offset_right = 400.0
 offset_bottom = 40.0
+texture = ExtResource("1_bar")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="Zone" type="ColorRect" parent="Track" unique_id=58309267]
 layout_mode = 1
 offset_right = 40.0
 offset_bottom = 40.0
-color = Color(0.66611713, 0.9797489, 0.49439484, 1)
+color = Color(1, 0.872, 0.26, 0.88)
 
 [node name="Marker" type="ColorRect" parent="Track" unique_id=13958281]
 layout_mode = 1
 offset_right = 5.0
 offset_bottom = 40.0
+color = Color(1, 1, 1, 1)
 
 [node name="Status" type="Label" parent="." unique_id=623034165]
 layout_mode = 1

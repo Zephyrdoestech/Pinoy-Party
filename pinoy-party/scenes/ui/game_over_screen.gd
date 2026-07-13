@@ -3,10 +3,17 @@ extends Control
 
 var headline: Label
 var score_rows: Array = []  # [{score: Label}] per player, indexed by player_index
-var restart_button: Button
+var restart_button: TextureButton
 const CUSTOM_FONT_PATH := "res://assets/fonts/GrapeSoda.ttf"
+const WINNING_CONTAINER := preload("res://assets/screens/winning_container.png")
+const LOSING_CONTAINER := preload("res://assets/screens/losing_container.png")
+const PLAY_BUTTON_TEXTURE := preload("res://assets/screens/lobby/play_button.png")
+const PLAY_BUTTON_HOVER_TEXTURE := preload("res://assets/screens/lobby/play_button_hover.png")
+const PLAY_BUTTON_PRESSED_TEXTURE := preload("res://assets/screens/lobby/play_button_pressed.png")
 const VICTORY_SFX := preload("res://assets/sfx/board/victory_sfx.mp3")
 const GAME_OVER_SFX := preload("res://assets/sfx/board/game_over_sfx.mp3")
+const ROW_SIZE := Vector2(460, 72)
+const PLAY_BUTTON_SIZE := Vector2(220, 76)
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -17,47 +24,80 @@ func _ready() -> void:
 	var custom_font = load(CUSTOM_FONT_PATH)
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.85)
+	dim.color = Color(0, 0, 0, 0.35)
 	add_child(dim)
 
 	var panel := VBoxContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(520, 460)
+	panel.offset_left = -260.0
+	panel.offset_top = -260.0
+	panel.offset_right = 260.0
+	panel.offset_bottom = 200.0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	panel.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_theme_constant_override("separation", 10)
 	add_child(panel)
 
+	var title := Label.new()
+	title.text = "Game Over"
+	title.add_theme_font_size_override("font_size", 86)
+	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.22))
+	title.add_theme_color_override("font_outline_color", Color(0.25, 0.08, 0.03))
+	title.add_theme_constant_override("outline_size", 8)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if custom_font:
+		title.add_theme_font_override("font", custom_font)
+	panel.add_child(title)
+
 	headline = Label.new()
-	headline.add_theme_font_size_override("font_size", 56)
+	headline.add_theme_font_size_override("font_size", 72)
+	headline.add_theme_color_override("font_outline_color", Color(0.18, 0.07, 0.04))
+	headline.add_theme_constant_override("outline_size", 6)
 	headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if custom_font:
 		headline.add_theme_font_override("font", custom_font)
 	panel.add_child(headline)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 24)
+	spacer.custom_minimum_size = Vector2(0, 6)
 	panel.add_child(spacer)
 
 	for i in GameManager.active_player_count:
+		var row_bg := TextureRect.new()
+		row_bg.custom_minimum_size = ROW_SIZE
+		row_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		row_bg.stretch_mode = TextureRect.STRETCH_SCALE
+		panel.add_child(row_bg)
+
 		var score_label := Label.new()
-		score_label.add_theme_font_size_override("font_size", 24)
+		score_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		score_label.offset_left = 28.0
+		score_label.offset_right = -28.0
+		score_label.add_theme_font_size_override("font_size", 34)
+		score_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05))
+		score_label.add_theme_color_override("font_outline_color", Color(1, 0.94, 0.75))
+		score_label.add_theme_constant_override("outline_size", 3)
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		if custom_font:
 			score_label.add_theme_font_override("font", custom_font)
-		panel.add_child(score_label)
+		row_bg.add_child(score_label)
 		score_rows.append(score_label)
 
 	var spacer2 := Control.new()
 	spacer2.custom_minimum_size = Vector2(0, 24)
 	panel.add_child(spacer2)
 
-	restart_button = Button.new()
-	restart_button.text = "Play Again"
-	restart_button.custom_minimum_size = Vector2(160, 48)
+	restart_button = TextureButton.new()
+	restart_button.texture_normal = PLAY_BUTTON_TEXTURE
+	restart_button.texture_hover = PLAY_BUTTON_HOVER_TEXTURE
+	restart_button.texture_pressed = PLAY_BUTTON_PRESSED_TEXTURE
+	restart_button.ignore_texture_size = true
+	restart_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	restart_button.custom_minimum_size = PLAY_BUTTON_SIZE
 	restart_button.pressed.connect(_on_restart_pressed)
-	if custom_font:
-		restart_button.add_theme_font_override("font", custom_font)
-		restart_button.add_theme_font_size_override("font_size", 20)
 	# Add to panel so the button flows naturally below the score rows.
 	# Previously added to self (root Control) with hardcoded screen offsets
 	# which broke if the panel grew or the resolution changed.
@@ -68,7 +108,7 @@ func _ready() -> void:
 func _on_game_over(winner_index: int) -> void:
 	_play_game_over_sfx(winner_index)
 	var winner_data: Dictionary = GameManager.players[winner_index]
-	headline.text = "%s Wins!" % winner_data["name"]
+	headline.text = "%s Won!" % winner_data["name"]
 	headline.modulate = winner_data["color"]
 
 	# score_rows was built for active_player_count, so index directly with no
@@ -76,9 +116,12 @@ func _on_game_over(winner_index: int) -> void:
 	for i in GameManager.active_player_count:
 		var label: Label = score_rows[i]
 		var p: Dictionary = GameManager.players[i]
-		label.text = "%s: %d" % [p["name"], p["score"]]
+		var row_bg := label.get_parent() as TextureRect
+		if row_bg:
+			row_bg.texture = WINNING_CONTAINER if i == winner_index else LOSING_CONTAINER
+		label.text = "%s  -  %d Points" % [p["name"], p["score"]]
 		label.modulate = p["color"]
-		label.add_theme_font_size_override("font_size", 32 if i == winner_index else 24)
+		label.add_theme_font_size_override("font_size", 42 if i == winner_index else 34)
 	visible = true
 
 func _on_restart_pressed() -> void:
