@@ -3,13 +3,17 @@ extends Control
 
 var headline: Label
 var score_rows: Array = []  # [{score: Label}] per player, indexed by player_index
-var restart_button: Button
+var restart_button: TextureButton
 const CUSTOM_FONT_PATH := "res://assets/fonts/GrapeSoda.ttf"
 const WINNING_CONTAINER := preload("res://assets/screens/winning_container.png")
 const LOSING_CONTAINER := preload("res://assets/screens/losing_container.png")
+const PLAY_BUTTON_TEXTURE := preload("res://assets/screens/lobby/play_button.png")
+const PLAY_BUTTON_HOVER_TEXTURE := preload("res://assets/screens/lobby/play_button_hover.png")
+const PLAY_BUTTON_PRESSED_TEXTURE := preload("res://assets/screens/lobby/play_button_pressed.png")
 const VICTORY_SFX := preload("res://assets/sfx/board/victory_sfx.mp3")
 const GAME_OVER_SFX := preload("res://assets/sfx/board/game_over_sfx.mp3")
 const ROW_SIZE := Vector2(460, 72)
+const PLAY_BUTTON_SIZE := Vector2(220, 76)
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -86,13 +90,14 @@ func _ready() -> void:
 	spacer2.custom_minimum_size = Vector2(0, 24)
 	panel.add_child(spacer2)
 
-	restart_button = Button.new()
-	restart_button.text = "Play Again"
-	restart_button.custom_minimum_size = Vector2(160, 48)
+	restart_button = TextureButton.new()
+	restart_button.texture_normal = PLAY_BUTTON_TEXTURE
+	restart_button.texture_hover = PLAY_BUTTON_HOVER_TEXTURE
+	restart_button.texture_pressed = PLAY_BUTTON_PRESSED_TEXTURE
+	restart_button.ignore_texture_size = true
+	restart_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	restart_button.custom_minimum_size = PLAY_BUTTON_SIZE
 	restart_button.pressed.connect(_on_restart_pressed)
-	if custom_font:
-		restart_button.add_theme_font_override("font", custom_font)
-		restart_button.add_theme_font_size_override("font_size", 20)
 	# Add to panel so the button flows naturally below the score rows.
 	# Previously added to self (root Control) with hardcoded screen offsets
 	# which broke if the panel grew or the resolution changed.

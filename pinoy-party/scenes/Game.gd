@@ -13,6 +13,7 @@ const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.m
 @onready var board: Node2D = $Board
 @onready var dice: Node2D = $Dice
 @onready var roll_button: TextureButton = $UI/RollButton
+@onready var score_board: Control = $UI/ScoreBoard
 @onready var state_machine: StateMachine = $StateMachine
 @onready var button_click_sfx: AudioStreamPlayer = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
 @onready var hover_sfx: AudioStreamPlayer = _get_or_create_audio_player("HoverSfx", HOVER_SFX)
@@ -160,6 +161,9 @@ func _on_dice_rolled(_player_index: int, _result: int) -> void:
 func _on_game_over(_winner_index: int) -> void:
 	BgmManager.play_game_over()
 	roll_button.disabled = true
+	roll_button.visible = false
+	if score_board:
+		score_board.visible = false
 	_stop_audio(walking_sfx)
 
 func _update_roll_button() -> void:
