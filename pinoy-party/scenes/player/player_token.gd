@@ -26,7 +26,14 @@ func setup(index: int, board: Node2D, front_sheet: Texture2D) -> void:
 
 	sprite.sprite_frames = _build_frames(player_index + 1, front_sheet)
 	sprite.scale         = SPRITE_SCALE
+	# Start frozen on the first frame of walkFront rather than immediately
+	# playing the walk cycle. Tokens are created before any movement happens
+	# (during the tutorial / countdown), so they should look still until
+	# move_to() is called. This also matches the state tokens end up in
+	# after _step_toward() completes (pause() on the last walk frame).
 	sprite.play("walkFront")
+	sprite.pause()
+	sprite.frame = 0
 
 	var current_tile: int = GameManager.players[index]["tile_index"]
 	global_position = board_ref.get_tile_position(current_tile) + Utils.token_offset(player_index)

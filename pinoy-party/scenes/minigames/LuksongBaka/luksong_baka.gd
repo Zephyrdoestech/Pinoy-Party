@@ -6,7 +6,7 @@ const ROUND_TIME_START := 2.2      # seconds for marker to sweep bar at round 1
 const ROUND_TIME_MIN := 0.7        # fastest the sweep will ever get
 const ROUND_SPEEDUP := 0.85        # multiply sweep time by this each round
 const ZONE_WIDTH_START := 0.30     # green zone width as % of bar (round 1)
-const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ever get
+const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ev0er get
 const ZONE_SHRINK := 0.92          # multiply zone width by this each round
 const DEBUG_FORCE_LOCAL_TEST := false
 const BAR_WIDTH := 200.0
@@ -58,15 +58,15 @@ var char_sprites: Dictionary = {}  # player_index -> AnimatedSprite2D
 var quadrants: Dictionary = {}     # player_index -> SubViewportContainer reference
 
 func _ready() -> void:
-	randomize()
-	
 	# ️ LOCAL TESTING OVERRIDE GATEWAY:
-	if DEBUG_FORCE_LOCAL_TEST :
+	if DEBUG_FORCE_LOCAL_TEST:
+		# Keep this dict in sync with GameManager._setup_players() — every field
+		# that any autoload or FSM state reads must exist here or debug runs crash.
 		GameManager.players = [
-			{"name": "Player 1 (You)", "score": 0},
-			{"name": "CPU Player 2", "score": 0},
-			{"name": "CPU Player 3", "score": 0},
-			{"name": "CPU Player 4", "score": 0}
+			{"name": "Player 1",   "score": 0, "tile_index": 0, "color": Color.RED,    "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 2", "score": 0, "tile_index": 0, "color": Color.BLUE,   "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 3", "score": 0, "tile_index": 0, "color": Color.GREEN,  "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 4", "score": 0, "tile_index": 0, "color": Color.YELLOW, "state": Enums.PlayerState.IDLE, "finished": false},
 		]
 		
 		gameplay_locked = false 
@@ -76,19 +76,24 @@ func start_game(players: Array[int]) -> void:
 	alive_players = players.duplicate()
 	super(players)
 	elimination_order.clear()
+	
 	# Initialize our 4 separate isolated viewports
 	_spawn_splitscreen_worlds()
 	
 	if not GameManager.has_shown_tutorial("luksong_baka"):
 		GameManager.mark_tutorial_shown("luksong_baka")
 		_show_tutorial_png()
-	
-	if DEBUG_FORCE_LOCAL_TEST :
-		await get_tree().process_frame 
+
+	if DEBUG_FORCE_LOCAL_TEST:
+		await get_tree().process_frame
 		_start_countdown()
 		_begin_round(randf_range(0.0, 1.0 - zone_width)) # Kicks off local sandbox with an initial zone position
 	else:
 		await run_intro()
+		# Dismiss the tutorial overlay now that the countdown has finished.
+		if is_instance_valid(tutorial_node):
+			tutorial_node.queue_free()
+			tutorial_node = null
 		_start_countdown()
 
 func _start_countdown() -> void:
@@ -105,8 +110,7 @@ func _start_countdown() -> void:
 	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
 	#  LOCAL SANDBOX COMPATIBILITY GATEWAY:
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		# Directly run the logic instantly without routing through NetworkManager
 		_begin_round(picked_zone_start)
 	else:
@@ -211,13 +215,15 @@ func _process(delta: float) -> void:
 				var start_x := 500.0  # Spawn coordinate (off-screen right)
 				var target_x := 80.0   # Character's horizontal position
 				
+				var arrival_time := zone_start + (zone_width * 0.4) # for better visual alignment of the obstacles
+				
 				# Normalize marker progress against where the safe zone actually begins
-				if marker_t < zone_start:
-					var t_normalized = marker_t / zone_start
+				if marker_t < arrival_time:
+					var t_normalized = marker_t / arrival_time
 					obstacle.position.x = lerp(start_x, target_x, t_normalized)
 				else:
 					# If marker passes the target zone, pass through the player to the left off-screen
-					var overshoot = (marker_t - zone_start) / (1.0 - zone_start)
+					var overshoot = (marker_t - arrival_time) / (1.0 - arrival_time)
 					obstacle.position.x = lerp(target_x, -100.0, overshoot)
 		
 		if not alive_players.has(player_idx):
@@ -254,11 +260,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	print(" Jump action detected!")
 
 	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
 	if DEBUG_FORCE_LOCAL_TEST:
 		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
 		_try_jump(0)
-		return #  CRITICAL: This MUST be here so it stops execution right now!
+		return #  
 
 	# 4. GATEWAY B: Production Network Mode (F5 Running Main Game)
 	var my_idx: int = NetworkManager.get_my_player_index()
@@ -298,14 +303,14 @@ func _try_jump(player_idx: int) -> void:
 
 	if in_zone:
 		if status:
-			status.text = "Cleared!"
+			status.text = "Ligtas!"
 			status.modulate = Color(0.3, 0.9, 0.4)
 		GameManager.add_score(player_idx, 1)
 		
 		var spr: AnimatedSprite2D = char_sprites[player_idx]
 		spr.play("jump")
 		var tween = create_tween().set_parallel(false)
-		var jump_height := 100.0  # Increase this number to jump even higher!
+		var jump_height := 150.0  
 		var jump_duration := 0.25 # How fast they reach the peak
 		
 		# 1. Animate upward relative to the base CHAR_Y alignment
@@ -326,7 +331,7 @@ func _try_jump(player_idx: int) -> void:
 		, CONNECT_ONE_SHOT)
 	else:
 		if status:
-			status.text = "Caught!"
+			status.text = "Aray!"
 			status.modulate = Color(0.9, 0.3, 0.3)
 		
 		var spr: AnimatedSprite2D = char_sprites[player_idx]
@@ -340,10 +345,8 @@ func _try_jump(player_idx: int) -> void:
 
 func _end_round_sweep() -> void:
 	sweeping = false
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-	
 	# ️ HARD SANDBOX RESET FOR F6 TESTING
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		print("--- ROUND ENDED (SANDBOX) ---")
 		
 		# Eliminate anyone who didn't trigger a jump callback
@@ -352,7 +355,7 @@ func _end_round_sweep() -> void:
 				if bars.has(player_idx):
 					var status: Label = bars[player_idx].get_node_or_null("Status")
 					if status:
-						status.text = "Caught!"
+						status.text = "Aray!"
 						status.modulate = Color(0.9, 0.3, 0.3)
 				
 				if char_sprites.has(player_idx):
@@ -400,15 +403,31 @@ func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 	if bars.has(player_idx):
 		status = bars[player_idx].get_node_or_null("Status")
 	if status:
-		status.text = "Cleared!" if in_zone else "Caught!"
+		status.text = "Ligtas!" if in_zone else "Aray!"
 		status.modulate = Color(0.3, 0.9, 0.4) if in_zone else Color(0.9, 0.3, 0.3)
 		
-	if not in_zone:
+	if in_zone:
+		if char_sprites.has(player_idx):
+			var spr: AnimatedSprite2D = char_sprites[player_idx]
+			spr.play("jump")
+			
+			var tween = create_tween().set_parallel(false)
+			var jump_height := 150.0  
+			var jump_duration := 0.25 
+			
+			# Animate upward and back down relative to standard footing alignment
+			tween.tween_property(spr, "position:y", CHAR_Y - jump_height, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(spr, "position:y", CHAR_Y, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+			spr.animation_finished.connect(func():
+				if is_instance_valid(spr) and alive_players.has(player_idx):
+					spr.play("walk")
+				, CONNECT_ONE_SHOT)
+	else:
 		if char_sprites.has(player_idx):
 			char_sprites[player_idx].stop()
 			char_sprites[player_idx].modulate = Color(0.4, 0.4, 0.4)
 			
-		#  FIX: Added 'var' to properly declare the obstacle variable
 		if quadrants.has(player_idx):
 			var obstacle = quadrants[player_idx].get_node_or_null("SubViewport/Obstacle")
 			if obstacle:
@@ -422,7 +441,7 @@ func apply_round_end(auto_eliminated: Array) -> void:
 		if bars.has(player_idx):
 			status = bars[player_idx].get_node_or_null("Status")
 		if status:
-			status.text = "Caught!"
+			status.text = "Aray!"
 			status.modulate = Color(0.9, 0.3, 0.3)
 		if char_sprites.has(player_idx):
 			char_sprites[player_idx].stop()
@@ -447,18 +466,16 @@ func _eliminate(player_idx: int) -> void:
 	eliminated_this_round.append(player_idx)
 
 func _check_game_over() -> void:
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-
 	if alive_players.size() <= 1:
 		print("--- GAME OVER (No players left or 1 winner) ---")
-		if not is_local_test:
+		if not DEBUG_FORCE_LOCAL_TEST:
 			_end_game()
 		return
 
 	round_time = max(ROUND_TIME_MIN, round_time * ROUND_SPEEDUP)
 	zone_width = max(ZONE_WIDTH_MIN, zone_width * ZONE_SHRINK)
 
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		_start_countdown()
 	else:
 		await get_tree().create_timer(1.0).timeout
@@ -489,45 +506,62 @@ func _spawn_splitscreen_worlds() -> void:
 	bars.clear()
 
 	var visible_players: Array = participating_players
-	splitscreen_grid.columns = visible_players.size()
-	#if not DEBUG_FORCE_LOCAL_TEST:
-		#visible_players = [NetworkManager.get_my_player_index()]
+	splitscreen_grid.columns = 2
 
-	for player_idx in visible_players:
+	for player_idx in range(4):
 		var quad = QUADRANT_SCENE.instantiate()
 		quad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		quad.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		quad.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		
 		splitscreen_grid.add_child(quad)
 		quadrants[player_idx] = quad
 		
 		var viewport: SubViewport = quad.get_node("SubViewport")
+		var bar_ui = quad.get_node_or_null("PlayerBarUI")
 		
 		# 1. Clear out the placeholder character inside the base quadrant file
 		var old_char = viewport.get_node_or_null("Character")
 		if old_char:
 			old_char.queue_free()
-			
-		# 2. Drop in the player-specific custom scene node branch
-		if PLAYER_SCENES.has(player_idx):
-			var character_scene: PackedScene = PLAYER_SCENES[player_idx]
-			var spr = character_scene.instantiate() as AnimatedSprite2D
-			
-			viewport.add_child(spr)
-			spr.name = "Character" # Rename to keep code references consistent across scripts
-			
-			# Apply standard scale layouts
-			spr.scale = Vector2(CHAR_SCALE, CHAR_SCALE)
-			#spr.position.x = 200.0 
-			spr.position = Vector2(80.0, CHAR_Y)
-			
-			spr.play("walk")
-			char_sprites[player_idx] = spr
 		
-		var bar_ui = quad.get_node_or_null("PlayerBarUI")
-		if bar_ui:
-			bars[player_idx] = bar_ui
-
-## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
+		# 2. Check if this slot belongs to an active player
+		if visible_players.has(player_idx):
+			quadrants[player_idx] = quad
+			if PLAYER_SCENES.has(player_idx):
+				var character_scene: PackedScene = PLAYER_SCENES[player_idx]
+				var spr = character_scene.instantiate() as AnimatedSprite2D
+				
+				viewport.add_child(spr)
+				spr.name = "Character" # Rename to keep code references consistent across scripts
+				
+				spr.scale = Vector2(CHAR_SCALE, CHAR_SCALE)
+				spr.position = Vector2(80.0, CHAR_Y)
+				
+				spr.play("walk")
+				char_sprites[player_idx] = spr
+			
+			if bar_ui:
+				bars[player_idx] = bar_ui
+				bar_ui.show()
+			
+		else:
+			quad.modulate = Color(0.2, 0.2, 0.2, 1.0)
+			if bar_ui:
+				bar_ui.hide()
+				
+			var bg: Parallax2D = quad.get_node_or_null("SubViewport/Parallax2D")
+			if bg:
+				bg.autoscroll.x = 0.0
+				
+			var obstacle = quad.get_node_or_null("SubViewport/Obstacle")
+			if obstacle:
+				obstacle.hide()
+			var placeholder_char = viewport.get_node_or_null("Character")
+			if placeholder_char and placeholder_char is AnimatedSprite2D:
+				placeholder_char.hide()
+			
 ## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
 func _scroll_buildings(_delta: float) -> void:
 	var speed_mult: float = ROUND_TIME_START / max(round_time, ROUND_TIME_MIN)

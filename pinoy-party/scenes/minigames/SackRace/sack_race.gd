@@ -97,6 +97,11 @@ func _show_intro_tutorial() -> CanvasLayer:
 	blur_rect.material = mat
 	overlay.add_child(blur_rect)
 	
+	# Full-screen click zone so players can dismiss the tutorial
+	var click_zone := TextureButton.new()
+	click_zone.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(click_zone)
+	
 	# Tutorial Graphic Panel
 	var tut_texture: Texture2D = load(TUTORIAL_IMAGE_PATH)
 	if tut_texture:
@@ -105,7 +110,26 @@ func _show_intro_tutorial() -> CanvasLayer:
 		tut_rect.set_anchors_preset(Control.PRESET_CENTER)
 		tut_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
-		overlay.add_child(tut_rect)
+		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		click_zone.add_child(tut_rect)
+
+	# Flashing "click to dismiss" prompt, matching langit_lupa's tutorial UX
+	var flash_label := Label.new()
+	flash_label.text = "Click anywhere to continue..."
+	flash_label.set_anchors_preset(Control.PRESET_CENTER)
+	flash_label.position.y += 250
+	flash_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	flash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	click_zone.add_child(flash_label)
+	var tween = create_tween().set_loops(9999)
+	tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
+
+	# Pressing anywhere dismisses the overlay immediately
+	click_zone.pressed.connect(func():
+		tween.kill()
+		overlay.queue_free()
+	)
 		
 	return overlay
 
@@ -167,7 +191,7 @@ func _input(event: InputEvent) -> void:
 		return  # already finished, ignore further presses
 	# Route through the host so every client's progress stays in sync -
 	# same request -> host-broadcast pattern used for dice rolls.
-	if NetworkManager.is_host:
+	if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 		NetworkManager.process_sack_race_hop(my_idx)
 	else:
 		NetworkManager.request_sack_race_hop.rpc_id(1, my_idx)

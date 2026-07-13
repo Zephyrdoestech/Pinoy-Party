@@ -99,9 +99,22 @@ func _show_tutorial_overlay() -> void:
 		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
 		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		click_zone.add_child(tut_rect)
-	
+
+	# Flashing dismiss prompt — matches the same UX used in all three minigame tutorials.
+	var flash_label := Label.new()
+	flash_label.text = "Click anywhere to continue..."
+	flash_label.set_anchors_preset(Control.PRESET_CENTER)
+	flash_label.position.y += 250
+	flash_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	flash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	click_zone.add_child(flash_label)
+	var tween := create_tween().set_loops(9999)
+	tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
+
 	# clean up and unpause execution layout
 	click_zone.pressed.connect(func():
+		tween.kill()
 		overlay.queue_free() # Destroys the image and the blur rect
 		get_tree().paused = false
 	)

@@ -25,10 +25,12 @@ var elimination_order: Array = []      # Array[Array[int]] - tie-groups, in elim
 var flood_start_y: float
 @onready var flood: Area2D = $Flood
 @onready var flood_sprite: AnimatedSprite2D = $"Flood/flood sprite"
+@onready var anim_player: AnimationPlayer = $Dog/AnimationPlayer
 var round_start_msec: int
 var round_active: bool = false
 var _coyote_timer: float = 0.
 var finished_players: Array[int] = []
+signal tutorial_dismissed
 
 # Position sync - each client broadcasts their position at SYNC_HZ rate.
 # Host collects all positions and rebroadcasts to everyone.
@@ -51,12 +53,19 @@ func start_game(players: Array[int]) -> void:
 	flood_start_y = $Flood.position.y
 	flood_sprite.play("default") 
 	
+	var active_anim_player = get_node_or_null("Dog/AnimationPlayer")
+	if active_anim_player:
+		active_anim_player.play("idle")
+	
 	gameplay_locked = true
 	if not GameManager.has_shown_tutorial("langit_lupa"):
 		GameManager.mark_tutorial_shown("langit_lupa")
 		_show_intro_tutorial_synced()
-	
+		await tutorial_dismissed
+
 	await run_intro("")
+	round_start_msec = Time.get_ticks_msec()
+	round_active = true
 	if NetworkManager.is_host:
 		NetworkManager.sync_langitlupa_start.rpc()
 
@@ -109,7 +118,7 @@ func _show_intro_tutorial_synced() -> void:
 	
 	if can_interact:
 		flash_label.text = "Click anywhere to start the round..."
-		var tween = create_tween().set_loops()
+		var tween = create_tween().set_loops(9999)
 		tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
 		
@@ -128,19 +137,10 @@ func _show_intro_tutorial_synced() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _sync_dismiss_tutorial_and_start() -> void:
-	# Cleans up the custom tutorial CanvasLayer on everyone's screen
 	for child in get_children():
 		if child is CanvasLayer and child.layer == 128:
 			child.queue_free()
-			
-	# Lifts the block so physics engine and loops run together on the same frame
-	gameplay_locked = false
-	round_start_msec = Time.get_ticks_msec()
-	round_active = true
-	
-	# Host signals the underlying server network state to listen for inputs
-	if NetworkManager.is_host and multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		NetworkManager.sync_langitlupa_start.rpc()
+	tutorial_dismissed.emit()
 
 func _position_players() -> void:
 	var spawn_pos: Vector2 = $Platforms/SpawnPlatform.position
@@ -151,7 +151,9 @@ func _position_players() -> void:
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
-		var node := _get_player_node(i)
+		var node: CharacterBody2D = get_node_or_null("Players/Player %d" % (i + 1))
+		if node == null:
+			continue  # player node doesn't exist in this scene — skip safely
 		var active := participating_players.has(i)
 		node.visible = active
 		node.set_physics_process(active)
@@ -159,7 +161,12 @@ func _hide_inactive_players() -> void:
 func _auto_position_spawn_and_goal() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	$Platforms/SpawnPlatform.position = Vector2(SCREEN_MARGIN, viewport_size.y - SCREEN_MARGIN)
-	$Platforms/GoalPlatform.position = Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN)
+	var goal_pos := Vector2(viewport_size.x - SCREEN_MARGIN, SCREEN_MARGIN + 20)
+	$Platforms/GoalPlatform.position = goal_pos
+	
+	if has_node("Dog"):
+		$Dog.position = goal_pos + Vector2(0, -30.0) # Adjust Y offset so the dog sits cleanly on the surface
+
 	$Flood.position = Vector2(-viewport_size.x, viewport_size.y + 60.0)
 	$Flood.get_node("ColorRect").size = Vector2(viewport_size.x * 3.0, 40.0)
 
@@ -251,7 +258,7 @@ func _process(delta: float) -> void:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
 			var sprite := _get_player_sprite(local_player_index)
 			var my_anim: String = sprite.animation if sprite else ""
-			if NetworkManager.is_host:
+			if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
 			else:
 				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
@@ -398,5 +405,4 @@ func _end_game(scores: Dictionary) -> void:
 	gameplay_locked = true
 	_clear_generated_platforms()
 
-	print("[LangitLupa] Round over. Elimination order: %s" % [elimination_order])
 	_finish(scores)

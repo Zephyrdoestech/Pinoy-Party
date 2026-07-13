@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqnfcc3gafeua"
-path="res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"
+uid="uid://gvelv0dlmeuc"
+path="res://.godot/imported/clutchFive_button.png-d7df7fe2b7c0a2ef133b75f7e4e56725.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/DIce/3d/rolling_dice-sheet.png"
-dest_files=["res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"]
+source_file="res://assets/screens/lobby/clutchFive_button.png"
+dest_files=["res://.godot/imported/clutchFive_button.png-d7df7fe2b7c0a2ef133b75f7e4e56725.ctex"]
 
 [params]
 

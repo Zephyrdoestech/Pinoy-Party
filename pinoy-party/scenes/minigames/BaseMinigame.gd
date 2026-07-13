@@ -14,8 +14,27 @@ const WINNING_SCORE_CONTAINER := preload("res://assets/minigame_assets/winning_s
 const SECOND_PLACE_SCORE_CONTAINER := preload("res://assets/minigame_assets/2nd_place_score_container.png")
 const THIRD_PLACE_SCORE_CONTAINER := preload("res://assets/minigame_assets/3rd_place_score_container.png")
 const LAST_PLACE_SCORE_CONTAINER := preload("res://assets/minigame_assets/last_place_score_container.png")
+const MINIGAME_GAMEOVER_BG := preload("res://assets/game over assets/Minigame_gameover_bg.png")
 const RESULT_ROW_SIZE := Vector2(512, 128)
 const RESULT_PANEL_SIZE := Vector2(560, 600)
+const GLOBAL_PLAYER_PORTRAITS := {
+	0: {
+		"win": preload("res://assets/game over assets/charac1_happy.png"),
+		"sad": preload("res://assets/game over assets/charac1_sad.png")
+	},
+	1: {
+		"win": preload("res://assets/game over assets/charac2_happy.png"),
+		"sad": preload("res://assets/game over assets/charac2_sad.png")
+	},
+	2: {
+		"win": preload("res://assets/game over assets/charac3_happy.png"),
+		"sad": preload("res://assets/game over assets/charac3_sad.png")
+	},
+	3: {
+		"win": preload("res://assets/game over assets/charac4_happy.png"),
+		"sad": preload("res://assets/game over assets/charac4_sad.png")
+	}
+}
 
 # ---------------------------------------------------------------------------
 # Shared pre-round intro: optional announcement (e.g. "Player 2 is IT!"),
@@ -104,55 +123,39 @@ func run_results(scores: Dictionary) -> void:
 	var canvas := CanvasLayer.new()
 	add_child(canvas)
 
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.85)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	canvas.add_child(dim)
-
-	# Phase 1: winner announcement
-	var winner_panel := TextureRect.new()
-	winner_panel.texture = WINNING_SCORE_CONTAINER
-	winner_panel.custom_minimum_size = RESULT_ROW_SIZE
-	winner_panel.set_anchors_preset(Control.PRESET_CENTER)
-	winner_panel.offset_left = -RESULT_ROW_SIZE.x * 0.5
-	winner_panel.offset_top = -RESULT_ROW_SIZE.y * 0.5
-	winner_panel.offset_right = RESULT_ROW_SIZE.x * 0.5
-	winner_panel.offset_bottom = RESULT_ROW_SIZE.y * 0.5
-	winner_panel.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	winner_panel.stretch_mode = TextureRect.STRETCH_SCALE
-	canvas.add_child(winner_panel)
-
-	var label := _make_result_label(58)
-	label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	label.offset_left = 34.0
-	label.offset_right = -34.0
-	winner_panel.add_child(label)
+	var victory_bg := TextureRect.new()
+	victory_bg.texture = MINIGAME_GAMEOVER_BG
+	victory_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	victory_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	victory_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	canvas.add_child(victory_bg)
 
 	var winner_idx := _get_winner_index(scores)
-	label.text = "%s Won!" % _get_player_name(winner_idx) if winner_idx != -1 else "It's a Tie!"
+
+	var top_label := Label.new()
+	top_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_label.offset_top = 18.0
+	top_label.offset_bottom = 118.0
+	top_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top_label.add_theme_font_override("font", UI_FONT)
+	top_label.add_theme_font_size_override("font_size", 64)
+	top_label.add_theme_color_override("font_color", Color.WHITE)
+	top_label.add_theme_color_override("font_outline_color", Color(0.12, 0.08, 0.05))
+	top_label.add_theme_constant_override("outline_size", 5)
+	top_label.text = "%s Won!" % _get_player_name(winner_idx) if winner_idx != -1 else "It's a Tie!"
+	canvas.add_child(top_label)
 	play_applause_sfx()
-	await get_tree().create_timer(2.0).timeout
 
-	# Phase 2: points breakdown
-	winner_panel.queue_free()
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	vbox.offset_left = -RESULT_PANEL_SIZE.x * 0.5
-	vbox.offset_top = -RESULT_PANEL_SIZE.y * 0.5
-	vbox.offset_right = RESULT_PANEL_SIZE.x * 0.5
-	vbox.offset_bottom = RESULT_PANEL_SIZE.y * 0.5
-	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 8)
-	canvas.add_child(vbox)
-
-	var header := _make_result_label(48)
-	header.text = "Points Earned"
-	header.custom_minimum_size = Vector2(RESULT_ROW_SIZE.x, 56)
-	header.add_theme_color_override("font_color", Color.WHITE)
-	header.add_theme_color_override("font_outline_color", Color(0.12, 0.08, 0.05))
-	vbox.add_child(header)
+	var content := HBoxContainer.new()
+	content.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = 36.0
+	content.offset_top = 120.0
+	content.offset_right = -36.0
+	content.offset_bottom = -28.0
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 18)
+	canvas.add_child(content)
 
 	var result_players := _get_result_player_indices(scores)
 	var place_index := -1
@@ -163,21 +166,39 @@ func run_results(scores: Dictionary) -> void:
 		if last_points == null or points != last_points:
 			place_index += 1
 			last_points = points
+		var player_column := VBoxContainer.new()
+		player_column.alignment = BoxContainer.ALIGNMENT_END
+		player_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		player_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		player_column.add_theme_constant_override("separation", -8)
+		content.add_child(player_column)
+
+		var portrait := TextureRect.new()
+		var textures: Dictionary = GLOBAL_PLAYER_PORTRAITS.get(idx, {})
+		portrait.texture = textures.get("win") if winner_idx != -1 and idx == winner_idx else textures.get("sad")
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		portrait.custom_minimum_size = Vector2(120.0, 220.0)
+		player_column.add_child(portrait)
+
 		var row_bg := TextureRect.new()
 		row_bg.texture = _get_result_row_texture(place_index)
 		row_bg.custom_minimum_size = RESULT_ROW_SIZE
 		row_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		row_bg.stretch_mode = TextureRect.STRETCH_SCALE
-		vbox.add_child(row_bg)
+		player_column.add_child(row_bg)
 
-		var row := _make_result_label(42 if place_index == 0 else 36)
-		row.text = "%s  %s" % [_get_player_name(idx), _format_points(points)]
-		row.set_anchors_preset(Control.PRESET_FULL_RECT)
-		row.offset_left = 36.0
-		row.offset_right = -36.0
-		row_bg.add_child(row)
+		var score_label := _make_result_label(38 if place_index == 0 else 34)
+		score_label.text = "%s  %s" % [_get_player_name(idx), _format_points(points)]
+		score_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		score_label.offset_left = 34.0
+		score_label.offset_right = -34.0
+		row_bg.add_child(score_label)
 
-	await get_tree().create_timer(2.0).timeout
+	# Let the screen linger as a single complete victory screen, then clean up
+	await get_tree().create_timer(5.0).timeout
 	canvas.queue_free()
 
 func _make_result_label(font_size: int) -> Label:
@@ -224,7 +245,6 @@ func _format_points(points: int) -> String:
 		return "No Points"
 	return "+%d %s" % [points, _point_word(points)]
 
-
 func _get_winner_index(scores: Dictionary) -> int:
 	var best_idx := -1
 	var best_score := -1
@@ -236,7 +256,7 @@ func _get_winner_index(scores: Dictionary) -> int:
 			tied = false
 		elif scores[idx] == best_score:
 			tied = true
-	return -1 if tied else best_idx
+	return -1 if tied else int(best_idx)
 
 func _build_intro_overlay() -> void:
 	_intro_layer = CanvasLayer.new()
@@ -289,10 +309,14 @@ func _get_or_create_minigame_sfx_player(player_name: String, stream: AudioStream
 
 
 ## Call this when the minigame is fully resolved.
-## Emits through EventBus so State_TileEvent's await catches it.
+## Emits through EventBus so GameManager's autoload handler catches it.
+## IMPORTANT: run_results() is awaited FIRST so the 5-second results screen
+## completes before scores are applied and game-over is checked.  Emitting
+## before the await caused the game-over overlay to appear on top of the
+## still-visible results screen.
 func _finish(scores: Dictionary) -> void:
 	play_minigame_finish_sfx()
-	EventBus.minigame_finished.emit(scores)
 	await run_results(scores)
+	EventBus.minigame_finished.emit(scores)
 	SceneLoader.return_to_board()
 	

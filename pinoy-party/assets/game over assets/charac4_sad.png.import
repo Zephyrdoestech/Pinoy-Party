@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqnfcc3gafeua"
-path="res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"
+uid="uid://1vgkqkf1epr4"
+path="res://.godot/imported/charac4_sad.png-2e105df4299e99a3f6d3c490759bcfb1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/DIce/3d/rolling_dice-sheet.png"
-dest_files=["res://.godot/imported/rolling_dice-sheet.png-4bc22d782cc3e6906ed50cf6e3238006.ctex"]
+source_file="res://assets/game over assets/charac4_sad.png"
+dest_files=["res://.godot/imported/charac4_sad.png-2e105df4299e99a3f6d3c490759bcfb1.ctex"]
 
 [params]
 

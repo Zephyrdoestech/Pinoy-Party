@@ -2,7 +2,6 @@ extends Node
 
 signal lobby_created(code: String)
 signal player_joined(peer_id: int, player_name: String)
-signal player_left(peer_id: int)
 signal join_failed(reason: String)
 signal game_starting
 signal roster_updated
@@ -39,6 +38,7 @@ func _on_server_disconnected() -> void:
 	host_left.emit()
 
 func host_lobby(player_name: String) -> void:
+	stop_discovery()
 	lobby_code = _generate_code()
 	is_host = true
 
@@ -168,7 +168,6 @@ func _on_peer_disconnected(id: int) -> void:
 			rpc("_notify_player_left_mid_match", id, leaving_name)
 		elif is_host:
 			_broadcast_player_list()
-		player_left.emit(id)
 
 @rpc("authority", "reliable", "call_local")
 func _notify_player_left_mid_match(peer_id: int, player_name: String) -> void:
@@ -336,8 +335,6 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 
 # --- LangitLupa sync ---
 
-
-
 # Host broadcasts it_player and area positions once at match start.
 @rpc("authority", "reliable", "call_local")
 func sync_langitlupa_start() -> void:
@@ -478,7 +475,10 @@ func _apply_trivia_reveal(scores: Dictionary, correct_idx: int) -> void:
 		# Overlay was never shown on this peer - just propagate the score signal.
 		EventBus.trivia_finished.emit(scores)
 		return
-	TriviaController.show_results(scores, correct_idx)
+	# await so the 3-second result reveal fully completes before trivia_finished
+	# fires. Without this, State_TileEvent received the signal and transitioned
+	# back to the board while the CORRECT/WRONG screen was still on screen.
+	await TriviaController.show_results(scores, correct_idx)
 	EventBus.trivia_finished.emit(scores)
 
 func _generate_code() -> String:
