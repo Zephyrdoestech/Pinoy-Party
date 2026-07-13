@@ -9,6 +9,25 @@ const JUMP_SFX := preload("res://assets/sfx/minigame/jump_sfx.mp3")
 const MINIGAME_FINISH_SFX := preload("res://assets/sfx/minigame/minigame_finish_sfx.mp3")
 const APPLAUSE_SFX := preload("res://assets/sfx/minigame/applause_sfx.mp3")
 const COUNTDOWN_SFX := preload("res://assets/sfx/board/3_seconds_countdown_sfx.mp3")
+const CUSTOM_FONT := preload("res://assets/fonts/GrapeSoda.ttf") 
+const GLOBAL_PLAYER_PORTRAITS := {
+	0: {
+		"win": preload("res://assets/game over assets/charac1_happy.png"),
+		"sad": preload("res://assets/game over assets/charac1_sad.png")
+	},
+	1: {
+		"win": preload("res://assets/game over assets/charac2_happy.png"),
+		"sad": preload("res://assets/game over assets/charac2_sad.png")
+	},
+	2: {
+		"win": preload("res://assets/game over assets/charac3_happy.png"),
+		"sad": preload("res://assets/game over assets/charac3_sad.png")
+	},
+	3: {
+		"win": preload("res://assets/game over assets/charac4_happy.png"),
+		"sad": preload("res://assets/game over assets/charac4_sad.png")
+	}
+}
 
 # ---------------------------------------------------------------------------
 # Shared pre-round intro: optional announcement (e.g. "Player 2 is IT!"),
@@ -97,42 +116,72 @@ func run_results(scores: Dictionary) -> void:
 	var canvas := CanvasLayer.new()
 	add_child(canvas)
 
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.85)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	canvas.add_child(dim)
+	# 1. THE ACTUAL BACKGROUND PNG
+	var victory_bg := TextureRect.new()
+	victory_bg.texture = load("res://assets/game over assets/Minigame_gameover_bg.png")
+	victory_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	victory_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	victory_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	canvas.add_child(victory_bg)
 
-	var label := Label.new()
-	label.set_anchors_preset(Control.PRESET_CENTER)
-	label.add_theme_font_size_override("font_size", 48)
-	canvas.add_child(label)
-
-	# Phase 1: winner announcement
+	# Calculate who won
 	var winner_idx := _get_winner_index(scores)
-	label.text = "Player %d Wins!" % (winner_idx + 1) if winner_idx != -1 else "It's a Tie!"
+
+	# 2. TOP CENTER ANNOUNCEMENT LABEL
+	var top_label := Label.new()
+	top_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top_label.add_theme_font_override("font", CUSTOM_FONT)
+	top_label.add_theme_font_size_override("font_size", 64) # Set your title font size here
+	# Give it some top padding so it isn't clipping the very edge of the window
+	top_label.text = "\nPlayer %d Wins!" % (winner_idx + 1) if winner_idx != -1 else "\nIt's a Tie!"
+	canvas.add_child(top_label)
 	play_applause_sfx()
-	await get_tree().create_timer(2.0).timeout
 
-	# Phase 2: points breakdown
-	label.queue_free()
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	canvas.add_child(vbox)
-
-	var header := Label.new()
-	header.text = "Points Earned"
-	header.add_theme_font_size_override("font_size", 36)
-	vbox.add_child(header)
-
+	# 3. CONTAINER FOR SIDE-BY-SIDE PLAYER COLUMNS
+	var char_row := HBoxContainer.new()
+	char_row.set_anchors_preset(Control.PRESET_FULL_RECT) 
+	char_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	canvas.add_child(char_row)
+	var character_scenes = GLOBAL_PLAYER_PORTRAITS
+	
 	for idx in scores.keys():
-		var row := Label.new()
-		row.text = "Player %d: +%d pts" % [idx + 1, scores[idx]]
-		row.add_theme_font_size_override("font_size", 28)
-		vbox.add_child(row)
+		if character_scenes.has(idx):
+			# Create a vertical column for THIS specific player (Portrait + Points underneath)
+			var player_column := VBoxContainer.new()
+			player_column.alignment = BoxContainer.ALIGNMENT_END
+			player_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			player_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			char_row.add_child(player_column)
+			
+			# A. The Character Portrait Asset
+			var player_box := TextureRect.new()
+			var textures: Dictionary = character_scenes[idx]
+			
+			if winner_idx != -1 and idx == winner_idx:
+				player_box.texture = textures.get("win")
+			else:
+				player_box.texture = textures.get("sad")
+				
+			player_box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			player_box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			player_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			player_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			player_box.custom_minimum_size = Vector2(40.0, 40.0)
+			player_column.add_child(player_box)
+			
+			# B. The Score Label directly below their asset portrait
+			var score_label := Label.new()
+			score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			score_label.add_theme_font_override("font", CUSTOM_FONT)
+			score_label.add_theme_font_size_override("font_size", 48)
+			score_label.text = "Player %d: +%d pts" % [idx + 1, scores[idx]]
+			score_label.offset_top = -25.0
+			player_column.add_child(score_label)
 
-	await get_tree().create_timer(2.0).timeout
+	# Let the screen linger as a single complete victory screen, then clean up
+	await get_tree().create_timer(5.0).timeout
 	canvas.queue_free()
-
 
 func _get_winner_index(scores: Dictionary) -> int:
 	var best_idx := -1

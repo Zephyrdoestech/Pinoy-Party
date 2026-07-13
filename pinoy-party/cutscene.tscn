@@ -8,13 +8,13 @@
 [ext_resource type="Texture2D" uid="uid://dcv2rswcs5o0t" path="res://assets/characters/cutscene/Character1.png" id="3_53jq0"]
 [ext_resource type="Texture2D" uid="uid://bvsiuyg3gcf46" path="res://assets/characters/cutscene/Character4.png" id="4_3q24f"]
 [ext_resource type="Texture2D" uid="uid://cav3vfpuuo05l" path="res://assets/characters/cutscene/ShoutEmote.png" id="4_p30sb"]
-[ext_resource type="Texture2D" uid="uid://2x0sgsqgc1g1" path="res://assets/characters/cutscene/park_bg.png" id="5_u4yv4"]
 [ext_resource type="Texture2D" uid="uid://qctp46nbxr7i" path="res://assets/characters/cutscene/Character1 2.png" id="6_3q24f"]
 [ext_resource type="Texture2D" uid="uid://c7y0vt3jhab2k" path="res://assets/characters/cutscene/Character2 2.png" id="7_8ye5a"]
 [ext_resource type="AudioStream" uid="uid://dg1dbwon5hfc0" path="res://assets/characters/cutscene/audios/Dialogue2.mp3" id="9_8ye5a"]
 [ext_resource type="AudioStream" uid="uid://ba14jt7cee5ly" path="res://assets/characters/cutscene/audios/Dialogue3.mp3" id="10_1titf"]
 [ext_resource type="AudioStream" uid="uid://cojpu462sl2am" path="res://assets/characters/cutscene/audios/Dialogue4.mp3" id="11_ed5nn"]
 [ext_resource type="AudioStream" uid="uid://dkcl0ystfwp71" path="res://assets/characters/cutscene/audios/Dialogue5.mp3" id="12_5gysb"]
+[ext_resource type="Texture2D" uid="uid://b6wbtnhutwb6q" path="res://assets/characters/cutscene/cutscene_bg.jpg" id="12_mlekn"]
 [ext_resource type="AudioStream" uid="uid://dtlc35swcrlhj" path="res://assets/characters/cutscene/audios/Dialogue6.mp3" id="13_l2u6u"]
 [ext_resource type="Texture2D" uid="uid://dqhdv1trk2w6o" path="res://assets/characters/cutscene/CharacterHeads.png" id="14_ed5nn"]
 [ext_resource type="AudioStream" uid="uid://dey108oo2dd58" path="res://assets/characters/cutscene/audios/ParkAmbience.mp3" id="17_pby01"]
@@ -1528,8 +1528,8 @@ autoplay = &"1st_Cutscene"
 
 [node name="ParkBg2" type="Sprite2D" parent="." unique_id=384554778]
 position = Vector2(640.5, 359.5)
-scale = Vector2(0.8326823, 0.70214844)
-texture = ExtResource("5_u4yv4")
+scale = Vector2(0.9, 0.759)
+texture = ExtResource("12_mlekn")
 
 [node name="Characters" type="Node2D" parent="." unique_id=1668469179]
 

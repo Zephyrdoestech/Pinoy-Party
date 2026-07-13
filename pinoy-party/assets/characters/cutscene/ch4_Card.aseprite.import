@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cvipevrhnnb20"
+path="res://.godot/imported/ch4_Card.aseprite-7b2cae5e08d82a10d87e53b1782c2e1f.res"
+
+[deps]
+
+source_file="res://assets/characters/cutscene/ch4_Card.aseprite"
+dest_files=["res://.godot/imported/ch4_Card.aseprite-7b2cae5e08d82a10d87e53b1782c2e1f.res"]
+
+[params]
+
