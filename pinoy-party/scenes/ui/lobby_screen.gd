@@ -216,9 +216,12 @@ func _on_host_left() -> void:
 	start_button.visible = false
 
 func _show_error(msg: String) -> void:
-	if status_label != null:
+	# status_label lives inside lobby_container (shown after joining/hosting).
+	# join_status_label lives inside host_join_panel (shown before joining).
+	# Only one panel is ever visible at a time, so only write to the active one.
+	if status_label != null and lobby_container != null and lobby_container.visible:
 		status_label.text = msg
-	if join_status_label != null:
+	if join_status_label != null and host_join_panel != null and host_join_panel.visible:
 		join_status_label.text = msg
 
 func _on_start_pressed() -> void:

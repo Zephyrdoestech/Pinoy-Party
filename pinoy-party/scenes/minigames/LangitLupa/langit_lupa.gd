@@ -25,6 +25,7 @@ var round_start_msec: int
 var round_active: bool = false
 var _coyote_timer: float = 0.
 var finished_players: Array[int] = []
+signal tutorial_dismissed
 
 # Position sync - each client broadcasts their position at SYNC_HZ rate.
 # Host collects all positions and rebroadcasts to everyone.
@@ -55,10 +56,11 @@ func start_game(players: Array[int]) -> void:
 	if not GameManager.has_shown_tutorial("langit_lupa"):
 		GameManager.mark_tutorial_shown("langit_lupa")
 		_show_intro_tutorial_synced()
-	else:
-		_show_intro_tutorial_synced()
-	
+		await tutorial_dismissed
+
 	await run_intro("")
+	round_start_msec = Time.get_ticks_msec()
+	round_active = true
 	if NetworkManager.is_host:
 		NetworkManager.sync_langitlupa_start.rpc()
 
@@ -130,19 +132,10 @@ func _show_intro_tutorial_synced() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _sync_dismiss_tutorial_and_start() -> void:
-	# Cleans up the custom tutorial CanvasLayer on everyone's screen
 	for child in get_children():
 		if child is CanvasLayer and child.layer == 128:
 			child.queue_free()
-			
-	# Lifts the block so physics engine and loops run together on the same frame
-	gameplay_locked = false
-	round_start_msec = Time.get_ticks_msec()
-	round_active = true
-	
-	# Host signals the underlying server network state to listen for inputs
-	if NetworkManager.is_host and multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
-		NetworkManager.sync_langitlupa_start.rpc()
+	tutorial_dismissed.emit()
 
 func _position_players() -> void:
 	var spawn_pos: Vector2 = $Platforms/SpawnPlatform.position
