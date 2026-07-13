@@ -20,6 +20,7 @@ var button_click_sfx: AudioStreamPlayer
 var hover_sfx: AudioStreamPlayer
 
 func _ready() -> void:
+	BgmManager.play_default()
 	host_join_panel = _find_required_node("HostJoinPanel", ["UIContainer/UIControl/HostJoinPanel"]) as VBoxContainer
 	lobby_container = _find_required_node("LobbyContainer", ["LobbyContainer", "CenterContainer"]) as Control
 	lobby_panel = _find_required_node("LobbyPanel", [

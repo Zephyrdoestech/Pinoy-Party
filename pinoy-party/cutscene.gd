@@ -4,6 +4,7 @@ extends Node2D
 @onready var skip_button: Button = $SkipButton
 
 func _ready() -> void:
+	BgmManager.stop()
 	# Ensure the animation plays automatically
 	if not anim_player.is_playing():
 		anim_player.play("1st_Cutscene")

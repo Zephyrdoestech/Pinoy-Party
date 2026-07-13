@@ -31,6 +31,7 @@ Enums="*uid://btrgc223d7l4y"
 Utils="*uid://kq72ldfg6dn8"
 NetworkManager="*uid://dh16yfljr5wd7"
 TriviaController="*uid://bsqfygbc7nlo3"
+BgmManager="*res://autoload/BgmManager.gd"
 
 [display]
 
