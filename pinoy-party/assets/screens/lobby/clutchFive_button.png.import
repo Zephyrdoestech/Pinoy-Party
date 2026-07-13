@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tt13ccv7chlu"
-path="res://.godot/imported/dice_3d_static_4.png-c335df8fdb802e37d8cd3b0b3455b06d.ctex"
+uid="uid://gvelv0dlmeuc"
+path="res://.godot/imported/clutchFive_button.png-d7df7fe2b7c0a2ef133b75f7e4e56725.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/board_assets/Dice/3d/dice_3d_static_4.png"
-dest_files=["res://.godot/imported/dice_3d_static_4.png-c335df8fdb802e37d8cd3b0b3455b06d.ctex"]
+source_file="res://assets/screens/lobby/clutchFive_button.png"
+dest_files=["res://.godot/imported/clutchFive_button.png-d7df7fe2b7c0a2ef133b75f7e4e56725.ctex"]
 
 [params]
 
