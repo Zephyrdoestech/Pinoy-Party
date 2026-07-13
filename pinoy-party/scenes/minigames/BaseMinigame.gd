@@ -247,10 +247,14 @@ func _get_or_create_minigame_sfx_player(player_name: String, stream: AudioStream
 
 
 ## Call this when the minigame is fully resolved.
-## Emits through EventBus so State_TileEvent's await catches it.
+## Emits through EventBus so GameManager's autoload handler catches it.
+## IMPORTANT: run_results() is awaited FIRST so the 5-second results screen
+## completes before scores are applied and game-over is checked.  Emitting
+## before the await caused the game-over overlay to appear on top of the
+## still-visible results screen.
 func _finish(scores: Dictionary) -> void:
 	play_minigame_finish_sfx()
-	EventBus.minigame_finished.emit(scores)
 	await run_results(scores)
+	EventBus.minigame_finished.emit(scores)
 	SceneLoader.return_to_board()
 	

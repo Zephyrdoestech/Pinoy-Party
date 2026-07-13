@@ -61,12 +61,14 @@ func _ready() -> void:
 	randomize()
 	
 	# ️ LOCAL TESTING OVERRIDE GATEWAY:
-	if DEBUG_FORCE_LOCAL_TEST :
+	if DEBUG_FORCE_LOCAL_TEST:
+		# Keep this dict in sync with GameManager._setup_players() — every field
+		# that any autoload or FSM state reads must exist here or debug runs crash.
 		GameManager.players = [
-			{"name": "Player 1", "score": 0},
-			{"name": "CPU Player 2", "score": 0},
-			{"name": "CPU Player 3", "score": 0},
-			{"name": "CPU Player 4", "score": 0}
+			{"name": "Player 1",   "score": 0, "tile_index": 0, "color": Color.RED,    "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 2", "score": 0, "tile_index": 0, "color": Color.BLUE,   "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 3", "score": 0, "tile_index": 0, "color": Color.GREEN,  "state": Enums.PlayerState.IDLE, "finished": false},
+			{"name": "CPU Player 4", "score": 0, "tile_index": 0, "color": Color.YELLOW, "state": Enums.PlayerState.IDLE, "finished": false},
 		]
 		
 		gameplay_locked = false 
@@ -83,13 +85,17 @@ func start_game(players: Array[int]) -> void:
 	if not GameManager.has_shown_tutorial("luksong_baka"):
 		GameManager.mark_tutorial_shown("luksong_baka")
 		_show_tutorial_png()
-	
-	if DEBUG_FORCE_LOCAL_TEST :
-		await get_tree().process_frame 
+
+	if DEBUG_FORCE_LOCAL_TEST:
+		await get_tree().process_frame
 		_start_countdown()
 		_begin_round(randf_range(0.0, 1.0 - zone_width)) # Kicks off local sandbox with an initial zone position
 	else:
 		await run_intro()
+		# Dismiss the tutorial overlay now that the countdown has finished.
+		if is_instance_valid(tutorial_node):
+			tutorial_node.queue_free()
+			tutorial_node = null
 		_start_countdown()
 
 func _start_countdown() -> void:
@@ -509,8 +515,6 @@ func _spawn_splitscreen_worlds() -> void:
 
 	var visible_players: Array = participating_players
 	splitscreen_grid.columns = 2
-	#if not DEBUG_FORCE_LOCAL_TEST:
-		#visible_players = [NetworkManager.get_my_player_index()]
 
 	for player_idx in range(4):
 		var quad = QUADRANT_SCENE.instantiate()
@@ -566,7 +570,6 @@ func _spawn_splitscreen_worlds() -> void:
 			if placeholder_char and placeholder_char is AnimatedSprite2D:
 				placeholder_char.hide()
 			
-## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
 ## Cycles through viewports and shifts backgrounds only if that specific quadrant is active
 func _scroll_buildings(_delta: float) -> void:
 	var speed_mult: float = ROUND_TIME_START / max(round_time, ROUND_TIME_MIN)
