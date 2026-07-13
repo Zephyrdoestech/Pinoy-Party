@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://cwhh1x44g3c3n"]
 
+[ext_resource type="FontFile" uid="uid://dchskkvpjy4f" path="res://assets/fonts/GrapeSoda.ttf" id="1_yl8xk"]
+
 [node name="PlayerBarUI" type="Control" unique_id=991425365]
 layout_mode = 3
 anchors_preset = 15
@@ -17,6 +19,8 @@ offset_right = 1.0
 offset_bottom = 28.0
 size_flags_horizontal = 0
 size_flags_vertical = 0
+theme_override_fonts/font = ExtResource("1_yl8xk")
+theme_override_font_sizes/font_size = 32
 
 [node name="Track" type="TextureRect" parent="." unique_id=260009234]
 custom_minimum_size = Vector2(200, 40)
@@ -50,3 +54,5 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
+theme_override_fonts/font = ExtResource("1_yl8xk")
+theme_override_font_sizes/font_size = 48

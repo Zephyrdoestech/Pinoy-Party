@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" uid="uid://cwhh1x44g3c3n" path="res://scenes/minigames/LuksongBaka/player_bar_ui.tscn" id="9_pkldg"]
 
 [node name="PlayerQuadrant" type="SubViewportContainer" unique_id=161038997]
+texture_filter = 1
+custom_minimum_size = Vector2(320, 180)
 offset_right = 472.0
 offset_bottom = 320.0
 size_flags_horizontal = 3
@@ -28,51 +30,61 @@ repeat_size = Vector2(1800, 0)
 autoscroll = Vector2(-400, 0)
 
 [node name="BG" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1811716492]
+texture_filter = 1
 position = Vector2(960, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("1_ec4lo")
 
 [node name="BG4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=672349213]
+texture_filter = 1
 position = Vector2(320, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("1_ec4lo")
 
 [node name="BG2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1534743825]
+texture_filter = 1
 position = Vector2(1600, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("1_ec4lo")
 
 [node name="Building1" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=210857944]
+texture_filter = 1
 position = Vector2(664, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("2_jxrk7")
 
 [node name="Building2" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=389599442]
+texture_filter = 1
 position = Vector2(1192, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("3_iwe7p")
 
 [node name="Building3" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=503958685]
+texture_filter = 1
 position = Vector2(1448, 176)
 scale = Vector2(4, 4)
 texture = ExtResource("4_pkldg")
 
 [node name="Building4" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1667406001]
+texture_filter = 1
 position = Vector2(-64, 176)
 scale = Vector2(4, 4)
 texture = ExtResource("5_t0vb0")
 
 [node name="Building5" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1180793557]
+texture_filter = 1
 position = Vector2(368, 192)
 scale = Vector2(4, 4)
 texture = ExtResource("6_oqlja")
 
 [node name="Building6" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=912088263]
+texture_filter = 1
 position = Vector2(704, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("7_qcgck")
 
 [node name="Building9" type="Sprite2D" parent="SubViewport/Parallax2D" unique_id=1018977225]
+texture_filter = 1
 position = Vector2(1728, 184)
 scale = Vector2(4, 4)
 texture = ExtResource("7_qcgck")
@@ -81,6 +93,7 @@ texture = ExtResource("7_qcgck")
 anchor_mode = 0
 
 [node name="Obstacle" type="Sprite2D" parent="SubViewport" unique_id=791024491]
+texture_filter = 1
 position = Vector2(286, 256)
 scale = Vector2(3.9999995, 3.9999995)
 texture = ExtResource("8_pkldg")

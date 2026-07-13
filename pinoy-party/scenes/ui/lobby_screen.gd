@@ -1,7 +1,12 @@
 extends Control
 
 const LOBBY_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
-const PLAYER_ICON_TEXTURE := preload("res://assets/screens/lobby/player_icon.png")
+const PLAYER_ICONS: Array[Texture2D] = [
+	preload("res://assets/board_assets/LeaderBoard/player_icons1.png"),
+	preload("res://assets/board_assets/LeaderBoard/player_icons2.png"),
+	preload("res://assets/board_assets/LeaderBoard/player_icons3.png"),
+	preload("res://assets/board_assets/LeaderBoard/player_icons4.png")
+]
 const TYPING_SFX := preload("res://assets/sfx/type_sfx.mp3")
 const BUTTON_CLICK_SFX := preload("res://assets/sfx/button_click_sfx.mp3")
 const HOVER_SFX := preload("res://assets/sfx/hover_sfx.mp3")
@@ -146,9 +151,14 @@ func _on_roster_changed(_id: int = -1) -> void:
 func _rebuild_cards() -> void:
 	for child in player_cards.get_children():
 		child.queue_free()
+	var current_index := 0
 	for peer_id in NetworkManager.connected_players:
-		var card := _build_card(NetworkManager.connected_players[peer_id]["name"])
+		var player_name: String = NetworkManager.connected_players[peer_id]["name"]
+		
+		# Pass the current index alongside the name
+		var card := _build_card(player_name, current_index)
 		player_cards.add_child(card)
+		current_index += 1 
 
 	var player_count := NetworkManager.connected_players.size()
 	start_button.visible = lobby_container.visible and NetworkManager.is_host
@@ -162,14 +172,17 @@ func _rebuild_cards() -> void:
 	else:
 		_show_error("Waiting for Host to start the game...")
 
-func _build_card(player_name: String) -> Control:
+func _build_card(player_name: String, player_index: int) -> Control:
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(136, 132)
 	vbox.add_theme_constant_override("separation", 6)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var icon := TextureRect.new()
-	icon.texture = PLAYER_ICON_TEXTURE
+	if player_index < PLAYER_ICONS.size():
+		icon.texture = PLAYER_ICONS[player_index]
+	else:
+		icon.texture = PLAYER_ICONS[0]
 	icon.custom_minimum_size = Vector2(80, 80)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

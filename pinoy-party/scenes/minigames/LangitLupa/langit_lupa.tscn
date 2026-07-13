@@ -1,4 +1,4 @@
-[gd_scene load_steps=82 format=3 uid="uid://bpa7rdgj5r1e4"]
+[gd_scene format=3 uid="uid://bpa7rdgj5r1e4"]
 
 [ext_resource type="Script" uid="uid://db2g7lb16tosu" path="res://scenes/minigames/LangitLupa/langit_lupa.gd" id="1_ncfyi"]
 [ext_resource type="Texture2D" uid="uid://dw7pwk1i6ydgw" path="res://assets/minigame_assets/langit_lupa_assets/LangitLupa_flood.png" id="2_rfiok"]
@@ -9,7 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://dnwapr0y8blk2" path="res://assets/characters/minigame_characs/mg_c1/mg_charac1_jumpRight.PNG" id="4_lagkl"]
 [ext_resource type="Texture2D" uid="uid://k81ypclk5l7e" path="res://assets/minigame_assets/langit_lupa_assets/GoalPlatform.png" id="4_umpmc"]
 [ext_resource type="Texture2D" uid="uid://cdfn4wxasbxti" path="res://assets/characters/minigame_characs/mg_c1/mg_charac1_jumpLeft.PNG" id="5_mamc8"]
-[ext_resource type="Texture2D" uid="uid://u0xx5dp1avhr" path="res://assets/minigame_assets/langit_lupa_assets/Flag.png" id="5_xpeiu"]
+[ext_resource type="Texture2D" uid="uid://flqp4r40xf0x" path="res://assets/minigame_assets/langit_lupa_assets/Doggie.png" id="5_xpeiu"]
 [ext_resource type="Texture2D" uid="uid://bkvde1q4cr7c8" path="res://assets/characters/minigame_characs/mg_c2/mg_charac2_jumpLeft.PNG" id="8_7a0qw"]
 [ext_resource type="Texture2D" uid="uid://bkqbajj8hvgpa" path="res://assets/characters/minigame_characs/mg_c2/mg_charac2_jumpRight.PNG" id="9_bvh4e"]
 [ext_resource type="Texture2D" uid="uid://bkqoopp032vv0" path="res://assets/characters/minigame_characs/mg_c2/mg_charac2_walkLeft.PNG" id="10_noijs"]
@@ -28,6 +28,43 @@ size = Vector2(307, 18)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ncfyi"]
 size = Vector2(198, 20)
+
+[sub_resource type="Animation" id="Animation_fhb5w"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_hddg3"]
+resource_name = "idle"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.54),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [0, 1]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_yx6bi"]
+_data = {
+&"RESET": SubResource("Animation_fhb5w"),
+&"idle": SubResource("Animation_hddg3")
+}
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6uy84"]
 
@@ -530,86 +567,90 @@ animations = [{
 "speed": 10.0
 }]
 
-[node name="LangitLupa" type="Node2D"]
+[node name="LangitLupa" type="Node2D" unique_id=1013061644]
 script = ExtResource("1_ncfyi")
 
-[node name="LangitLupaBg" type="Sprite2D" parent="."]
+[node name="LangitLupaBg" type="Sprite2D" parent="." unique_id=187136410]
 position = Vector2(650.50006, 360.49997)
 scale = Vector2(4.0531254, 4.016667)
 texture = ExtResource("3_lagkl")
 
-[node name="Platforms" type="Node2D" parent="."]
+[node name="Platforms" type="Node2D" parent="." unique_id=1358070320]
 
-[node name="SpawnPlatform" type="StaticBody2D" parent="Platforms"]
+[node name="SpawnPlatform" type="StaticBody2D" parent="Platforms" unique_id=1587959816]
 position = Vector2(3, 649)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Platforms/SpawnPlatform"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platforms/SpawnPlatform" unique_id=2131750389]
 position = Vector2(66.5, 9)
 shape = SubResource("RectangleShape2D_4b1gd")
 
-[node name="ColorRect" type="ColorRect" parent="Platforms/SpawnPlatform"]
+[node name="ColorRect" type="ColorRect" parent="Platforms/SpawnPlatform" unique_id=1466687566]
 offset_left = -88.0
 offset_right = 220.0
 offset_bottom = 20.0
 color = Color(0, 0.4874007, 1.92523e-07, 1)
 
-[node name="Sprite2D" type="Sprite2D" parent="Platforms/SpawnPlatform"]
+[node name="Sprite2D" type="Sprite2D" parent="Platforms/SpawnPlatform" unique_id=1020502417]
 position = Vector2(40.000004, 22.00003)
 scale = Vector2(0.38, 0.53200006)
 texture = ExtResource("3_3bp75")
 
-[node name="GoalPlatform" type="StaticBody2D" parent="Platforms"]
+[node name="GoalPlatform" type="StaticBody2D" parent="Platforms" unique_id=1714521785]
 position = Vector2(1012, 163)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Platforms/GoalPlatform"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platforms/GoalPlatform" unique_id=1314263598]
 position = Vector2(1, 0)
 shape = SubResource("RectangleShape2D_ncfyi")
 
-[node name="ColorRect" type="ColorRect" parent="Platforms/GoalPlatform"]
+[node name="ColorRect" type="ColorRect" parent="Platforms/GoalPlatform" unique_id=1648417001]
 offset_left = -99.0
 offset_top = -10.0
 offset_right = 101.0
 offset_bottom = 10.0
 color = Color(1, 0.84313726, 0, 1)
 
-[node name="Sprite2D" type="Sprite2D" parent="Platforms/GoalPlatform"]
-position = Vector2(109, 74)
+[node name="Sprite2D" type="Sprite2D" parent="Platforms/GoalPlatform" unique_id=1365563720]
+position = Vector2(111, 80)
 scale = Vector2(0.401375, 0.45049998)
 texture = ExtResource("4_umpmc")
 
-[node name="Flag" type="Sprite2D" parent="Platforms/GoalPlatform"]
-position = Vector2(-72.00003, -43)
+[node name="Dog" type="Sprite2D" parent="." unique_id=843810879]
+position = Vector2(1048, 111.99999)
 scale = Vector2(0.11828122, 0.12868749)
 texture = ExtResource("5_xpeiu")
+hframes = 2
 
-[node name="Flood" type="Area2D" parent="."]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Dog" unique_id=990337923]
+libraries/ = SubResource("AnimationLibrary_yx6bi")
+
+[node name="Flood" type="Area2D" parent="." unique_id=1424933278]
 position = Vector2(-150, 1467)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Flood"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Flood" unique_id=1496642065]
 shape = SubResource("RectangleShape2D_6uy84")
 
-[node name="ColorRect" type="ColorRect" parent="Flood"]
+[node name="ColorRect" type="ColorRect" parent="Flood" unique_id=1267687270]
 offset_right = 2061.0
 offset_bottom = 40.0
 color = Color(0.2, 0.4, 0.9, 0.5)
 
-[node name="flood sprite" type="AnimatedSprite2D" parent="Flood"]
+[node name="flood sprite" type="AnimatedSprite2D" parent="Flood" unique_id=1846741619]
 texture_filter = 1
 position = Vector2(1634, 279.99994)
 scale = Vector2(0.7396154, 0.64391893)
 sprite_frames = SubResource("SpriteFrames_mamc8")
 autoplay = "default"
 
-[node name="Players" type="Node2D" parent="."]
+[node name="Players" type="Node2D" parent="." unique_id=1244226072]
 
-[node name="Player 1" type="CharacterBody2D" parent="Players"]
+[node name="Player 1" type="CharacterBody2D" parent="Players" unique_id=74059266]
 position = Vector2(-80, 35)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 1"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 1" unique_id=993833930]
 visible = false
 shape = SubResource("CapsuleShape2D_4b1gd")
 
-[node name="ColorRect" type="ColorRect" parent="Players/Player 1"]
+[node name="ColorRect" type="ColorRect" parent="Players/Player 1" unique_id=796268029]
 visible = false
 offset_left = -16.0
 offset_top = -16.0
@@ -617,21 +658,21 @@ offset_right = 16.0
 offset_bottom = 16.0
 metadata/_edit_use_anchors_ = true
 
-[node name="player1node" type="AnimatedSprite2D" parent="Players/Player 1"]
+[node name="player1node" type="AnimatedSprite2D" parent="Players/Player 1" unique_id=448808295]
 position = Vector2(-1, -23)
 scale = Vector2(0.095214844, 0.099609375)
 sprite_frames = SubResource("SpriteFrames_3bp75")
 animation = &"idleRight"
 autoplay = "idleRight"
 
-[node name="Player 2" type="CharacterBody2D" parent="Players"]
+[node name="Player 2" type="CharacterBody2D" parent="Players" unique_id=1376171890]
 position = Vector2(-35, 35)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 2"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 2" unique_id=1756871085]
 visible = false
 shape = SubResource("CapsuleShape2D_4b1gd")
 
-[node name="ColorRect2" type="ColorRect" parent="Players/Player 2"]
+[node name="ColorRect2" type="ColorRect" parent="Players/Player 2" unique_id=338143728]
 visible = false
 offset_left = -16.0
 offset_top = -16.0
@@ -639,21 +680,21 @@ offset_right = 16.0
 offset_bottom = 16.0
 metadata/_edit_use_anchors_ = true
 
-[node name="player2node" type="AnimatedSprite2D" parent="Players/Player 2"]
+[node name="player2node" type="AnimatedSprite2D" parent="Players/Player 2" unique_id=2036288404]
 position = Vector2(-2.75, -22)
 scale = Vector2(0.09033203, 0.1015625)
 sprite_frames = SubResource("SpriteFrames_n2hjj")
 animation = &"idleLeft"
 autoplay = "idleRight"
 
-[node name="Player 3" type="CharacterBody2D" parent="Players"]
+[node name="Player 3" type="CharacterBody2D" parent="Players" unique_id=1925708394]
 position = Vector2(10, 35)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 3"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 3" unique_id=639598343]
 visible = false
 shape = SubResource("CapsuleShape2D_4b1gd")
 
-[node name="ColorRect3" type="ColorRect" parent="Players/Player 3"]
+[node name="ColorRect3" type="ColorRect" parent="Players/Player 3" unique_id=400393693]
 visible = false
 offset_left = -16.0
 offset_top = -16.0
@@ -661,21 +702,21 @@ offset_right = 16.0
 offset_bottom = 16.0
 metadata/_edit_use_anchors_ = true
 
-[node name="player3node" type="AnimatedSprite2D" parent="Players/Player 3"]
+[node name="player3node" type="AnimatedSprite2D" parent="Players/Player 3" unique_id=758140093]
 position = Vector2(-1, -22.625)
 scale = Vector2(0.10742188, 0.10229492)
 sprite_frames = SubResource("SpriteFrames_0gp7v")
 animation = &"idleLeft"
 autoplay = "idleRight"
 
-[node name="Player 4" type="CharacterBody2D" parent="Players"]
+[node name="Player 4" type="CharacterBody2D" parent="Players" unique_id=623097938]
 position = Vector2(55, 35)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 4"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 4" unique_id=1813869303]
 visible = false
 shape = SubResource("CapsuleShape2D_4b1gd")
 
-[node name="ColorRect4" type="ColorRect" parent="Players/Player 4"]
+[node name="ColorRect4" type="ColorRect" parent="Players/Player 4" unique_id=1508952927]
 visible = false
 offset_left = -15.0
 offset_top = -14.0
@@ -683,11 +724,11 @@ offset_right = 17.0
 offset_bottom = 18.0
 metadata/_edit_use_anchors_ = true
 
-[node name="player4node" type="AnimatedSprite2D" parent="Players/Player 4"]
+[node name="player4node" type="AnimatedSprite2D" parent="Players/Player 4" unique_id=1599979576]
 position = Vector2(-2, -22.4375)
 scale = Vector2(0.107421875, 0.10266113)
 sprite_frames = SubResource("SpriteFrames_kwjvj")
 animation = &"idleRight"
 autoplay = "idleRight"
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=427483603]
