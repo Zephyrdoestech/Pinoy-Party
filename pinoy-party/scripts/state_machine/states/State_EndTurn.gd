@@ -17,13 +17,7 @@ func enter() -> void:
 	var gm: GameManager = GameManager
 	var player_idx: int = gm.current_player_index
 
-	# 1. Persist turn-end state.
-	_save_state(gm)
-
-	# 2. Update the global UI.
-	_update_ui(gm, player_idx)
-
-	# 3. Check win condition before advancing.
+	# Check win condition before advancing.
 	if _check_game_over(gm):
 		var winner: int = gm._get_winner()
 		gm.state = Enums.GameState.GAME_OVER
@@ -31,7 +25,7 @@ func enter() -> void:
 		# Do NOT loop back - the game is finished.
 		return
 
-	# 4. Advance to the next player who has not yet finished.
+	# Advance to the next player who has not yet finished.
 	# The simple modulo is replaced with a loop so players who have already
 	# reached the finish tile are skipped entirely. The attempts cap is a
 	# safety net against an infinite loop if _is_game_over() somehow missed
@@ -43,29 +37,13 @@ func enter() -> void:
 		attempts += 1
 	gm.current_player_index = next_index
 
-	# 5. Loop back to the start of the next player's turn.
+	# Loop back to the start of the next player's turn.
 	request_transition(&"State_StartTurn")
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-func _save_state(_gm: GameManager) -> void:
-	# TODO: Integrate with your persistence layer (e.g. FileAccess / JSON save).
-	# Example placeholder:
-	#   SaveGame.save(_gm.players)
-	pass
-
-
-func _update_ui(_gm: GameManager, _player_idx: int) -> void:
-	# The UI subscribes to EventBus signals; emit whatever is needed here.
-	# turn_started is emitted by State_StartTurn, so here we only need
-	# to refresh the scoreboard if you have a dedicated signal for it.
-	# Example:
-	#   EventBus.scores_updated.emit(_gm.players)
-	pass
-
 
 func _check_game_over(gm: GameManager) -> bool:
 	# Delegate to the single source of truth on GameManager - avoids

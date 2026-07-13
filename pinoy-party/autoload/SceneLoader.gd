@@ -3,9 +3,12 @@ extends Node
 
 func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
 	BgmManager.play_minigame()
-	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id]
-	if not ResourceLoader.exists(path):
-		path = "res://scenes/minigames/%s/%s.tscn" % [minigame_id, minigame_id.to_snake_case()]
+	# Folders are PascalCase (LangitLupa, SackRace, LuksongBaka) but the
+	# .tscn files on disk are snake_case (langit_lupa.tscn, sack_race.tscn,
+	# luksong_baka.tscn). Build the path with to_snake_case() for the filename
+	# only — the folder name stays PascalCase.
+	var scene_file := minigame_id.to_snake_case()
+	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, scene_file]
 	var err := get_tree().change_scene_to_file(path)
 	if err != OK:
 		push_error("[SceneLoader] Failed to load minigame scene '%s': error code %d" % [path, err])

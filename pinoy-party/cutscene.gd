@@ -27,6 +27,13 @@ func _on_animation_finished(anim_name: String) -> void:
 	if anim_name == "1st_Cutscene":
 		if not multiplayer.has_multiplayer_peer() or NetworkManager.is_host:
 			_trigger_synchronized_transition()
+		else:
+			# Non-host client: the host will call _rpc_change_scene via RPC.
+			# If it hasn't arrived within 3 seconds (lag / timing mismatch),
+			# fall back to transitioning locally so the client never gets stuck.
+			await get_tree().create_timer(3.0).timeout
+			if is_inside_tree():  # guard: RPC may have already changed the scene
+				get_tree().change_scene_to_file("res://scenes/Game.tscn")
 
 func _trigger_synchronized_transition() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:

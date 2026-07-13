@@ -207,6 +207,7 @@ func _on_join_failed(reason: String) -> void:
 	lobby_container.visible = false
 	lobby_panel.visible = false
 	start_button.visible = false
+	NetworkManager.start_listening_for_lobbies()
 
 func _on_host_left() -> void:
 	_show_error("Host disconnected. Lobby closed.")
@@ -214,6 +215,7 @@ func _on_host_left() -> void:
 	lobby_container.visible = false
 	lobby_panel.visible = false
 	start_button.visible = false
+	NetworkManager.start_listening_for_lobbies()
 
 func _show_error(msg: String) -> void:
 	# status_label lives inside lobby_container (shown after joining/hosting).
