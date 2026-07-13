@@ -58,15 +58,10 @@ func _ready() -> void:
 	if custom_font:
 		restart_button.add_theme_font_override("font", custom_font)
 		restart_button.add_theme_font_size_override("font_size", 20)
-	add_child(restart_button)
-	
-	restart_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	restart_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	restart_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	restart_button.offset_left = -80
-	restart_button.offset_right = 80
-	restart_button.offset_bottom = -60
-	restart_button.offset_top = -108
+	# Add to panel so the button flows naturally below the score rows.
+	# Previously added to self (root Control) with hardcoded screen offsets
+	# which broke if the panel grew or the resolution changed.
+	panel.add_child(restart_button)
 	
 	EventBus.game_over.connect(_on_game_over)
 

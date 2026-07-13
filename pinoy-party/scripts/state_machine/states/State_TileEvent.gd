@@ -82,9 +82,12 @@ func _handle_blank() -> void:
 	# Nothing happens - go straight to EndTurn.
 	request_transition(&"State_EndTurn")
 func _handle_minigame() -> void:
-	# All 4 players compete simultaneously (per design decision)
+	# Build the participant list from active_player_count, not players.size().
+	# players.size() is always MAX_PLAYERS (4); in a 2-player match this would
+	# send [0,1,2,3] to the minigame, which would crash looking for non-existent
+	# nodes for players 2 and 3.
 	var all_players: Array[int] = []
-	for i in GameManager.players.size():
+	for i in GameManager.active_player_count:
 		all_players.append(i)
 	# Every client calls this, but only the host's instance actually picks
 	# the minigame ID and broadcasts it - see NetworkManager.start_minigame_synced().

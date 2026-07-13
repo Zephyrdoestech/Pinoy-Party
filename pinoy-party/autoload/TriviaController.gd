@@ -58,7 +58,6 @@ func _process(delta: float) -> void:
 		_timer_active = false
 
 func _on_trivia_started(question: String, options: Array, answering_player_idx: int) -> void:
-	BgmManager.play_trivia()
 	_submitted_answers.clear()
 	_answering_player_idx = answering_player_idx
 	_build_overlay(question, options)
@@ -68,6 +67,7 @@ func _on_trivia_started(question: String, options: Array, answering_player_idx: 
 	_last_timer_second = -1
 	set_process(true)
 	_update_timer_label()
+	BgmManager.play_trivia()
 
 func _build_overlay(question: String, options: Array) -> void:
 	if _overlay:
@@ -310,6 +310,7 @@ func show_results(scores: Dictionary, correct_index: int) -> void:
 
 	await get_tree().create_timer(Constants.TRIVIA_REVEAL_TIME_SEC).timeout
 	visible = false
+	BgmManager.play_board()
 	if _overlay:
 		_overlay.queue_free()
 		_overlay = null

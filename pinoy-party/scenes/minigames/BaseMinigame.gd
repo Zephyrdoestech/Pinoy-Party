@@ -194,7 +194,7 @@ func _get_winner_index(scores: Dictionary) -> int:
 			tied = false
 		elif scores[idx] == best_score:
 			tied = true
-	return -1 if tied else best_idx
+	return -1 if tied else int(best_idx)
 
 func _build_intro_overlay() -> void:
 	_intro_layer = CanvasLayer.new()

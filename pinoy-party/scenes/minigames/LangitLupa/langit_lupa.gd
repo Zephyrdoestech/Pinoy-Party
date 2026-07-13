@@ -113,7 +113,7 @@ func _show_intro_tutorial_synced() -> void:
 	
 	if can_interact:
 		flash_label.text = "Click anywhere to start the round..."
-		var tween = create_tween().set_loops()
+		var tween = create_tween().set_loops(9999)
 		tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
 		
@@ -146,7 +146,9 @@ func _position_players() -> void:
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
-		var node := _get_player_node(i)
+		var node: CharacterBody2D = get_node_or_null("Players/Player %d" % (i + 1))
+		if node == null:
+			continue  # player node doesn't exist in this scene — skip safely
 		var active := participating_players.has(i)
 		node.visible = active
 		node.set_physics_process(active)
@@ -245,7 +247,7 @@ func _process(delta: float) -> void:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
 			var sprite := _get_player_sprite(local_player_index)
 			var my_anim: String = sprite.animation if sprite else ""
-			if NetworkManager.is_host:
+			if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
 			else:
 				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)

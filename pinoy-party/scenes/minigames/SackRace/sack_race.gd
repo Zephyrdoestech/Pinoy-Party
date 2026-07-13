@@ -115,7 +115,7 @@ func _show_intro_tutorial() -> CanvasLayer:
 	flash_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	flash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	click_zone.add_child(flash_label)
-	var tween = create_tween().set_loops()
+	var tween = create_tween().set_loops(9999)
 	tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
 
@@ -153,7 +153,7 @@ func _input(event: InputEvent) -> void:
 		return  # already finished, ignore further presses
 	# Route through the host so every client's progress stays in sync -
 	# same request -> host-broadcast pattern used for dice rolls.
-	if NetworkManager.is_host:
+	if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 		NetworkManager.process_sack_race_hop(my_idx)
 	else:
 		NetworkManager.request_sack_race_hop.rpc_id(1, my_idx)
