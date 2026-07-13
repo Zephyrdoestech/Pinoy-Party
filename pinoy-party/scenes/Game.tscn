@@ -384,11 +384,11 @@ scale = Vector2(2, 2)
 [node name="Tile3" parent="Board" unique_id=1144859300 instance=ExtResource("8_kyk2p")]
 position = Vector2(392, 104)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile4" parent="Board" unique_id=375673994 instance=ExtResource("8_kyk2p")]
 position = Vector2(472, 104)
 scale = Vector2(2, 2)
-tile_type = 1
 
 [node name="Tile5" parent="Board" unique_id=1518892781 instance=ExtResource("8_kyk2p")]
 position = Vector2(552, 104)
@@ -397,6 +397,7 @@ scale = Vector2(2, 2)
 [node name="Tile6" parent="Board" unique_id=370085026 instance=ExtResource("8_kyk2p")]
 position = Vector2(632, 104)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile7" parent="Board" unique_id=1120706849 instance=ExtResource("8_kyk2p")]
 position = Vector2(712, 104)
@@ -405,11 +406,11 @@ scale = Vector2(2, 2)
 [node name="Tile8" parent="Board" unique_id=271920983 instance=ExtResource("8_kyk2p")]
 position = Vector2(792, 104)
 scale = Vector2(2, 2)
-tile_type = 1
 
 [node name="Tile9" parent="Board" unique_id=1726265710 instance=ExtResource("8_kyk2p")]
 position = Vector2(792, 176)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile10" parent="Board" unique_id=70789912 instance=ExtResource("8_kyk2p")]
 position = Vector2(792, 248)
@@ -474,6 +475,7 @@ scale = Vector2(2, 2)
 [node name="Tile24" parent="Board" unique_id=1229555866 instance=ExtResource("8_kyk2p")]
 position = Vector2(392, 616)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile25" parent="Board" unique_id=1490904791 instance=ExtResource("8_kyk2p")]
 position = Vector2(472, 616)
@@ -491,15 +493,16 @@ scale = Vector2(2, 2)
 [node name="Tile28" parent="Board" unique_id=1254731969 instance=ExtResource("8_kyk2p")]
 position = Vector2(712, 616)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile29" parent="Board" unique_id=848752719 instance=ExtResource("8_kyk2p")]
 position = Vector2(792, 616)
 scale = Vector2(2, 2)
-tile_type = 1
 
 [node name="Tile30" parent="Board" unique_id=1688110384 instance=ExtResource("8_kyk2p")]
 position = Vector2(872, 616)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile31" parent="Board" unique_id=1731889793 instance=ExtResource("8_kyk2p")]
 position = Vector2(952, 616)
@@ -512,11 +515,11 @@ scale = Vector2(2, 2)
 [node name="Tile33" parent="Board" unique_id=1322911378 instance=ExtResource("8_kyk2p")]
 position = Vector2(1112, 616)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile34" parent="Board" unique_id=1478156545 instance=ExtResource("8_kyk2p")]
 position = Vector2(1120, 536)
 scale = Vector2(2, 2)
-tile_type = 1
 
 [node name="Tile35" parent="Board" unique_id=5350535 instance=ExtResource("8_kyk2p")]
 position = Vector2(1120, 456)
