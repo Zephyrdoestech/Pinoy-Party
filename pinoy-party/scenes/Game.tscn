@@ -525,6 +525,7 @@ scale = Vector2(2, 2)
 [node name="Tile35" parent="Board" unique_id=5350535 instance=ExtResource("8_kyk2p")]
 position = Vector2(1120, 456)
 scale = Vector2(2, 2)
+tile_type = 1
 
 [node name="Tile36" parent="Board" unique_id=1848458189 instance=ExtResource("8_kyk2p")]
 position = Vector2(1118, 378)
