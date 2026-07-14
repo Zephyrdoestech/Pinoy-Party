@@ -13,37 +13,62 @@ func enter() -> void:
 	var last_tile: int = Constants.TOTAL_TILES - 1
 	var raw_target: int = old_tile + roll
 	var new_tile: int
- 
-	if raw_target > last_tile:
+	var bounced: bool = raw_target > last_tile
+
+	if bounced:
 		# Bounce back off the finish tile by the overshoot amount instead of
-		# refusing to move. E.g. 2 tiles from the end, rolling a 5 overshoots
-		# by 3, so the token advances to the end then rebounds 3 tiles back.
-		# The token still animates through every intermediate tile in both
-		# directions - _step_toward() in player_token.gd handles reverse
-		# movement the same way it handles forward movement.
+		# refusing to move. The token still visits the finish tile itself
+		# before rebounding - see _animate_and_advance()'s two-leg handling.
 		var overshoot: int = raw_target - last_tile
 		new_tile = last_tile - overshoot
 		EventBus.roll_exceeded.emit(player_idx, last_tile - old_tile)
 	else:
 		new_tile = raw_target
- 
+
 	# Detect first arrival at the finish tile and award the bonus.
 	# We check here (pre-animation) so the flag is set before State_TileEvent
 	# or State_EndTurn can run. add_score() emits score_changed, which updates
-	# the HUD immediately once the token lands.
-	if new_tile == last_tile and not gm.players[player_idx]["finished"]:
+	# the HUD immediately once the token lands. A bounce always visits the
+	# finish tile mid-animation, so it earns the bonus too, same as landing
+	# on it exactly.
+	if (new_tile == last_tile or bounced) and not gm.players[player_idx]["finished"]:
 		gm.players[player_idx]["finished"] = true
 		gm.add_score(player_idx, Constants.FINISH_LINE_BONUS)
 		EventBus.player_finished.emit(player_idx)
- 
-	_animate_and_advance.call_deferred(player_idx, new_tile)
+
+	if bounced:
+		_animate_bounce.call_deferred(player_idx, last_tile, new_tile)
+	else:
+		_animate_and_advance.call_deferred(player_idx, new_tile)
+
+## Two-leg animation for an overshoot: walk to the finish tile, then walk
+## back to the actual resting tile. Reuses _animate_one_leg() for each leg
+## so the movement_finished waiting/timeout logic isn't duplicated.
+func _animate_bounce(player_idx: int, peak_tile: int, final_tile: int) -> void:
+	await _animate_one_leg(player_idx, peak_tile)
+	await _animate_one_leg(player_idx, final_tile)
+
+	var gm: GameManager = GameManager
+	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
+	request_transition(&"State_TileEvent")
 
 func _animate_and_advance(player_idx: int, new_tile: int) -> void:
+	await _animate_one_leg(player_idx, new_tile)
+
+	var gm: GameManager = GameManager
+	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
+	request_transition(&"State_TileEvent")
+
+## Animates the token from its current tile to `target_tile` and waits for
+## that specific player's movement_finished signal (or a timeout), then
+## persists the authoritative tile_index. Shared by both the normal
+## single-leg move and each leg of a bounce.
+func _animate_one_leg(player_idx: int, target_tile: int) -> void:
 	var gm: GameManager = GameManager
 
 	# Tell the token to animate. Game.gd will re-emit movement_finished
 	# on EventBus when the token's own signal fires.
-	EventBus.player_moved.emit(player_idx, new_tile)
+	EventBus.player_moved.emit(player_idx, target_tile)
 
 	# Use an Array as the "done" flag so the lambda captures it by reference.
 	# A plain `var done := false` would be captured by VALUE in GDScript,
@@ -71,9 +96,8 @@ func _animate_and_advance(player_idx: int, new_tile: int) -> void:
 	if EventBus.movement_finished.is_connected(_handler):
 		EventBus.movement_finished.disconnect(_handler)
 
-	# Persist the final tile position so State_TileEvent reads it correctly.
-	# Also covers the timeout case: GameManager's authoritative position is
-	# correct even if the token visually fell short of new_tile.
-	gm.players[player_idx]["tile_index"] = new_tile
-	gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
-	request_transition(&"State_TileEvent")
+	# Persist the final tile position so subsequent legs / State_TileEvent
+	# read it correctly. Also covers the timeout case: GameManager's
+	# authoritative position is correct even if the token visually fell
+	# short of target_tile.
+	gm.players[player_idx]["tile_index"] = target_tile
