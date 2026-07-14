@@ -263,6 +263,25 @@ func _launch_minigame(minigame_id: String, participating_players: Array) -> void
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
 
+# --- SackRace start-of-round sync ---
+# Host-only trigger, broadcast to every peer via _apply_sack_race_setup()
+# instead of RPC'ing the SackRace scene node directly. Node-targeted RPCs
+# resolve by scene path (/root/SackRace/...), which isn't guaranteed to
+# exist on a client yet at this point - go_to_minigame()'s scene change is
+# still in flight there. Routing through this autoload (always present at
+# /root/NetworkManager) and reaching into the scene via current_scene, same
+# as _apply_sack_race_hop() below, avoids that race entirely.
+func sync_sack_race_setup(players: Array[int]) -> void:
+	if not is_host:
+		return
+	rpc("_apply_sack_race_setup", players)
+
+@rpc("authority", "call_local", "reliable")
+func _apply_sack_race_setup(players: Array[int]) -> void:
+	var scene := get_tree().current_scene
+	if scene is SackRace:
+		scene._sync_local_client_setup(players)
+
 # --- SackRace hop sync ---
 # Same shape as dice rolls: a client requests a hop for the player it
 # controls, the host validates it, then broadcasts so every peer's copy of

@@ -33,14 +33,16 @@ func start_game(players: Array[int]) -> void:
 	# If we are online, the host tells everyone to execute the visual positioning logic
 	if multiplayer.has_multiplayer_peer() and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		if NetworkManager.is_host:
-			rpc("_sync_local_client_setup", players)
+			NetworkManager.sync_sack_race_setup(players)
 	else:
 		# Offline fallback
 		_sync_local_client_setup(players)
 
 
-# synchronized RPC function that configures the UI for each client player
-@rpc("authority", "call_local", "reliable")
+# Called by NetworkManager._apply_sack_race_setup() on every peer, via the
+# same get_tree().current_scene pattern as apply_hop() - not RPC'd directly
+# on this node, since node-path RPCs race against the client's own
+# change_scene_to_file() still being in flight.
 func _sync_local_client_setup(players: Array[int]) -> void:
 	# Move variables to local scope for everyone
 	for idx in players:
