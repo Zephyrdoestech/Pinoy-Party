@@ -66,35 +66,6 @@ _data = {
 &"idle": SubResource("Animation_hddg3")
 }
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_6uy84"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_rfiok"]
-atlas = ExtResource("2_rfiok")
-region = Rect2(0, 0, 2600, 1480)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_lagkl"]
-atlas = ExtResource("2_rfiok")
-region = Rect2(2600, 0, 2600, 1480)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_mamc8"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_rfiok")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_lagkl")
-}],
-"loop": true,
-"name": &"default",
-"speed": 3.0
-}, {
-"frames": [],
-"loop": true,
-"name": &"new_animation",
-"speed": 5.0
-}]
-
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_4b1gd"]
 radius = 19.0
 height = 46.0
@@ -567,6 +538,35 @@ animations = [{
 "speed": 10.0
 }]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6uy84"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rfiok"]
+atlas = ExtResource("2_rfiok")
+region = Rect2(0, 0, 2600, 1480)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lagkl"]
+atlas = ExtResource("2_rfiok")
+region = Rect2(2600, 0, 2600, 1480)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_mamc8"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rfiok")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lagkl")
+}],
+"loop": true,
+"name": &"default",
+"speed": 3.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"new_animation",
+"speed": 5.0
+}]
+
 [node name="LangitLupa" type="Node2D" unique_id=1013061644]
 script = ExtResource("1_ncfyi")
 
@@ -623,29 +623,11 @@ hframes = 2
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Dog" unique_id=990337923]
 libraries/ = SubResource("AnimationLibrary_yx6bi")
 
-[node name="Flood" type="Area2D" parent="." unique_id=1424933278]
-position = Vector2(-150, 1467)
-collision_layer = 16
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Flood" unique_id=1496642065]
-shape = SubResource("RectangleShape2D_6uy84")
-
-[node name="ColorRect" type="ColorRect" parent="Flood" unique_id=1267687270]
-offset_right = 2061.0
-offset_bottom = 40.0
-color = Color(0.2, 0.4, 0.9, 0.5)
-
-[node name="flood sprite" type="AnimatedSprite2D" parent="Flood" unique_id=1846741619]
-texture_filter = 1
-position = Vector2(1634, 279.99994)
-scale = Vector2(0.7396154, 0.64391893)
-sprite_frames = SubResource("SpriteFrames_mamc8")
-autoplay = "default"
-
 [node name="Players" type="Node2D" parent="." unique_id=1244226072]
 
 [node name="Player 1" type="CharacterBody2D" parent="Players" unique_id=74059266]
 position = Vector2(-80, 35)
+collision_layer = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 1" unique_id=993833930]
 visible = false
@@ -668,7 +650,7 @@ autoplay = "idleRight"
 
 [node name="Player 2" type="CharacterBody2D" parent="Players" unique_id=1376171890]
 position = Vector2(-35, 35)
-collision_layer = 2
+collision_layer = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 2" unique_id=1756871085]
 visible = false
@@ -691,7 +673,7 @@ autoplay = "idleRight"
 
 [node name="Player 3" type="CharacterBody2D" parent="Players" unique_id=1925708394]
 position = Vector2(10, 35)
-collision_layer = 4
+collision_layer = 8
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 3" unique_id=639598343]
 visible = false
@@ -714,7 +696,7 @@ autoplay = "idleRight"
 
 [node name="Player 4" type="CharacterBody2D" parent="Players" unique_id=623097938]
 position = Vector2(55, 35)
-collision_layer = 8
+collision_layer = 16
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 4" unique_id=1813869303]
 visible = false
@@ -734,5 +716,23 @@ scale = Vector2(0.107421875, 0.10266113)
 sprite_frames = SubResource("SpriteFrames_kwjvj")
 animation = &"idleRight"
 autoplay = "idleRight"
+
+[node name="Flood" type="Area2D" parent="." unique_id=1424933278]
+position = Vector2(-150, 1467)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Flood" unique_id=1496642065]
+shape = SubResource("RectangleShape2D_6uy84")
+
+[node name="ColorRect" type="ColorRect" parent="Flood" unique_id=1267687270]
+offset_right = 2061.0
+offset_bottom = 40.0
+color = Color(0.2, 0.4, 0.9, 0.5)
+
+[node name="flood sprite" type="AnimatedSprite2D" parent="Flood" unique_id=1846741619]
+texture_filter = 1
+position = Vector2(1634, 279.99994)
+scale = Vector2(0.7396154, 0.64391893)
+sprite_frames = SubResource("SpriteFrames_mamc8")
+autoplay = "default"
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=427483603]

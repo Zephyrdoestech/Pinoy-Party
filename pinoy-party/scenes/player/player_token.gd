@@ -94,7 +94,7 @@ func move_to(target_tile_index: int) -> void:
 	_step_toward(current_idx, target_tile_index)
 
 func _step_toward(current_idx: int, target_idx: int) -> void:
-	if current_idx >= target_idx:
+	if current_idx == target_idx:
 		# Freeze the walk animation on the current frame so the token appears
 		# still after landing. pause() halts the loop without resetting the
 		# frame counter; stop() resets to frame 0 which can cause a visible
@@ -104,10 +104,16 @@ func _step_toward(current_idx: int, target_idx: int) -> void:
 		movement_finished.emit(player_index)
 		return
 
-	var next_idx: int = min(current_idx + 1, target_idx)
+	# +1 when advancing toward a higher tile index, -1 when bouncing back
+	# toward a lower one (State_Moving can send a target below current_idx
+	# after an overshoot rebound off the finish tile).
+	var step: int = 1 if target_idx > current_idx else -1
+	var next_idx: int = current_idx + step
 	var target_pos: Vector2 = board_ref.get_tile_position(next_idx) + Utils.token_offset(player_index)
 
 	# Switch to the animation that matches the board segment being traversed.
+	# _get_direction_animation() is direction-agnostic (position-delta based),
+	# so it already picks the correct reverse-facing animation on its own.
 	var anim: String = _get_direction_animation(current_idx, next_idx)
 	sprite.play(anim)
 

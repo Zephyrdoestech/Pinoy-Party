@@ -10,23 +10,28 @@ func enter() -> void:
 	gm.players[player_idx]["state"] = Enums.PlayerState.MOVING
 
 	var old_tile: int = gm.players[player_idx]["tile_index"]
-	var tiles_remaining: int = Constants.TOTAL_TILES - 1 - old_tile
+	var last_tile: int = Constants.TOTAL_TILES - 1
+	var raw_target: int = old_tile + roll
+	var new_tile: int
  
-	if roll > tiles_remaining:
-		# Overshoot - don't move at all. tile_index is never touched, so this
-		# can't be mistaken for a finish by State_TileEvent/game-over checks.
-		gm.players[player_idx]["state"] = Enums.PlayerState.IDLE
-		EventBus.roll_exceeded.emit(player_idx, tiles_remaining)
-		request_transition.call_deferred(&"State_EndTurn")
-		return
- 
-	var new_tile: int = old_tile + roll
+	if raw_target > last_tile:
+		# Bounce back off the finish tile by the overshoot amount instead of
+		# refusing to move. E.g. 2 tiles from the end, rolling a 5 overshoots
+		# by 3, so the token advances to the end then rebounds 3 tiles back.
+		# The token still animates through every intermediate tile in both
+		# directions - _step_toward() in player_token.gd handles reverse
+		# movement the same way it handles forward movement.
+		var overshoot: int = raw_target - last_tile
+		new_tile = last_tile - overshoot
+		EventBus.roll_exceeded.emit(player_idx, last_tile - old_tile)
+	else:
+		new_tile = raw_target
  
 	# Detect first arrival at the finish tile and award the bonus.
 	# We check here (pre-animation) so the flag is set before State_TileEvent
 	# or State_EndTurn can run. add_score() emits score_changed, which updates
 	# the HUD immediately once the token lands.
-	if new_tile == Constants.TOTAL_TILES - 1 and not gm.players[player_idx]["finished"]:
+	if new_tile == last_tile and not gm.players[player_idx]["finished"]:
 		gm.players[player_idx]["finished"] = true
 		gm.add_score(player_idx, Constants.FINISH_LINE_BONUS)
 		EventBus.player_finished.emit(player_idx)
