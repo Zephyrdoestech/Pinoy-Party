@@ -3,7 +3,7 @@ extends BaseMinigame
 
 const FINISH_DISTANCE := 48.0      # "hops" needed to win
 const HOP_DISTANCE := 1.0          # progress per press
-const RACE_TIMEOUT := 15.0         # seconds, safety net
+const RACE_TIMEOUT := 10.0         # seconds, safety net
 const HOP_PIXELS := 30.0           # how many pixels each ColorRect moves per press
 const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_sack_race.png"
 const SACK_RACE_UI_FONT := preload("res://assets/fonts/GrapeSoda.ttf")

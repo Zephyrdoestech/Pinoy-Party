@@ -40,16 +40,16 @@ func _ready() -> void:
 	panel.add_theme_constant_override("separation", 10)
 	add_child(panel)
 
-	var title := Label.new()
-	title.text = "Game Over"
-	title.add_theme_font_size_override("font_size", 86)
-	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.22))
-	title.add_theme_color_override("font_outline_color", Color(0.25, 0.08, 0.03))
-	title.add_theme_constant_override("outline_size", 8)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if custom_font:
-		title.add_theme_font_override("font", custom_font)
-	panel.add_child(title)
+	#var title := Label.new()
+	#title.text = "Game Over"
+	#title.add_theme_font_size_override("font_size", 86)
+	#title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.22))
+	#title.add_theme_color_override("font_outline_color", Color(0.25, 0.08, 0.03))
+	#title.add_theme_constant_override("outline_size", 8)
+	#title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	#if custom_font:
+		#title.add_theme_font_override("font", custom_font)
+	#panel.add_child(title)
 
 	headline = Label.new()
 	headline.add_theme_font_size_override("font_size", 72)
@@ -58,6 +58,11 @@ func _ready() -> void:
 	headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if custom_font:
 		headline.add_theme_font_override("font", custom_font)
+		
+	var top_spacer := Control.new()
+	top_spacer.custom_minimum_size = Vector2(0, 40) 
+	panel.add_child(top_spacer)
+	
 	panel.add_child(headline)
 
 	var spacer := Control.new()
@@ -87,7 +92,7 @@ func _ready() -> void:
 		score_rows.append(score_label)
 
 	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 24)
+	spacer2.custom_minimum_size = Vector2(0, 356)
 	panel.add_child(spacer2)
 
 	restart_button = TextureButton.new()

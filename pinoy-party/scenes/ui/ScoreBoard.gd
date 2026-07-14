@@ -111,4 +111,4 @@ func _on_turn_started(current_player_index: int) -> void:
 	var display_count = min(GameManager.players.size(), rows.size())
 	for i in display_count:
 		var marker: Label = rows[i]["marker"]
-		marker.text = "▶" if i == current_player_index else ""
+		marker.text = "    ▶" if i == current_player_index else ""
