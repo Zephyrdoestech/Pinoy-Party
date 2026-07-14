@@ -645,6 +645,7 @@ autoplay = "default"
 
 [node name="Player 1" type="CharacterBody2D" parent="Players" unique_id=74059266]
 position = Vector2(-80, 35)
+collision_layer = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 1" unique_id=993833930]
 visible = false
@@ -667,6 +668,7 @@ autoplay = "idleRight"
 
 [node name="Player 2" type="CharacterBody2D" parent="Players" unique_id=1376171890]
 position = Vector2(-35, 35)
+collision_layer = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 2" unique_id=1756871085]
 visible = false
@@ -689,6 +691,7 @@ autoplay = "idleRight"
 
 [node name="Player 3" type="CharacterBody2D" parent="Players" unique_id=1925708394]
 position = Vector2(10, 35)
+collision_layer = 8
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 3" unique_id=639598343]
 visible = false
@@ -711,6 +714,7 @@ autoplay = "idleRight"
 
 [node name="Player 4" type="CharacterBody2D" parent="Players" unique_id=623097938]
 position = Vector2(55, 35)
+collision_layer = 16
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Players/Player 4" unique_id=1813869303]
 visible = false
