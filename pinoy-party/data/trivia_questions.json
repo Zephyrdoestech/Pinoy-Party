@@ -5,7 +5,7 @@
 "correct_index": 1
 },
 {
-"question": "In the health lessons taught in Philippine schools, which food group does rice belong to?",
+"question": "Which food group does rice belong to?",
 "options": ["Go foods", "Grow foods", "Glow foods", "Junk foods"],
 "correct_index": 0
 },
@@ -16,7 +16,7 @@
 },
 {
 "question": "Which of these is an example of a 'Grow' food that helps Filipino children build strong muscles?",
-"options": ["Kamote (Sweet Potato)", "Saging (Banana)", "Isda (Fish)", "Tinapay (Bread)"],
+"options": ["Kamote", "Saging", "Isda", "Tinapay"],
 "correct_index": 2
 },
 {
@@ -36,7 +36,7 @@
 },
 {
 "question": "Which popular Filipino root crop is a healthy alternative to rice and gives us energy to play?",
-"options": ["Kamote (Sweet Potato)", "Sibuyas (Onion)", "Bawang (Garlic)", "Luya (Ginger)"],
+"options": ["Kamote", "Sibuyas", "Bawang", "Luya"],
 "correct_index": 0
 },
 {
@@ -71,13 +71,8 @@
 },
 {
 "question": "What yellow or orange vegetable is often cooked in 'Pinakbet' and helps keep our eyesight clear?",
-"options": ["Ampalaya (Bitter Gourd)", "Kalabasa (Squash)", "Kamatis (Tomato)", "Talong (Eggplant)"],
+"options": ["Ampalaya", "Kalabasa", "Kamatis", "Talong"],
 "correct_index": 1
-},
-{
-"question": "What nutrient helps keep our skin healthy and prevents getting sick?",
-"options": ["Fats", "Protein", "Carbohydrates", "Vitamins"],
-"correct_index": 3
 },
 {
 "question": "Which of these is a healthy, traditional Filipino snack made of sticky rice wrapped in banana leaves?",
