@@ -31,7 +31,7 @@ func enter() -> void:
 	# the HUD immediately once the token lands. A bounce always visits the
 	# finish tile mid-animation, so it earns the bonus too, same as landing
 	# on it exactly.
-	if (new_tile == last_tile or bounced) and not gm.players[player_idx]["finished"]:
+	if new_tile == last_tile and not bounced and not gm.players[player_idx]["finished"]:
 		gm.players[player_idx]["finished"] = true
 		gm.add_score(player_idx, Constants.FINISH_LINE_BONUS)
 		EventBus.player_finished.emit(player_idx)
