@@ -11,8 +11,8 @@
 },
 {
 "question": "What small, round, green citrus fruit is very popular in the Philippines for making juice rich in Vitamin C?",
-"options": ["Mango", "Calamansi", "Coconut", "Watermelon"],
-"correct_index": 1
+"options": ["Mango", "Coconut", "Calamansi", "Watermelon"],
+"correct_index": 2
 },
 {
 "question": "Which of these is an example of a 'Grow' food that helps Filipino children build strong muscles?",
@@ -21,8 +21,8 @@
 },
 {
 "question": "What is the visual guide created by the government to help Filipinos eat a balanced healthy meal on a single plate?",
-"options": ["Pinggang Pinoy", "Food Pyramid", "Nutri-Plate", "Magic Plate"],
-"correct_index": 0
+"options": ["Food Pyramid", "Nutri-Plate", "Magic Plate", "Pinggang Pinoy",],
+"correct_index": 3
 },
 {
 "question": "Why is it important to eat 'Glow' foods like papaya and squash?",
@@ -31,7 +31,72 @@
 },
 {
 "question": "What nutritious drink is given in school feeding programs to help strengthen bones and teeth?",
-"options": ["Softdrinks", "Milk", "Coffee", "Iced Tea"],
+"options": ["Softdrinks", "Coffee", "Iced Tea", "Milk"],
+"correct_index": 3
+},
+{
+"question": "Which popular Filipino root crop is a healthy alternative to rice and gives us energy to play?",
+"options": ["Kamote (Sweet Potato)", "Sibuyas (Onion)", "Bawang (Garlic)", "Luya (Ginger)"],
+"correct_index": 0
+},
+{
+"question": "What is the main healthy ingredient of the popular sweet snack 'Taho' that helps build our muscles?",
+"options": ["Milk", "Sago", "Soybeans", "Chocolate"],
+"correct_index": 2
+},
+{
+"question": "What natural and healthy drink comes from a large green nut and keeps us hydrated on a hot day in the Philippines?",
+"options": ["Buko Juice", "Mango Shake", "Sago't Gulaman", "Melon Juice"],
+"correct_index": 0
+},
+{
+"question": "What sweet Philippine fruit turns yellow when ripe and is a great source of Vitamin C to prevent colds?",
+"options": ["Durian", "Pakwan (Watermelon)", "Rambutan", "Mangga (Mango)"],
+"correct_index": 3
+},
+{
+"question": "Which of these is a common green leafy vegetable often added to the soup 'Sinigang' and is part of the 'Glow' foods?",
+"options": ["Kangkong (Water Spinach)", "Repolyo (Cabbage)", "Patatas (Potato)", "Mais (Corn)"],
+"correct_index": 0
+},
+{
+"question": "Bangus or Milkfish is a favorite Filipino dish. What important nutrient do we get from eating fish like Bangus?",
+"options": ["Sugar", "Vitamin C", "Carbohydrates", "Protein"],
+"correct_index": 3
+},
+{
+"question": "Many Filipino families cook a healthy soup made from small green beans, especially on Fridays. What is this called?",
+"options": ["Adobo", "Tinola", "Monggo", "Pancit"],
+"correct_index": 2
+},
+{
+"question": "What yellow or orange vegetable is often cooked in 'Pinakbet' and helps keep our eyesight clear?",
+"options": ["Ampalaya (Bitter Gourd)", "Kalabasa (Squash)", "Kamatis (Tomato)", "Talong (Eggplant)"],
+"correct_index": 1
+},
+{
+"question": "What is the bitter green vegetable that is famous in the Philippines for being incredibly healthy, even if kids sometimes find it hard to eat?",
+"options": ["Talong (Eggplant)", "Sitaw (String Beans)", "Kamote (Sweet Potato)", "Ampalaya (Bitter Gourd)"],
+"correct_index": 3
+},
+{
+"question": "Which of these is a healthy, traditional Filipino snack made of sticky rice wrapped in banana leaves?",
+"options": ["Donut", "Suman", "Potato Chips", "French Fries"],
+"correct_index": 1
+},
+{
+"question": "What sweet yellow fruit that grows in hands or bunches is rich in potassium and helps prevent muscle cramps when running?",
+"options": ["Saging (Banana)", "Santol", "Chico", "Papaya"],
+"correct_index": 0
+},
+{
+"question": "In the Philippines, what nutrient-rich egg is boiled and has a dark purple shell, often eaten with tomatoes and onions?",
+"options": ["Century Egg", "Itlog na Maalat (Salted Egg)", "Quail Egg", "Raw Egg"],
+"correct_index": 1
+},
+{
+"question": "Which of these kitchen ingredients is a healthy herb we use to cook Filipino dishes like Adobo, known for helping our immune system?",
+"options": ["Asukal (Sugar)", "Bawang (Garlic)", "Chili Powder", "Artificial MSG"],
 "correct_index": 1
 }
 ]
