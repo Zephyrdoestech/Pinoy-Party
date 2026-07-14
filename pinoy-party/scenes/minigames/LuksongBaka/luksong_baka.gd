@@ -98,7 +98,16 @@ func start_game(players: Array[int]) -> void:
 
 func _start_countdown() -> void:
 	current_round += 1
+	
 	round_label.text = "Round %d" % current_round
+	
+	var custom_font = load("res://assets/fonts/GrapeSoda.ttf")
+	if custom_font and is_instance_valid(round_label):
+		round_label.add_theme_font_override("font", custom_font)
+		round_label.add_theme_font_size_override("font_size", 48)
+	
+	round_label.reset_size()
+	round_label.global_position = (get_viewport_rect().size / 2.0) - (round_label.size / 2.0)
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
 	
