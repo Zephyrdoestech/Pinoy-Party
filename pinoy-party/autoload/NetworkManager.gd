@@ -253,6 +253,13 @@ func _apply_roll_result(result: int) -> void:
 # loads the scene from this single shared call instead of each client
 # independently calling Utils.random_minigame()/SceneLoader.go_to_minigame().
 func start_minigame_synced(participating_players: Array[int]) -> void:
+	# Local play has no ENet host. Resolve the minigame directly in that case,
+	# while keeping the LAN host authoritative whenever a real peer exists.
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_launch_minigame(Utils.random_minigame(), participating_players)
+		return
 	if not is_host:
 		return
 	var minigame_id: String = Utils.random_minigame()
