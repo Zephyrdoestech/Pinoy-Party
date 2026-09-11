@@ -2,14 +2,14 @@
 extends Node2D
 
 const FACE_TEXTURE_PATHS := [
-	"res://assets/board_assets/Dice/3d/dice_3d_static_1.png",
-	"res://assets/board_assets/Dice/3d/dice_3d_static_2.png",
-	"res://assets/board_assets/Dice/3d/dice_3d_static_3.png",
-	"res://assets/board_assets/Dice/3d/dice_3d_static_4.png",
-	"res://assets/board_assets/Dice/3d/dice_3d_static_5.png",
-	"res://assets/board_assets/Dice/3d/dice_3d_static_6.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_1.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_2.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_3.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_4.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_5.png",
+	"res://assets/board_assets/DIce/3d/dice_3d_static_6.png",
 ]
-const ROLLING_TEXTURE_PATH := "res://assets/board_assets/Dice/3d/rolling_dice-sheet.png"
+const ROLLING_TEXTURE_PATH := "res://assets/board_assets/DIce/3d/rolling_dice-sheet.png"
 const ROLLING_FRAME_SIZE := Vector2i(25, 29)
 const ROLLING_COLUMNS := 6
 const ROLLING_FRAME_COUNT := 28

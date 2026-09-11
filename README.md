@@ -22,6 +22,18 @@
 2. Open the Godot Engine and import the `pinoy-party/project.godot` file.
 3. Press **F5** (or click the Play button) to run the game!
 
+### Verifying the Project
+From the repository root, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\verify_project.ps1
+```
+
+The verifier rejects unresolved merge markers and literal resource paths whose
+case does not match the files tracked by Git. When `godot` is available on
+`PATH`, it also runs a headless editor parse. Exported `.exe`, `.pck`, archive,
+and app bundles remain ignored build outputs.
+
 ### How to Play Multiplayer
 1. One player clicks **Host Game** on the main menu. They will be given a random 5-letter Room Code.
 2. Other players click **Join Game** and enter that exact 5-letter Room Code (and their chosen username).
