@@ -45,9 +45,14 @@ var _position_heartbeat_timer := 0.0
 var _last_sent_position := Vector2.INF
 var _last_sent_animation := ""
 var _remote_position_targets: Dictionary = {}
+var _ending_game := false
 	
 func start_round_synced() -> void:
 	round_start_msec = Time.get_ticks_msec()
+	_position_sync_timer = 0.0
+	_position_heartbeat_timer = 0.0
+	round_active = true
+	gameplay_locked = false
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
@@ -75,10 +80,10 @@ func start_game(players: Array[int]) -> void:
 			await tutorial_dismissed
 
 	await run_intro("")
-	round_start_msec = Time.get_ticks_msec()
-	round_active = true
-	if NetworkManager.is_host:
-		NetworkManager.sync_langitlupa_start.rpc()
+	# Do not start simulation independently on each machine. The host waits
+	# until all four peers finish this intro, then starts everyone together.
+	gameplay_locked = true
+	NetworkManager.report_langitlupa_intro_ready()
 
 # Builds the blurring layout wrapper on every client machine locally
 func _show_intro_tutorial_synced() -> void:
@@ -402,6 +407,7 @@ func _finish_player(idx: int) -> void:
 		return  # already finished or already flooded - guard against double-fire
 	alive_players.erase(idx)
 	finished_players.append(idx)
+	NetworkManager.broadcast_langitlupa_finish.rpc(idx)
 	if alive_players.size() <= 1:
 		NetworkManager.sync_langitlupa_end.rpc(_compute_final_scores())
 
@@ -417,7 +423,18 @@ func _eliminate_player(idx: int) -> void:
 
 ## Called on every peer (including host) when NetworkManager broadcasts an elimination.
 func apply_elimination(player_idx: int) -> void:
-	_get_player_node(player_idx).modulate.a = 0.3
+	alive_players.erase(player_idx)
+	_remote_position_targets.erase(player_idx)
+	var player := _get_player_node(player_idx)
+	player.velocity = Vector2.ZERO
+	player.modulate.a = 0.3
+
+func apply_finish(player_idx: int) -> void:
+	alive_players.erase(player_idx)
+	_remote_position_targets.erase(player_idx)
+	var player := _get_player_node(player_idx)
+	player.velocity = Vector2.ZERO
+	player.modulate = Color(0.55, 1.0, 0.55, 1.0)
 
 func _compute_final_scores() -> Dictionary:
 	var placement_points := [3, 2, 1]
@@ -441,6 +458,9 @@ func _compute_final_scores() -> Dictionary:
 	return scores
 
 func _end_game(scores: Dictionary) -> void:
+	if _ending_game:
+		return
+	_ending_game = true
 	round_active = false
 	gameplay_locked = true
 	_clear_generated_platforms()

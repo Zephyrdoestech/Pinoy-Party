@@ -15,6 +15,12 @@ const MAX_DISCOVERY_PACKETS_PER_FRAME := 32
 const DISCOVERY_ENTRY_TTL_MSEC := 5000
 const MIN_SACK_HOP_INTERVAL_MSEC := 35
 const MAX_LUKSONG_LAG_COMPENSATION_SEC := 0.18
+const MINIGAME_LOAD_TIMEOUT_SEC := 20.0
+const MINIGAME_RESULTS_TIMEOUT_SEC := 10.0
+const LANGITLUPA_INTRO_READY_TIMEOUT_SEC := 15.0
+const ENET_TIMEOUT_MIN_MSEC := 10000
+const ENET_TIMEOUT_MAX_MSEC := 60000
+const ENET_PING_INTERVAL_MSEC := 1000
 
 var _discovery_socket: PacketPeerUDP
 var _broadcast_timer: Timer
@@ -33,6 +39,11 @@ var _ready_minigame_peers: Dictionary = {}
 var _finished_minigame_peers: Dictionary = {}
 var _pending_minigame_started := false
 var _last_sack_hop_msec: Dictionary = {}
+var _pending_minigame_generation := 0
+var _results_wait_generation := 0
+var _langitlupa_intro_ready_peers: Dictionary = {}
+var _langitlupa_intro_wait_generation := 0
+var _disconnect_recovery_started := false
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -44,10 +55,26 @@ func _ready() -> void:
 func _on_server_disconnected() -> void:
 	# Only clients ever receive this (the host has no "server" to lose).
 	print("[NetworkManager] Lost connection to host.")
+	var was_in_match := match_in_progress or get_tree().current_scene is BaseMinigame
 	match_in_progress = false
 	multiplayer.multiplayer_peer = null
 	_clear_pending_minigame()
 	host_left.emit()
+	if was_in_match:
+		call_deferred(&"_return_to_lobby_after_host_loss")
+
+func _return_to_lobby_after_host_loss() -> void:
+	if _disconnect_recovery_started:
+		return
+	_disconnect_recovery_started = true
+	lobby_code = ""
+	is_host = false
+	connected_players.clear()
+	player_index_to_peer.clear()
+	peer_to_player_index.clear()
+	GameManager.reset_for_new_game()
+	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
+	_disconnect_recovery_started = false
 
 func host_lobby(player_name: String) -> void:
 	stop_discovery()
@@ -157,6 +184,7 @@ func leave_lobby() -> void:
 	peer_to_player_index.clear()
 	_clear_pending_minigame()
 	multiplayer.multiplayer_peer = null
+	_disconnect_recovery_started = false
 
 func join_lobby(code: String, ip: String, player_name: String) -> void:
 	lobby_code = code.to_upper()
@@ -175,6 +203,7 @@ func join_lobby(code: String, ip: String, player_name: String) -> void:
 	multiplayer.multiplayer_peer = peer
 
 func _on_connected_ok() -> void:
+	_configure_enet_peer(1)
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
@@ -210,38 +239,57 @@ func _sync_player_list(players: Dictionary) -> void:
 	connected_players = players
 	roster_updated.emit()
 
-func _on_peer_connected(_id: int) -> void:
+func _on_peer_connected(id: int) -> void:
+	_configure_enet_peer(id)
 	if not is_host:
 		stop_discovery()
+
+func _configure_enet_peer(peer_id: int) -> void:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet == null:
+		return
+	var packet_peer := enet.get_peer(peer_id)
+	if packet_peer == null:
+		return
+	# Scene imports and shader compilation can briefly stall slower PCs. Keep
+	# the connection alive through those spikes while still timing out a truly
+	# unreachable machine after one minute.
+	packet_peer.set_timeout(32, ENET_TIMEOUT_MIN_MSEC, ENET_TIMEOUT_MAX_MSEC)
+	packet_peer.ping_interval(ENET_PING_INTERVAL_MSEC)
 
 func _on_peer_disconnected(id: int) -> void:
 	if connected_players.has(id):
 		var leaving_name: String = connected_players[id].get("name", "Player")
 		connected_players.erase(id)
 		if is_host and match_in_progress:
-			# A player dropped mid-match. We don't try to keep the game
-			# running without them (their turn/minigame slot would hang
-			# forever, same failure shape as every other silent-freeze bug
-			# in this project) - tell every remaining peer and let the
-			# scene decide how to end gracefully.
-			rpc("_notify_player_left_mid_match", id, leaving_name)
+			if _disconnect_recovery_started:
+				return
+			# Keep the surviving ENet session alive and move every remaining
+			# peer back to the same lobby. Closing the host immediately after
+			# this RPC used to strand peers that had not received it yet.
+			_broadcast_player_list()
+			rpc("_notify_player_left_mid_match", id, leaving_name, connected_players)
 		elif is_host:
 			_broadcast_player_list()
 
 @rpc("authority", "reliable", "call_local")
-func _notify_player_left_mid_match(peer_id: int, player_name: String) -> void:
+func _notify_player_left_mid_match(peer_id: int, player_name: String, remaining_players: Dictionary) -> void:
+	if _disconnect_recovery_started:
+		return
+	_disconnect_recovery_started = true
 	match_in_progress = false
+	connected_players = remaining_players.duplicate(true)
 	_clear_pending_minigame()
 	player_left_mid_match.emit(peer_id, player_name)
-	if get_tree().current_scene is BaseMinigame:
-		call_deferred(&"_abort_minigame_after_disconnect")
+	call_deferred(&"_return_survivors_to_lobby")
 
-func _abort_minigame_after_disconnect() -> void:
-	if not get_tree().current_scene is BaseMinigame:
-		return
-	leave_lobby()
+func _return_survivors_to_lobby() -> void:
+	# Defer one frame so the reliable roster/abort messages are flushed before
+	# scenes change. The multiplayer peer remains connected for a rematch.
+	await get_tree().process_frame
 	GameManager.reset_for_new_game()
 	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
+	_disconnect_recovery_started = false
 
 func start_game() -> void:
 	if not is_host:
@@ -336,14 +384,34 @@ func start_minigame_synced(participating_players: Array[int]) -> void:
 
 @rpc("authority", "reliable", "call_local")
 func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
+	_pending_minigame_generation += 1
 	_pending_minigame_id = minigame_id
 	_pending_minigame_players.assign(participating_players)
 	_ready_minigame_peers.clear()
 	_finished_minigame_peers.clear()
+	_langitlupa_intro_ready_peers.clear()
 	_last_sack_hop_msec.clear()
 	_pending_minigame_started = false
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
+	if is_host:
+		_watch_minigame_load_timeout(_pending_minigame_generation, minigame_id)
+
+func _watch_minigame_load_timeout(generation: int, minigame_id: String) -> void:
+	await get_tree().create_timer(MINIGAME_LOAD_TIMEOUT_SEC).timeout
+	if not is_host or generation != _pending_minigame_generation:
+		return
+	if _pending_minigame_started or minigame_id != _pending_minigame_id:
+		return
+	push_warning("[NetworkManager] Minigame load timed out; returning every peer to the board.")
+	rpc("_abort_stalled_minigame", minigame_id)
+
+@rpc("authority", "call_local", "reliable")
+func _abort_stalled_minigame(minigame_id: String) -> void:
+	if minigame_id != _pending_minigame_id:
+		return
+	_clear_pending_minigame()
+	SceneLoader.return_to_board()
 
 # A reliable readiness barrier prevents the host from starting a minigame
 # while a slower computer is still loading its scene. RPCs sent before that
@@ -393,10 +461,14 @@ func _begin_loaded_minigame(minigame_id: String, players: Array, tutorials_shown
 	SceneLoader.start_loaded_minigame(typed_players)
 
 func _clear_pending_minigame() -> void:
+	_pending_minigame_generation += 1
+	_results_wait_generation += 1
+	_langitlupa_intro_wait_generation += 1
 	_pending_minigame_id = ""
 	_pending_minigame_players.clear()
 	_ready_minigame_peers.clear()
 	_finished_minigame_peers.clear()
+	_langitlupa_intro_ready_peers.clear()
 	_pending_minigame_started = false
 
 func report_minigame_results_finished() -> void:
@@ -420,11 +492,24 @@ func request_minigame_results_finished(minigame_id: String) -> void:
 	_record_minigame_results_finished(sender_id)
 
 func _record_minigame_results_finished(peer_id: int) -> void:
+	var was_empty := _finished_minigame_peers.is_empty()
 	_finished_minigame_peers[peer_id] = true
+	if was_empty:
+		_results_wait_generation += 1
+		_watch_minigame_results_timeout(_results_wait_generation, _pending_minigame_id)
 	for expected_peer_id in connected_players:
 		if not _finished_minigame_peers.has(expected_peer_id):
 			return
 	rpc("_return_to_board_after_minigame", _pending_minigame_id)
+
+func _watch_minigame_results_timeout(generation: int, minigame_id: String) -> void:
+	await get_tree().create_timer(MINIGAME_RESULTS_TIMEOUT_SEC).timeout
+	if not is_host or generation != _results_wait_generation:
+		return
+	if minigame_id.is_empty() or minigame_id != _pending_minigame_id:
+		return
+	push_warning("[NetworkManager] Results synchronization timed out; returning every peer to the board.")
+	rpc("_return_to_board_after_minigame", minigame_id)
 
 @rpc("authority", "call_local", "reliable")
 func _return_to_board_after_minigame(minigame_id: String) -> void:
@@ -535,7 +620,52 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 
 # --- LangitLupa sync ---
 
-# Host broadcasts it_player and area positions once at match start.
+# Langit Lupa has its own post-intro barrier. Loading the scene is not enough:
+# slower computers must also finish the tutorial/countdown before simulation
+# begins, or an early end RPC can race their still-running start coroutine.
+func report_langitlupa_intro_ready() -> void:
+	var offline := not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		sync_langitlupa_start()
+	elif is_host:
+		_record_langitlupa_intro_ready(multiplayer.get_unique_id())
+	else:
+		request_langitlupa_intro_ready.rpc_id(1)
+
+@rpc("any_peer", "reliable")
+func request_langitlupa_intro_ready() -> void:
+	if not is_host or _pending_minigame_id != "LangitLupa":
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if not connected_players.has(sender_id):
+		return
+	_record_langitlupa_intro_ready(sender_id)
+
+func _record_langitlupa_intro_ready(peer_id: int) -> void:
+	if _pending_minigame_id != "LangitLupa":
+		return
+	var was_empty := _langitlupa_intro_ready_peers.is_empty()
+	_langitlupa_intro_ready_peers[peer_id] = true
+	if was_empty:
+		_langitlupa_intro_wait_generation += 1
+		_watch_langitlupa_intro_timeout(_langitlupa_intro_wait_generation, _pending_minigame_generation)
+	for expected_peer_id in connected_players:
+		if not _langitlupa_intro_ready_peers.has(expected_peer_id):
+			return
+	_langitlupa_intro_wait_generation += 1
+	rpc("sync_langitlupa_start")
+
+func _watch_langitlupa_intro_timeout(wait_generation: int, minigame_generation: int) -> void:
+	await get_tree().create_timer(LANGITLUPA_INTRO_READY_TIMEOUT_SEC).timeout
+	if not is_host or wait_generation != _langitlupa_intro_wait_generation:
+		return
+	if minigame_generation != _pending_minigame_generation or _pending_minigame_id != "LangitLupa":
+		return
+	push_warning("[NetworkManager] Langit Lupa intro synchronization timed out; returning every peer to the board.")
+	rpc("_abort_stalled_minigame", _pending_minigame_id)
+
+# Host broadcasts the synchronized start after every peer finishes its intro.
 @rpc("authority", "reliable", "call_local")
 func sync_langitlupa_start() -> void:
 	var scene := get_tree().current_scene
@@ -575,6 +705,12 @@ func broadcast_langitlupa_elimination(player_idx: int) -> void:
 	var scene := get_tree().current_scene
 	if scene is LangitLupa:
 		scene.apply_elimination(player_idx)
+
+@rpc("authority", "reliable", "call_local")
+func broadcast_langitlupa_finish(player_idx: int) -> void:
+	var scene := get_tree().current_scene
+	if scene is LangitLupa:
+		scene.apply_finish(player_idx)
 
 # Host decided the round is over - broadcast to all peers.
 @rpc("authority", "reliable", "call_local")

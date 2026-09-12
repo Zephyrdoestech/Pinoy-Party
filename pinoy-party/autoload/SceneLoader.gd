@@ -1,7 +1,11 @@
 # autoload/SceneLoader.gd
 extends Node
 
+var _load_generation := 0
+
 func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
+	_load_generation += 1
+	var generation := _load_generation
 	BgmManager.play_minigame()
 	# Folders are PascalCase (LangitLupa, SackRace, LuksongBaka) but the
 	# .tscn files on disk are snake_case (langit_lupa.tscn, sack_race.tscn,
@@ -9,7 +13,24 @@ func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
 	# only — the folder name stays PascalCase.
 	var scene_file := minigame_id.to_snake_case()
 	var path := "res://scenes/minigames/%s/%s.tscn" % [minigame_id, scene_file]
-	var err := get_tree().change_scene_to_file(path)
+	var request_error := ResourceLoader.load_threaded_request(path, "PackedScene")
+	if request_error != OK:
+		push_error("[SceneLoader] Failed to request minigame scene '%s': error code %d" % [path, request_error])
+		return
+	var progress: Array = []
+	while ResourceLoader.load_threaded_get_status(path, progress) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		await get_tree().process_frame
+		if generation != _load_generation:
+			return
+	var load_status := ResourceLoader.load_threaded_get_status(path, progress)
+	if load_status != ResourceLoader.THREAD_LOAD_LOADED:
+		push_error("[SceneLoader] Failed loading minigame scene '%s': status %d" % [path, load_status])
+		return
+	var packed_scene := ResourceLoader.load_threaded_get(path) as PackedScene
+	if packed_scene == null or generation != _load_generation:
+		push_error("[SceneLoader] Minigame resource was not a PackedScene: %s" % path)
+		return
+	var err := get_tree().change_scene_to_packed(packed_scene)
 	if err != OK:
 		push_error("[SceneLoader] Failed to load minigame scene '%s': error code %d" % [path, err])
 		return
@@ -34,5 +55,6 @@ func start_loaded_minigame(players: Array[int]) -> void:
 		push_error("SceneLoader: cannot start unloaded minigame. Got: %s" % minigame)
 
 func return_to_board() -> void:
+	_load_generation += 1
 	BgmManager.play_board()
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")
