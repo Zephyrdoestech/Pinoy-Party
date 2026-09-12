@@ -10,7 +10,6 @@ const ZONE_WIDTH_MIN := 0.12       # narrowest the zone will ev0er get
 const ZONE_SHRINK := 0.92          # multiply zone width by this each round
 const DEBUG_FORCE_LOCAL_TEST := false
 const BAR_WIDTH := 200.0
-const LUKSONG_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
 
 # ---------------------------------------------------------------------------
 # Visual constants
@@ -72,31 +71,15 @@ func _ready() -> void:
 		
 		gameplay_locked = false 
 		start_game([0, 1, 2, 3])
-	elif not multiplayer.has_multiplayer_peer():
-		# F6/direct-scene runs do not go through SceneLoader. Start a local
-		# session after SceneLoader's normal two-frame setup window so testing
-		# this scene never leaves four idle quadrants on screen forever.
-		call_deferred(&"_start_standalone_test_if_needed")
-
-func _start_standalone_test_if_needed() -> void:
-	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
-	if not participating_players.is_empty() or get_tree().current_scene != self:
-		return
-	var local_players: Array[int] = []
-	for player_idx in GameManager.active_player_count:
-		local_players.append(player_idx)
-	start_game(local_players)
 
 func start_game(players: Array[int]) -> void:
 	alive_players = players.duplicate()
 	super(players)
 	elimination_order.clear()
-	
+
 	# Initialize our 4 separate isolated viewports
 	_spawn_splitscreen_worlds()
-	
+
 	if not GameManager.has_shown_tutorial("luksong_baka"):
 		GameManager.mark_tutorial_shown("luksong_baka")
 		_show_tutorial_png()
@@ -118,8 +101,9 @@ func _start_countdown() -> void:
 	
 	round_label.text = "Round %d" % current_round
 	
-	if is_instance_valid(round_label):
-		round_label.add_theme_font_override("font", LUKSONG_FONT)
+	var custom_font = load("res://assets/fonts/GrapeSoda.ttf")
+	if custom_font and is_instance_valid(round_label):
+		round_label.add_theme_font_override("font", custom_font)
 		round_label.add_theme_font_size_override("font_size", 48)
 	
 	round_label.reset_size()
@@ -139,13 +123,8 @@ func _start_countdown() -> void:
 		# Directly run the logic instantly without routing through NetworkManager
 		_begin_round(picked_zone_start)
 	else:
-		# Normal production network execution pathway. Direct/offline testing
-		# has no ENet host, so begin locally.
-		var offline := not multiplayer.has_multiplayer_peer() \
-			or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
-		if offline:
-			_begin_round(picked_zone_start)
-		elif NetworkManager.is_host:
+		# Normal production network execution pathway
+		if NetworkManager.is_host:
 			NetworkManager.sync_luksong_round.rpc(picked_zone_start)
 
 #  UNIFIED ROUND START FUNCTION
@@ -287,6 +266,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("jump"):
 		return
 		
+	print(" Jump action detected!")
+
 	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
 	if DEBUG_FORCE_LOCAL_TEST:
 		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
@@ -295,8 +276,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# 4. GATEWAY B: Production Network Mode (F5 Running Main Game)
 	var my_idx: int = NetworkManager.get_my_player_index()
-	if my_idx == -1 and not multiplayer.has_multiplayer_peer():
-		my_idx = 0
+	print(" Network Mode: My Player Index = ", my_idx, " | Is Alive = ", alive_players.has(my_idx))
+
 	if my_idx == -1 or not alive_players.has(my_idx):
 		return
 	if jumped_this_round.has(my_idx):
@@ -308,15 +289,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		NetworkManager.request_luksong_jump.rpc_id(1, my_idx, marker_t)
 
 func _try_jump(player_idx: int) -> void:
+	print(" Checking _try_jump guards for player: ", player_idx)
+
 	if not alive_players.has(player_idx):
+		print("Guard failed: player_idx is not in alive_players! current alive: ", alive_players)
 		return
 	if jumped_this_round.has(player_idx):
+		print("Guard failed: player already jumped this round!")
 		return
 	if not bars.has(player_idx):
+		print("Guard failed: bars dictionary is missing player_idx!")
 		return
 	if not char_sprites.has(player_idx):
+		print("Guard failed: char_sprites dictionary is missing player_idx!")
 		return
 
+	print("All guards passed! Processing jump calculations...")
 	play_jump_sfx()
 	jumped_this_round[player_idx] = true
 	var in_zone: bool = marker_t >= zone_start and marker_t <= (zone_start + zone_width)
@@ -338,6 +326,12 @@ func _try_jump(player_idx: int) -> void:
 		tween.tween_property(spr, "position:y", CHAR_Y - jump_height, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 # 2. Animate back down to the ground
 		tween.tween_property(spr, "position:y", CHAR_Y, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+# Return to walk state when the distinct resource finishes playing
+		spr.animation_finished.connect(func():
+			if is_instance_valid(spr) and alive_players.has(player_idx):
+				spr.play("walk"),
+		CONNECT_ONE_SHOT)
 
 		# Return to walk state when the distinct resource finishes playing
 		spr.animation_finished.connect(func():
@@ -399,9 +393,7 @@ func _end_round_sweep() -> void:
 		return
 
 	# --- ORIGINAL BACKEND LOBBY MULTIPLAYER CODE ---
-	var offline := not multiplayer.has_multiplayer_peer() \
-		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
-	if not NetworkManager.is_host and not offline:
+	if not NetworkManager.is_host:
 		return
 
 	var auto_eliminated: Array[int] = []
@@ -409,10 +401,7 @@ func _end_round_sweep() -> void:
 		if not jumped_this_round.has(player_idx):
 			auto_eliminated.append(player_idx)
 
-	if offline:
-		apply_round_end(auto_eliminated)
-	else:
-		NetworkManager.sync_luksong_round_end.rpc(auto_eliminated)
+	NetworkManager.sync_luksong_round_end.rpc(auto_eliminated)
 
 func apply_jump_result(player_idx: int, in_zone: bool) -> void:
 	if not alive_players.has(player_idx):
@@ -482,20 +471,8 @@ func apply_round_end(auto_eliminated: Array) -> void:
 	_check_game_over()
 
 func _eliminate(player_idx: int) -> void:
-	if not alive_players.has(player_idx):
-		return
 	alive_players.erase(player_idx)
 	eliminated_this_round.append(player_idx)
-	_freeze_quadrant_render(player_idx)
-
-func _freeze_quadrant_render(player_idx: int) -> void:
-	if not quadrants.has(player_idx):
-		return
-	var viewport := quadrants[player_idx].get_node_or_null("SubViewport") as SubViewport
-	if viewport != null:
-		# Draw the elimination state once, then stop rendering a quadrant that
-		# can no longer change.
-		viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _check_game_over() -> void:
 	if alive_players.size() <= 1:
@@ -579,7 +556,6 @@ func _spawn_splitscreen_worlds() -> void:
 				bar_ui.show()
 			
 		else:
-			viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			quad.modulate = Color(0.2, 0.2, 0.2, 1.0)
 			if bar_ui:
 				bar_ui.hide()

@@ -97,7 +97,6 @@ func _ready() -> void:
 		lobby_container.visible = false
 		lobby_panel.visible = false
 		start_button.visible = false
-		NetworkManager.start_listening_for_lobbies()
 	_show_error("")
 	status_label.add_theme_font_override("font", LOBBY_FONT)
 	status_label.add_theme_font_size_override("font_size", 24)
@@ -106,6 +105,7 @@ func _ready() -> void:
 	join_status_label.add_theme_font_size_override("font_size", 24)
 	join_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
+	NetworkManager.start_listening_for_lobbies()
 
 func _on_host_pressed() -> void:
 	_play_button_click_sfx()

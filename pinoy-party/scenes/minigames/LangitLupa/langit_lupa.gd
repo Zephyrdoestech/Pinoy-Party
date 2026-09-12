@@ -31,28 +31,14 @@ var round_active: bool = false
 var _coyote_timer: float = 0.
 var finished_players: Array[int] = []
 signal tutorial_dismissed
-var _tutorial_dismissed_synced := false
 
-# Position sync is deliberately below the render frame rate. Remote players
-# interpolate between snapshots, so 15 Hz looks smooth without flooding the
-# host when four computers are playing.
-const POSITION_SYNC_HZ := 15.0
-const POSITION_HEARTBEAT_SEC := 0.25
-const POSITION_CHANGE_THRESHOLD_SQ := 1.0
-const REMOTE_INTERPOLATION_SPEED := 18.0
+# Position sync - each client broadcasts their position at SYNC_HZ rate.
+# Host collects all positions and rebroadcasts to everyone.
+const POSITION_SYNC_HZ := 20.0
 var _position_sync_timer := 0.0
-var _position_heartbeat_timer := 0.0
-var _last_sent_position := Vector2.INF
-var _last_sent_animation := ""
-var _remote_position_targets: Dictionary = {}
-var _ending_game := false
 	
 func start_round_synced() -> void:
 	round_start_msec = Time.get_ticks_msec()
-	_position_sync_timer = 0.0
-	_position_heartbeat_timer = 0.0
-	round_active = true
-	gameplay_locked = false
 
 func start_game(players: Array[int]) -> void:
 	super.start_game(players)
@@ -62,7 +48,6 @@ func start_game(players: Array[int]) -> void:
 	await get_tree().process_frame
 	_auto_position_spawn_and_goal()
 	_position_players()
-	_remote_position_targets.clear()
 	_hide_inactive_players()
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
@@ -76,19 +61,16 @@ func start_game(players: Array[int]) -> void:
 	if not GameManager.has_shown_tutorial("langit_lupa"):
 		GameManager.mark_tutorial_shown("langit_lupa")
 		_show_intro_tutorial_synced()
-		if not _tutorial_dismissed_synced:
-			await tutorial_dismissed
+		await tutorial_dismissed
 
 	await run_intro("")
-	# Do not start simulation independently on each machine. The host waits
-	# until all four peers finish this intro, then starts everyone together.
-	gameplay_locked = true
-	NetworkManager.report_langitlupa_intro_ready()
+	round_start_msec = Time.get_ticks_msec()
+	round_active = true
+	if NetworkManager.is_host:
+		NetworkManager.sync_langitlupa_start.rpc()
 
 # Builds the blurring layout wrapper on every client machine locally
 func _show_intro_tutorial_synced() -> void:
-	if _tutorial_dismissed_synced:
-		return
 	var overlay := CanvasLayer.new()
 	overlay.layer = 128
 	add_child(overlay)
@@ -155,9 +137,6 @@ func _show_intro_tutorial_synced() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _sync_dismiss_tutorial_and_start() -> void:
-	if _tutorial_dismissed_synced:
-		return
-	_tutorial_dismissed_synced = true
 	for child in get_children():
 		if child is CanvasLayer and child.layer == 128:
 			child.queue_free()
@@ -262,51 +241,27 @@ func _get_player_sprite(idx: int) -> AnimatedSprite2D:
 	return null
 
 func apply_remote_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
-	if player_idx == local_player_index or not alive_players.has(player_idx):
-		return
-	# The host applies client positions immediately because its flood/goal
-	# checks are authoritative. Other peers smooth snapshots visually.
-	if NetworkManager.is_host:
+	if player_idx != local_player_index:
 		_get_player_node(player_idx).position = pos
-	else:
-		if not _remote_position_targets.has(player_idx):
-			_get_player_node(player_idx).position = pos
-		_remote_position_targets[player_idx] = pos
-	var sprite = _get_player_sprite(player_idx)
-	if sprite and anim_name != "" and sprite.animation != anim_name:
-		sprite.play(anim_name)
+		var sprite = _get_player_sprite(player_idx)
+		if sprite and anim_name != "" and sprite.animation != anim_name:
+			sprite.play(anim_name)
 
 func _process(delta: float) -> void:
 	if not round_active or gameplay_locked:
 		return
 
 	_position_sync_timer += delta
-	_position_heartbeat_timer += delta
 	if _position_sync_timer >= 1.0 / POSITION_SYNC_HZ:
 		_position_sync_timer = 0.0
 		if local_player_index != -1:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
 			var sprite := _get_player_sprite(local_player_index)
 			var my_anim: String = sprite.animation if sprite else ""
-			var changed := _last_sent_position == Vector2.INF \
-				or my_pos.distance_squared_to(_last_sent_position) >= POSITION_CHANGE_THRESHOLD_SQ \
-				or my_anim != _last_sent_animation
-			if changed or _position_heartbeat_timer >= POSITION_HEARTBEAT_SEC:
-				_last_sent_position = my_pos
-				_last_sent_animation = my_anim
-				_position_heartbeat_timer = 0.0
-				if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
-					NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
-				else:
-					NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
-
-	if not NetworkManager.is_host:
-		var blend := 1.0 - exp(-REMOTE_INTERPOLATION_SPEED * delta)
-		for player_idx in _remote_position_targets:
-			if player_idx == local_player_index or not alive_players.has(player_idx):
-				continue
-			var player := _get_player_node(player_idx)
-			player.position = player.position.lerp(_remote_position_targets[player_idx], blend)
+			if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
+				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
+			else:
+				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
 	# Flood visual - every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 
@@ -407,7 +362,6 @@ func _finish_player(idx: int) -> void:
 		return  # already finished or already flooded - guard against double-fire
 	alive_players.erase(idx)
 	finished_players.append(idx)
-	NetworkManager.broadcast_langitlupa_finish.rpc(idx)
 	if alive_players.size() <= 1:
 		NetworkManager.sync_langitlupa_end.rpc(_compute_final_scores())
 
@@ -423,18 +377,7 @@ func _eliminate_player(idx: int) -> void:
 
 ## Called on every peer (including host) when NetworkManager broadcasts an elimination.
 func apply_elimination(player_idx: int) -> void:
-	alive_players.erase(player_idx)
-	_remote_position_targets.erase(player_idx)
-	var player := _get_player_node(player_idx)
-	player.velocity = Vector2.ZERO
-	player.modulate.a = 0.3
-
-func apply_finish(player_idx: int) -> void:
-	alive_players.erase(player_idx)
-	_remote_position_targets.erase(player_idx)
-	var player := _get_player_node(player_idx)
-	player.velocity = Vector2.ZERO
-	player.modulate = Color(0.55, 1.0, 0.55, 1.0)
+	_get_player_node(player_idx).modulate.a = 0.3
 
 func _compute_final_scores() -> Dictionary:
 	var placement_points := [3, 2, 1]
@@ -458,9 +401,6 @@ func _compute_final_scores() -> Dictionary:
 	return scores
 
 func _end_game(scores: Dictionary) -> void:
-	if _ending_game:
-		return
-	_ending_game = true
 	round_active = false
 	gameplay_locked = true
 	_clear_generated_platforms()

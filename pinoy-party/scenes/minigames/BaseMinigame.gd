@@ -347,5 +347,5 @@ func _finish(scores: Dictionary) -> void:
 	play_minigame_finish_sfx()
 	await run_results(scores)
 	EventBus.minigame_finished.emit(scores)
-	NetworkManager.report_minigame_results_finished()
+	SceneLoader.return_to_board()
 	
