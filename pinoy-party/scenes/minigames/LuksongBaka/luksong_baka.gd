@@ -327,13 +327,7 @@ func _try_jump(player_idx: int) -> void:
 # 2. Animate back down to the ground
 		tween.tween_property(spr, "position:y", CHAR_Y, jump_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-# Return to walk state when the distinct resource finishes playing
-		spr.animation_finished.connect(func():
-			if is_instance_valid(spr) and alive_players.has(player_idx):
-				spr.play("walk"),
-		CONNECT_ONE_SHOT)
-
-		# Return to walk state when the distinct resource finishes playing
+		# Return to walk state when the jump animation finishes playing
 		spr.animation_finished.connect(func():
 			if is_instance_valid(spr) and alive_players.has(player_idx):
 				spr.play("walk")
