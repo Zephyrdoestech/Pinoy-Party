@@ -1,6 +1,7 @@
 extends Control
 
 const LOBBY_FONT := preload("res://assets/fonts/GrapeSoda.ttf")
+const MAIN_MENU_SCENE_PATH := "res://scenes/ui/MainMenu.tscn"
 const PLAYER_ICONS: Array[Texture2D] = [
 	preload("res://assets/board_assets/LeaderBoard/player_icons1.png"),
 	preload("res://assets/board_assets/LeaderBoard/player_icons2.png"),
@@ -18,6 +19,7 @@ var lobby_panel: Control
 var player_cards: HBoxContainer
 var code_label: Label
 var start_button: TextureButton
+var back_button: TextureButton
 var status_label: Label
 var join_status_label: Label
 var typing_sfx: AudioStreamPlayer
@@ -48,6 +50,9 @@ func _ready() -> void:
 		"CenterContainer/VBoxContainer/StartButton",
 		"LobbyPanel/StartButton"
 	]) as TextureButton
+	back_button = _find_required_node("BackButton", [
+		"LobbyContainer/Control/BackButton"
+	]) as TextureButton
 	status_label = _find_required_node("StatusLabel", [
 		"LobbyContainer/Control/VBoxContainer/StatusLabel",
 		"StatusLabel"
@@ -56,7 +61,7 @@ func _ready() -> void:
 		"UIContainer/UIControl/HostJoinPanel/JoinStatusLabel"
 	]) as Label
 
-	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or status_label == null or join_status_label == null:
+	if host_join_panel == null or lobby_container == null or lobby_panel == null or player_cards == null or code_label == null or start_button == null or back_button == null or status_label == null or join_status_label == null:
 		return
 
 	button_click_sfx = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
@@ -68,11 +73,13 @@ func _ready() -> void:
 	NetworkManager.join_failed.connect(_on_join_failed)
 	NetworkManager.host_left.connect(_on_host_left)
 	start_button.pressed.connect(_on_start_pressed)
+	back_button.pressed.connect(_on_back_pressed)
 	var host_button := host_join_panel.get_node("HostButton") as BaseButton
 	var join_button := host_join_panel.get_node("JoinButton") as BaseButton
 	host_button.pressed.connect(_on_host_pressed)
 	join_button.pressed.connect(_on_join_pressed)
 	_connect_hover_sfx(start_button)
+	_connect_hover_sfx(back_button)
 	_connect_hover_sfx(host_button)
 	_connect_hover_sfx(join_button)
 	_connect_typing_sfx(host_join_panel.get_node("NameInput") as LineEdit)
@@ -229,6 +236,12 @@ func _show_error(msg: String) -> void:
 func _on_start_pressed() -> void:
 	_play_button_click_sfx()
 	NetworkManager.start_game()
+
+func _on_back_pressed() -> void:
+	back_button.disabled = true
+	_play_button_click_sfx()
+	NetworkManager.leave_lobby()
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
 func _connect_typing_sfx(input: LineEdit) -> void:
 	if input == null:

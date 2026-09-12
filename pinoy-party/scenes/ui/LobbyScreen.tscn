@@ -220,7 +220,6 @@ offset_right = 494.0
 offset_bottom = 429.0
 size_flags_horizontal = 4
 size_flags_vertical = 4
-disabled = true
 texture_normal = ExtResource("19_37hj7")
 texture_pressed = ExtResource("20_i2ss7")
 texture_hover = ExtResource("21_guo35")
