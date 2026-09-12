@@ -58,8 +58,6 @@ var char_sprites: Dictionary = {}  # player_index -> AnimatedSprite2D
 var quadrants: Dictionary = {}     # player_index -> SubViewportContainer reference
 
 func _ready() -> void:
-	randomize()
-	
 	# ️ LOCAL TESTING OVERRIDE GATEWAY:
 	if DEBUG_FORCE_LOCAL_TEST:
 		# Keep this dict in sync with GameManager._setup_players() — every field
@@ -100,7 +98,16 @@ func start_game(players: Array[int]) -> void:
 
 func _start_countdown() -> void:
 	current_round += 1
+	
 	round_label.text = "Round %d" % current_round
+	
+	var custom_font = load("res://assets/fonts/GrapeSoda.ttf")
+	if custom_font and is_instance_valid(round_label):
+		round_label.add_theme_font_override("font", custom_font)
+		round_label.add_theme_font_size_override("font_size", 48)
+	
+	round_label.reset_size()
+	round_label.global_position = (get_viewport_rect().size / 2.0) - (round_label.size / 2.0)
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
 	
@@ -112,8 +119,7 @@ func _start_countdown() -> void:
 	var picked_zone_start := randf_range(0.0, 1.0 - zone_width)
 
 	#  LOCAL SANDBOX COMPATIBILITY GATEWAY:
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		# Directly run the logic instantly without routing through NetworkManager
 		_begin_round(picked_zone_start)
 	else:
@@ -263,7 +269,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	print(" Jump action detected!")
 
 	# 3. GATEWAY A: Local Sandbox Mode (F6 Testing)
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
 	if DEBUG_FORCE_LOCAL_TEST:
 		print("️ Sandbox Mode: Routing jump to _try_jump(0)")
 		_try_jump(0)
@@ -349,10 +354,8 @@ func _try_jump(player_idx: int) -> void:
 
 func _end_round_sweep() -> void:
 	sweeping = false
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-	
 	# ️ HARD SANDBOX RESET FOR F6 TESTING
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		print("--- ROUND ENDED (SANDBOX) ---")
 		
 		# Eliminate anyone who didn't trigger a jump callback
@@ -472,18 +475,16 @@ func _eliminate(player_idx: int) -> void:
 	eliminated_this_round.append(player_idx)
 
 func _check_game_over() -> void:
-	var is_local_test: bool = DEBUG_FORCE_LOCAL_TEST 
-
 	if alive_players.size() <= 1:
 		print("--- GAME OVER (No players left or 1 winner) ---")
-		if not is_local_test:
+		if not DEBUG_FORCE_LOCAL_TEST:
 			_end_game()
 		return
 
 	round_time = max(ROUND_TIME_MIN, round_time * ROUND_SPEEDUP)
 	zone_width = max(ZONE_WIDTH_MIN, zone_width * ZONE_SHRINK)
 
-	if is_local_test:
+	if DEBUG_FORCE_LOCAL_TEST:
 		_start_countdown()
 	else:
 		await get_tree().create_timer(1.0).timeout

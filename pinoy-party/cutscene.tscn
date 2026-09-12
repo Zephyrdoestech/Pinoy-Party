@@ -1580,43 +1580,44 @@ texture = ExtResource("4_p30sb")
 
 [node name="Dialogue2" type="AudioStreamPlayer2D" parent="Audios" unique_id=855831731]
 stream = ExtResource("9_8ye5a")
-volume_db = 1.756
+volume_db = 3.0
 pitch_scale = 1.12
 
 [node name="Dialogue3" type="AudioStreamPlayer2D" parent="Audios" unique_id=1285195292]
 stream = ExtResource("10_1titf")
-volume_db = -6.582
+volume_db = 3.0
 pitch_scale = 1.19
 
 [node name="Dialogue4" type="AudioStreamPlayer2D" parent="Audios" unique_id=1686204879]
 stream = ExtResource("11_ed5nn")
-volume_db = -1.755
+volume_db = 3.0
 pitch_scale = 1.15
 
 [node name="Dialogue5" type="AudioStreamPlayer2D" parent="Audios" unique_id=956606511]
 stream = ExtResource("12_5gysb")
-volume_db = -8.05
+volume_db = 3.0
 pitch_scale = 1.05
 
 [node name="Dialogue6" type="AudioStreamPlayer2D" parent="Audios" unique_id=419980321]
 stream = ExtResource("13_l2u6u")
+volume_db = 3.0
 pitch_scale = 1.11
 
 [node name="ParkAmbience" type="AudioStreamPlayer2D" parent="Audios" unique_id=728424576]
 stream = ExtResource("17_pby01")
-volume_db = -14.92
+volume_db = 3.0
 
 [node name="ChildrenLaughing" type="AudioStreamPlayer2D" parent="Audios" unique_id=1725091081]
 stream = ExtResource("18_jyjru")
-volume_db = -16.675
+volume_db = 3.0
 
 [node name="ChildrenLaughing2" type="AudioStreamPlayer2D" parent="Audios" unique_id=1934976250]
 stream = ExtResource("19_3v3wj")
-volume_db = -5.211
+volume_db = 3.0
 
 [node name="LolaDialogue" type="AudioStreamPlayer2D" parent="Audios" unique_id=804090677]
 stream = ExtResource("20_jad71")
-volume_db = -0.664
+volume_db = 3.0
 pitch_scale = 1.05
 
 [node name="SkipButton" type="Button" parent="." unique_id=1551146504]

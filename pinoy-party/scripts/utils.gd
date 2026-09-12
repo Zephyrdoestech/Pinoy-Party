@@ -1,6 +1,12 @@
 # scripts/utils.gd
 extends Node
 
+func _ready() -> void:
+	# Seed the global RNG once at boot. Without this, randi() uses Godot 4's
+	# fixed default seed — random_minigame() would return the same game every
+	# single launch (always LuksongBaka, index 2 with the default seed).
+	randomize()
+
 ## Returns a random minigame ID from the constants pool
 func random_minigame() -> String:
 	return Constants.MINIGAMES[randi() % Constants.MINIGAMES.size()]

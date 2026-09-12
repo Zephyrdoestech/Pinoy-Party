@@ -11,6 +11,11 @@ const LAYER_HEIGHT := 100.0
 const COLUMN_SPACING := 350.0   # must stay <= your real max horizontal jump distance
 const PLATFORM_WIDTH := 150.0
 const TUTORIAL_IMAGE_PATH := "res://assets/tutorials/tutorial_langit_lupa.png"
+const PLATFORM_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/minigame_assets/langit_lupa_assets/LangitLupa_platform.png"),
+	preload("res://assets/minigame_assets/langit_lupa_assets/LangitLupa_platform2.png")
+]
+const PLATFORM_VISUAL_HEIGHT := 48.0
 # Set from NetworkManager.get_my_player_index() at start_game() - replaces
 # the old hardcoded 0, which assumed the host was always Player 0.
 var local_player_index := -1
@@ -113,7 +118,7 @@ func _show_intro_tutorial_synced() -> void:
 	
 	if can_interact:
 		flash_label.text = "Click anywhere to start the round..."
-		var tween = create_tween().set_loops()
+		var tween = create_tween().set_loops(9999)
 		tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
 		
@@ -146,7 +151,9 @@ func _position_players() -> void:
 
 func _hide_inactive_players() -> void:
 	for i in Constants.MAX_PLAYERS:
-		var node := _get_player_node(i)
+		var node: CharacterBody2D = get_node_or_null("Players/Player %d" % (i + 1))
+		if node == null:
+			continue  # player node doesn't exist in this scene — skip safely
 		var active := participating_players.has(i)
 		node.visible = active
 		node.set_physics_process(active)
@@ -207,10 +214,16 @@ func _spawn_platform_node(pos: Vector2, layer: int, index: int) -> void:
 	shape.shape = rect
 	plat.add_child(shape)
 
-	var visual := ColorRect.new()
-	visual.size = Vector2(PLATFORM_WIDTH, 20.0)
-	visual.color = Color(0.6, 0.4, 0.2)   
-	visual.position = -visual.size / 2.0
+	var visual := Sprite2D.new()
+	var texture := PLATFORM_TEXTURES[(layer + index) % PLATFORM_TEXTURES.size()]
+	visual.texture = texture
+	visual.centered = true
+	visual.position = Vector2.ZERO
+	if texture:
+		visual.scale = Vector2(
+			PLATFORM_WIDTH / texture.get_width(),
+			PLATFORM_VISUAL_HEIGHT / texture.get_height()
+		)
 	plat.add_child(visual)
 
 	$Platforms.add_child(plat)
@@ -245,7 +258,7 @@ func _process(delta: float) -> void:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
 			var sprite := _get_player_sprite(local_player_index)
 			var my_anim: String = sprite.animation if sprite else ""
-			if NetworkManager.is_host:
+			if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
 				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
 			else:
 				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)

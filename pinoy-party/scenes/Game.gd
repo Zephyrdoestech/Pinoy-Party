@@ -13,6 +13,7 @@ const SARI_SARI_TILE_SFX := preload("res://assets/sfx/board/sari_sari_tile_sfx.m
 @onready var board: Node2D = $Board
 @onready var dice: Node2D = $Dice
 @onready var roll_button: TextureButton = $UI/RollButton
+@onready var score_board: Control = $UI/ScoreBoard
 @onready var state_machine: StateMachine = $StateMachine
 @onready var button_click_sfx: AudioStreamPlayer = _get_or_create_audio_player("ButtonSfx", BUTTON_CLICK_SFX)
 @onready var hover_sfx: AudioStreamPlayer = _get_or_create_audio_player("HoverSfx", HOVER_SFX)
@@ -99,9 +100,22 @@ func _show_tutorial_overlay() -> void:
 		tut_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
 		tut_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		click_zone.add_child(tut_rect)
-	
+
+	# Flashing dismiss prompt — matches the same UX used in all three minigame tutorials.
+	var flash_label := Label.new()
+	flash_label.text = "Click anywhere to continue..."
+	flash_label.set_anchors_preset(Control.PRESET_CENTER)
+	flash_label.position.y += 250
+	flash_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	flash_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	click_zone.add_child(flash_label)
+	var tween := create_tween().set_loops(9999)
+	tween.tween_property(flash_label, "modulate:a", 0.2, 0.6).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(flash_label, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
+
 	# clean up and unpause execution layout
 	click_zone.pressed.connect(func():
+		tween.kill()
 		overlay.queue_free() # Destroys the image and the blur rect
 		get_tree().paused = false
 	)
@@ -147,6 +161,9 @@ func _on_dice_rolled(_player_index: int, _result: int) -> void:
 func _on_game_over(_winner_index: int) -> void:
 	BgmManager.play_game_over()
 	roll_button.disabled = true
+	roll_button.visible = false
+	if score_board:
+		score_board.visible = false
 	_stop_audio(walking_sfx)
 
 func _update_roll_button() -> void:

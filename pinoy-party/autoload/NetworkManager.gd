@@ -2,7 +2,6 @@ extends Node
 
 signal lobby_created(code: String)
 signal player_joined(peer_id: int, player_name: String)
-signal player_left(peer_id: int)
 signal join_failed(reason: String)
 signal game_starting
 signal roster_updated
@@ -39,6 +38,7 @@ func _on_server_disconnected() -> void:
 	host_left.emit()
 
 func host_lobby(player_name: String) -> void:
+	stop_discovery()
 	lobby_code = _generate_code()
 	is_host = true
 
@@ -104,6 +104,15 @@ func stop_discovery() -> void:
 		_broadcast_timer.stop()
 		_broadcast_timer.queue_free()
 
+func leave_lobby() -> void:
+	stop_discovery()
+	match_in_progress = false
+	lobby_code = ""
+	is_host = false
+	connected_players.clear()
+	discovered_lobbies.clear()
+	multiplayer.multiplayer_peer = null
+
 func join_lobby(code: String, ip: String, player_name: String) -> void:
 	lobby_code = code.to_upper()
 	is_host = false
@@ -168,7 +177,6 @@ func _on_peer_disconnected(id: int) -> void:
 			rpc("_notify_player_left_mid_match", id, leaving_name)
 		elif is_host:
 			_broadcast_player_list()
-		player_left.emit(id)
 
 @rpc("authority", "reliable", "call_local")
 func _notify_player_left_mid_match(peer_id: int, player_name: String) -> void:
@@ -254,6 +262,13 @@ func _apply_roll_result(result: int) -> void:
 # loads the scene from this single shared call instead of each client
 # independently calling Utils.random_minigame()/SceneLoader.go_to_minigame().
 func start_minigame_synced(participating_players: Array[int]) -> void:
+	# Local play has no ENet host. Resolve the minigame directly in that case,
+	# while keeping the LAN host authoritative whenever a real peer exists.
+	var offline: bool = not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_launch_minigame(Utils.random_minigame(), participating_players)
+		return
 	if not is_host:
 		return
 	var minigame_id: String = Utils.random_minigame()
@@ -263,6 +278,25 @@ func start_minigame_synced(participating_players: Array[int]) -> void:
 func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
+
+# --- SackRace start-of-round sync ---
+# Host-only trigger, broadcast to every peer via _apply_sack_race_setup()
+# instead of RPC'ing the SackRace scene node directly. Node-targeted RPCs
+# resolve by scene path (/root/SackRace/...), which isn't guaranteed to
+# exist on a client yet at this point - go_to_minigame()'s scene change is
+# still in flight there. Routing through this autoload (always present at
+# /root/NetworkManager) and reaching into the scene via current_scene, same
+# as _apply_sack_race_hop() below, avoids that race entirely.
+func sync_sack_race_setup(players: Array[int]) -> void:
+	if not is_host:
+		return
+	rpc("_apply_sack_race_setup", players)
+
+@rpc("authority", "call_local", "reliable")
+func _apply_sack_race_setup(players: Array[int]) -> void:
+	var scene := get_tree().current_scene
+	if scene is SackRace:
+		scene._sync_local_client_setup(players)
 
 # --- SackRace hop sync ---
 # Same shape as dice rolls: a client requests a hop for the player it
@@ -335,8 +369,6 @@ func sync_luksong_round_end(auto_eliminated: Array) -> void:
 		scene.apply_round_end(auto_eliminated)
 
 # --- LangitLupa sync ---
-
-
 
 # Host broadcasts it_player and area positions once at match start.
 @rpc("authority", "reliable", "call_local")
@@ -478,7 +510,10 @@ func _apply_trivia_reveal(scores: Dictionary, correct_idx: int) -> void:
 		# Overlay was never shown on this peer - just propagate the score signal.
 		EventBus.trivia_finished.emit(scores)
 		return
-	TriviaController.show_results(scores, correct_idx)
+	# await so the 3-second result reveal fully completes before trivia_finished
+	# fires. Without this, State_TileEvent received the signal and transitioned
+	# back to the board while the CORRECT/WRONG screen was still on screen.
+	await TriviaController.show_results(scores, correct_idx)
 	EventBus.trivia_finished.emit(scores)
 
 func _generate_code() -> String:

@@ -4,7 +4,6 @@ const GAME_DEFAULT_BGM := preload("res://assets/bgm/game_default_bgm.mp3")
 const BOARD_BGM := preload("res://assets/bgm/board_bgm.mp3")
 const MINIGAME_BGM := preload("res://assets/bgm/minigame_bgm.mp3")
 const TRIVIA_BGM := preload("res://assets/bgm/trivia_bgm.mp3")
-const GAME_OVER_BGM_PATH := "res://assets/bgm/game_over_bgm.mp3"
 
 var _player: AudioStreamPlayer
 var _current_stream: AudioStream
@@ -32,10 +31,9 @@ func play_trivia() -> void:
 	_play_bgm(TRIVIA_BGM)
 
 func play_game_over() -> void:
-	if ResourceLoader.exists(GAME_OVER_BGM_PATH):
-		_play_bgm(load(GAME_OVER_BGM_PATH) as AudioStream)
-	else:
-		_play_bgm(GAME_DEFAULT_BGM)
+	# A dedicated game-over track is not currently shipped; use the default
+	# track explicitly instead of retaining a stale resource path.
+	_play_bgm(GAME_DEFAULT_BGM)
 
 func stop() -> void:
 	if _player != null:

@@ -15,11 +15,10 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="PinoyParty"
-run/main_scene="uid://e8f5pc6jmxlh"
+run/main_scene="res://scenes/ui/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="uid://bldmkhnvc10m3"
 config/windows_native_icon="res://assets/game_icon.ico"
-<<<<<<<Updatedupstreamrun/main_scene="res://scenes/ui/LobbyScreen.tscn"
 
 [autoload]
 
