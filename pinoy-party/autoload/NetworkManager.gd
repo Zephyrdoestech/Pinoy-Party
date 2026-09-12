@@ -11,10 +11,15 @@ signal player_left_mid_match(peer_id: int, player_name: String)
 const PORT := 7777
 const MAX_PLAYERS := 4
 const DISCOVERY_PORT := 7778
+const MAX_DISCOVERY_PACKETS_PER_FRAME := 32
+const DISCOVERY_ENTRY_TTL_MSEC := 5000
+const MIN_SACK_HOP_INTERVAL_MSEC := 35
+const MAX_LUKSONG_LAG_COMPENSATION_SEC := 0.18
 
 var _discovery_socket: PacketPeerUDP
 var _broadcast_timer: Timer
 var _pending_name: String = ""
+var _last_discovery_cleanup_msec := 0
 var discovered_lobbies: Dictionary = {}  # code -> {ip: String, last_seen: float}
 var lobby_code: String = ""
 var is_host: bool = false
@@ -22,6 +27,12 @@ var match_in_progress: bool = false
 var connected_players: Dictionary = {}  # peer_id -> {name: String}
 var _trivia_answering_player: int = -1
 var _trivia_round_id: int = 0
+var _pending_minigame_id := ""
+var _pending_minigame_players: Array[int] = []
+var _ready_minigame_peers: Dictionary = {}
+var _finished_minigame_peers: Dictionary = {}
+var _pending_minigame_started := false
+var _last_sack_hop_msec: Dictionary = {}
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -35,6 +46,7 @@ func _on_server_disconnected() -> void:
 	print("[NetworkManager] Lost connection to host.")
 	match_in_progress = false
 	multiplayer.multiplayer_peer = null
+	_clear_pending_minigame()
 	host_left.emit()
 
 func host_lobby(player_name: String) -> void:
@@ -49,12 +61,13 @@ func host_lobby(player_name: String) -> void:
 		return
 
 	multiplayer.multiplayer_peer = peer
-	connected_players[1] = {"name": player_name}
+	connected_players[1] = {"name": player_name.strip_edges().left(32)}
 	lobby_created.emit(lobby_code)
 
 	_start_broadcasting()
 
 func _start_broadcasting() -> void:
+	stop_discovery()
 	_discovery_socket = PacketPeerUDP.new()
 	_discovery_socket.set_broadcast_enabled(true)
 
@@ -65,26 +78,53 @@ func _start_broadcasting() -> void:
 	_broadcast_timer.start()
 
 func _send_broadcast() -> void:
+	if _discovery_socket == null:
+		return
 	var msg := "PINOYPARTY|%s" % lobby_code
 	_discovery_socket.set_dest_address("255.255.255.255", DISCOVERY_PORT)
 	_discovery_socket.put_packet(msg.to_utf8_buffer())
 
 func start_listening_for_lobbies() -> void:
+	stop_discovery()
 	discovered_lobbies.clear()
 	_discovery_socket = PacketPeerUDP.new()
-	_discovery_socket.bind(DISCOVERY_PORT)
+	var bind_error := _discovery_socket.bind(DISCOVERY_PORT)
+	if bind_error != OK:
+		push_warning("[NetworkManager] Could not listen for LAN lobbies on UDP port %d (error %d)." % [DISCOVERY_PORT, bind_error])
+		_discovery_socket = null
+		return
+	_last_discovery_cleanup_msec = Time.get_ticks_msec()
 	set_process(true)
 
 func _process(_delta: float) -> void:
 	if _discovery_socket == null or is_host:
 		return
-	while _discovery_socket.get_available_packet_count() > 0:
+	var processed := 0
+	while _discovery_socket.get_available_packet_count() > 0 and processed < MAX_DISCOVERY_PACKETS_PER_FRAME:
 		var packet := _discovery_socket.get_packet()
+		processed += 1
+		if packet.size() > 64:
+			continue
 		var sender_ip := _discovery_socket.get_packet_ip()
 		var msg := packet.get_string_from_utf8()
 		var parts := msg.split("|")
-		if parts.size() == 2 and parts[0] == "PINOYPARTY":
+		if parts.size() == 2 and parts[0] == "PINOYPARTY" and _is_valid_lobby_code(parts[1]):
 			discovered_lobbies[parts[1]] = {"ip": sender_ip, "last_seen": Time.get_ticks_msec()}
+
+	var now := Time.get_ticks_msec()
+	if now - _last_discovery_cleanup_msec >= 1000:
+		_last_discovery_cleanup_msec = now
+		for code in discovered_lobbies.keys():
+			if now - int(discovered_lobbies[code].get("last_seen", 0)) > DISCOVERY_ENTRY_TTL_MSEC:
+				discovered_lobbies.erase(code)
+
+func _is_valid_lobby_code(code: String) -> bool:
+	if code.length() != 5:
+		return false
+	for character in code:
+		if not "ABCDEFGHJKLMNPQRSTUVWXYZ".contains(character):
+			return false
+	return true
 
 func join_lobby_by_code(code: String, player_name: String) -> void:
 	code = code.to_upper()
@@ -98,11 +138,13 @@ func join_lobby_by_code(code: String, player_name: String) -> void:
 
 func stop_discovery() -> void:
 	set_process(false)
-	if _discovery_socket:
+	if _discovery_socket != null:
 		_discovery_socket.close()
-	if _broadcast_timer:
+	_discovery_socket = null
+	if is_instance_valid(_broadcast_timer):
 		_broadcast_timer.stop()
 		_broadcast_timer.queue_free()
+	_broadcast_timer = null
 
 func leave_lobby() -> void:
 	stop_discovery()
@@ -111,12 +153,15 @@ func leave_lobby() -> void:
 	is_host = false
 	connected_players.clear()
 	discovered_lobbies.clear()
+	player_index_to_peer.clear()
+	peer_to_player_index.clear()
+	_clear_pending_minigame()
 	multiplayer.multiplayer_peer = null
 
 func join_lobby(code: String, ip: String, player_name: String) -> void:
 	lobby_code = code.to_upper()
 	is_host = false
-	_pending_name = player_name
+	_pending_name = player_name.left(32)
 
 	if not ip.is_valid_ip_address() and ip != "localhost":
 		join_failed.emit("Invalid IP Address format")
@@ -133,6 +178,7 @@ func _on_connected_ok() -> void:
 	rpc_id(1, "_register_player", _pending_name, lobby_code)
 
 func _on_connection_failed() -> void:
+	multiplayer.multiplayer_peer = null
 	join_failed.emit("Lobby not found or unreachable")
 
 @rpc("any_peer", "reliable")
@@ -143,9 +189,13 @@ func _register_player(player_name: String, code: String) -> void:
 	if code.to_upper() != lobby_code:
 		rpc_id(sender_id, "_kick", "Wrong lobby code")
 		return
-	connected_players[sender_id] = {"name": player_name}
+	var safe_name := player_name.strip_edges().left(32)
+	if safe_name.is_empty():
+		rpc_id(sender_id, "_kick", "Invalid player name")
+		return
+	connected_players[sender_id] = {"name": safe_name}
 	_broadcast_player_list()
-	player_joined.emit(sender_id, player_name)
+	player_joined.emit(sender_id, safe_name)
 
 @rpc("authority", "reliable")
 func _kick(reason: String) -> void:
@@ -181,7 +231,17 @@ func _on_peer_disconnected(id: int) -> void:
 @rpc("authority", "reliable", "call_local")
 func _notify_player_left_mid_match(peer_id: int, player_name: String) -> void:
 	match_in_progress = false
+	_clear_pending_minigame()
 	player_left_mid_match.emit(peer_id, player_name)
+	if get_tree().current_scene is BaseMinigame:
+		call_deferred(&"_abort_minigame_after_disconnect")
+
+func _abort_minigame_after_disconnect() -> void:
+	if not get_tree().current_scene is BaseMinigame:
+		return
+	leave_lobby()
+	GameManager.reset_for_new_game()
+	get_tree().change_scene_to_file("res://scenes/ui/LobbyScreen.tscn")
 
 func start_game() -> void:
 	if not is_host:
@@ -276,8 +336,102 @@ func start_minigame_synced(participating_players: Array[int]) -> void:
 
 @rpc("authority", "reliable", "call_local")
 func _launch_minigame(minigame_id: String, participating_players: Array) -> void:
+	_pending_minigame_id = minigame_id
+	_pending_minigame_players.assign(participating_players)
+	_ready_minigame_peers.clear()
+	_finished_minigame_peers.clear()
+	_last_sack_hop_msec.clear()
+	_pending_minigame_started = false
 	EventBus.minigame_started.emit(minigame_id)
 	SceneLoader.go_to_minigame(minigame_id, participating_players)
+
+# A reliable readiness barrier prevents the host from starting a minigame
+# while a slower computer is still loading its scene. RPCs sent before that
+# point used to be silently ignored by scene-type guards, leaving that peer
+# frozen forever.
+func report_minigame_ready(minigame_id: String) -> void:
+	if minigame_id != _pending_minigame_id:
+		return
+	var offline := not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_begin_loaded_minigame(minigame_id, _pending_minigame_players, GameManager.tutorials_shown)
+	elif is_host:
+		_record_minigame_ready(multiplayer.get_unique_id(), minigame_id)
+	else:
+		request_minigame_ready.rpc_id(1, minigame_id)
+
+@rpc("any_peer", "reliable")
+func request_minigame_ready(minigame_id: String) -> void:
+	if not is_host or minigame_id != _pending_minigame_id:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if not connected_players.has(sender_id):
+		return
+	_record_minigame_ready(sender_id, minigame_id)
+
+func _record_minigame_ready(peer_id: int, minigame_id: String) -> void:
+	if _pending_minigame_started or minigame_id != _pending_minigame_id:
+		return
+	_ready_minigame_peers[peer_id] = true
+	for expected_peer_id in connected_players:
+		if not _ready_minigame_peers.has(expected_peer_id):
+			return
+	_pending_minigame_started = true
+	rpc("_begin_loaded_minigame", _pending_minigame_id, _pending_minigame_players, GameManager.tutorials_shown)
+
+@rpc("authority", "call_local", "reliable")
+func _begin_loaded_minigame(minigame_id: String, players: Array, tutorials_shown: Dictionary) -> void:
+	if minigame_id != _pending_minigame_id:
+		return
+	_pending_minigame_started = true
+	# Tutorial gates must agree on every peer; otherwise one client can wait
+	# for a host dismissal button that the host never created.
+	GameManager.tutorials_shown = tutorials_shown.duplicate(true)
+	var typed_players: Array[int] = []
+	typed_players.assign(players)
+	SceneLoader.start_loaded_minigame(typed_players)
+
+func _clear_pending_minigame() -> void:
+	_pending_minigame_id = ""
+	_pending_minigame_players.clear()
+	_ready_minigame_peers.clear()
+	_finished_minigame_peers.clear()
+	_pending_minigame_started = false
+
+func report_minigame_results_finished() -> void:
+	var offline := not multiplayer.has_multiplayer_peer() \
+		or multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+	if offline:
+		_clear_pending_minigame()
+		SceneLoader.return_to_board()
+	elif is_host:
+		_record_minigame_results_finished(multiplayer.get_unique_id())
+	else:
+		request_minigame_results_finished.rpc_id(1, _pending_minigame_id)
+
+@rpc("any_peer", "reliable")
+func request_minigame_results_finished(minigame_id: String) -> void:
+	if not is_host or minigame_id != _pending_minigame_id:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if not connected_players.has(sender_id):
+		return
+	_record_minigame_results_finished(sender_id)
+
+func _record_minigame_results_finished(peer_id: int) -> void:
+	_finished_minigame_peers[peer_id] = true
+	for expected_peer_id in connected_players:
+		if not _finished_minigame_peers.has(expected_peer_id):
+			return
+	rpc("_return_to_board_after_minigame", _pending_minigame_id)
+
+@rpc("authority", "call_local", "reliable")
+func _return_to_board_after_minigame(minigame_id: String) -> void:
+	if minigame_id != _pending_minigame_id:
+		return
+	_clear_pending_minigame()
+	SceneLoader.return_to_board()
 
 # --- SackRace start-of-round sync ---
 # Host-only trigger, broadcast to every peer via _apply_sack_race_setup()
@@ -317,6 +471,11 @@ func request_sack_race_hop(player_idx: int) -> void:
 	process_sack_race_hop(player_idx)
 
 func process_sack_race_hop(player_idx: int) -> void:
+	var now := Time.get_ticks_msec()
+	var last_hop := int(_last_sack_hop_msec.get(player_idx, -MIN_SACK_HOP_INTERVAL_MSEC))
+	if now - last_hop < MIN_SACK_HOP_INTERVAL_MSEC:
+		return
+	_last_sack_hop_msec[player_idx] = now
 	rpc("_apply_sack_race_hop", player_idx)
 
 @rpc("authority", "reliable", "call_local")
@@ -337,17 +496,23 @@ func request_luksong_jump(player_idx: int, client_marker_t: float) -> void:
 		return  # client tried to jump for a player it doesn't control
 	process_luksong_jump(player_idx, client_marker_t)
 
-func process_luksong_jump(player_idx: int, _client_marker_t: float) -> void:
+func process_luksong_jump(player_idx: int, client_marker_t: float) -> void:
 	var scene := get_tree().current_scene
 	if not scene is LuksongBaka:
 		return
-	# Host evaluates using its own marker_t, not the client's, so the
-	# in_zone decision is always authoritative - client_marker_t is only
-	# used as a fallback if the host scene somehow has no marker state.
+	if not is_finite(client_marker_t):
+		return
+	if not scene.alive_players.has(player_idx) or scene.jumped_this_round.has(player_idx):
+		return
+	# Use the client's observed marker only within a tightly bounded window
+	# around the host's authoritative marker. This compensates for normal LAN
+	# latency without allowing a client to claim an arbitrary success value.
 	var host_marker_t: float = scene.marker_t
+	var max_marker_drift := MAX_LUKSONG_LAG_COMPENSATION_SEC / maxf(scene.round_time, 0.001)
+	var evaluated_marker_t := clampf(client_marker_t, host_marker_t - max_marker_drift, host_marker_t + max_marker_drift)
 	var zone_start: float = scene.zone_start
 	var zone_width: float = scene.zone_width
-	var in_zone: bool = host_marker_t >= zone_start and host_marker_t <= (zone_start + zone_width)
+	var in_zone: bool = evaluated_marker_t >= zone_start and evaluated_marker_t <= (zone_start + zone_width)
 	rpc("_apply_luksong_jump", player_idx, in_zone)
 
 @rpc("authority", "reliable", "call_local")
@@ -379,18 +544,24 @@ func sync_langitlupa_start() -> void:
 
 # Client sends its state to host each sync tick.
 # Host calls process_langitlupa_state() directly (avoids self-RPC throw).
-@rpc("any_peer", "unreliable")  # unreliable is fine - positions update at 20Hz anyway
+@rpc("any_peer", "unreliable")  # Transient positions are refreshed at 15 Hz.
 func send_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
 	if not is_host:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	if peer_to_player_index.get(sender_id, -1) != player_idx:
 		return  # client tried to move a player it doesn't control
-	process_langitlupa_state(player_idx, pos, anim_name)
+	process_langitlupa_state(player_idx, pos, anim_name, sender_id)
 
 # Host receives a state update and broadcasts it to all peers.
-func process_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
-	rpc("_apply_langitlupa_state", player_idx, pos, anim_name)
+func process_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String, source_peer_id: int = 0) -> void:
+	if not pos.is_finite():
+		return
+	_apply_langitlupa_state(player_idx, pos, anim_name)
+	for peer_id in connected_players:
+		if peer_id == multiplayer.get_unique_id() or peer_id == source_peer_id:
+			continue
+		_apply_langitlupa_state.rpc_id(peer_id, player_idx, pos, anim_name)
 
 @rpc("authority", "unreliable", "call_local")
 func _apply_langitlupa_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
@@ -526,6 +697,9 @@ func _generate_code() -> String:
 @rpc("any_peer", "call_local", "reliable")
 func request_restart() -> void:
 	if not is_host:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id != 0 and not connected_players.has(sender_id):
 		return
 	_apply_restart.rpc()
 

@@ -31,11 +31,20 @@ var round_active: bool = false
 var _coyote_timer: float = 0.
 var finished_players: Array[int] = []
 signal tutorial_dismissed
+var _tutorial_dismissed_synced := false
 
-# Position sync - each client broadcasts their position at SYNC_HZ rate.
-# Host collects all positions and rebroadcasts to everyone.
-const POSITION_SYNC_HZ := 20.0
+# Position sync is deliberately below the render frame rate. Remote players
+# interpolate between snapshots, so 15 Hz looks smooth without flooding the
+# host when four computers are playing.
+const POSITION_SYNC_HZ := 15.0
+const POSITION_HEARTBEAT_SEC := 0.25
+const POSITION_CHANGE_THRESHOLD_SQ := 1.0
+const REMOTE_INTERPOLATION_SPEED := 18.0
 var _position_sync_timer := 0.0
+var _position_heartbeat_timer := 0.0
+var _last_sent_position := Vector2.INF
+var _last_sent_animation := ""
+var _remote_position_targets: Dictionary = {}
 	
 func start_round_synced() -> void:
 	round_start_msec = Time.get_ticks_msec()
@@ -48,6 +57,7 @@ func start_game(players: Array[int]) -> void:
 	await get_tree().process_frame
 	_auto_position_spawn_and_goal()
 	_position_players()
+	_remote_position_targets.clear()
 	_hide_inactive_players()
 	_generate_platforms()
 	flood_start_y = $Flood.position.y
@@ -61,7 +71,8 @@ func start_game(players: Array[int]) -> void:
 	if not GameManager.has_shown_tutorial("langit_lupa"):
 		GameManager.mark_tutorial_shown("langit_lupa")
 		_show_intro_tutorial_synced()
-		await tutorial_dismissed
+		if not _tutorial_dismissed_synced:
+			await tutorial_dismissed
 
 	await run_intro("")
 	round_start_msec = Time.get_ticks_msec()
@@ -71,6 +82,8 @@ func start_game(players: Array[int]) -> void:
 
 # Builds the blurring layout wrapper on every client machine locally
 func _show_intro_tutorial_synced() -> void:
+	if _tutorial_dismissed_synced:
+		return
 	var overlay := CanvasLayer.new()
 	overlay.layer = 128
 	add_child(overlay)
@@ -137,6 +150,9 @@ func _show_intro_tutorial_synced() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _sync_dismiss_tutorial_and_start() -> void:
+	if _tutorial_dismissed_synced:
+		return
+	_tutorial_dismissed_synced = true
 	for child in get_children():
 		if child is CanvasLayer and child.layer == 128:
 			child.queue_free()
@@ -241,27 +257,51 @@ func _get_player_sprite(idx: int) -> AnimatedSprite2D:
 	return null
 
 func apply_remote_state(player_idx: int, pos: Vector2, anim_name: String) -> void:
-	if player_idx != local_player_index:
+	if player_idx == local_player_index or not alive_players.has(player_idx):
+		return
+	# The host applies client positions immediately because its flood/goal
+	# checks are authoritative. Other peers smooth snapshots visually.
+	if NetworkManager.is_host:
 		_get_player_node(player_idx).position = pos
-		var sprite = _get_player_sprite(player_idx)
-		if sprite and anim_name != "" and sprite.animation != anim_name:
-			sprite.play(anim_name)
+	else:
+		if not _remote_position_targets.has(player_idx):
+			_get_player_node(player_idx).position = pos
+		_remote_position_targets[player_idx] = pos
+	var sprite = _get_player_sprite(player_idx)
+	if sprite and anim_name != "" and sprite.animation != anim_name:
+		sprite.play(anim_name)
 
 func _process(delta: float) -> void:
 	if not round_active or gameplay_locked:
 		return
 
 	_position_sync_timer += delta
+	_position_heartbeat_timer += delta
 	if _position_sync_timer >= 1.0 / POSITION_SYNC_HZ:
 		_position_sync_timer = 0.0
 		if local_player_index != -1:
 			var my_pos: Vector2 = _get_player_node(local_player_index).position
 			var sprite := _get_player_sprite(local_player_index)
 			var my_anim: String = sprite.animation if sprite else ""
-			if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
-				NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
-			else:
-				NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
+			var changed := _last_sent_position == Vector2.INF \
+				or my_pos.distance_squared_to(_last_sent_position) >= POSITION_CHANGE_THRESHOLD_SQ \
+				or my_anim != _last_sent_animation
+			if changed or _position_heartbeat_timer >= POSITION_HEARTBEAT_SEC:
+				_last_sent_position = my_pos
+				_last_sent_animation = my_anim
+				_position_heartbeat_timer = 0.0
+				if NetworkManager.is_host or not multiplayer.has_multiplayer_peer():
+					NetworkManager.process_langitlupa_state(local_player_index, my_pos, my_anim)
+				else:
+					NetworkManager.send_langitlupa_state.rpc_id(1, local_player_index, my_pos, my_anim)
+
+	if not NetworkManager.is_host:
+		var blend := 1.0 - exp(-REMOTE_INTERPOLATION_SPEED * delta)
+		for player_idx in _remote_position_targets:
+			if player_idx == local_player_index or not alive_players.has(player_idx):
+				continue
+			var player := _get_player_node(player_idx)
+			player.position = player.position.lerp(_remote_position_targets[player_idx], blend)
 	# Flood visual - every peer computes this locally from round_start_msec, no need to sync.
 	$Flood.position.y = _get_flood_y()
 

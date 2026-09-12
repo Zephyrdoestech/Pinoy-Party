@@ -13,18 +13,25 @@ func go_to_minigame(minigame_id: String, players: Array[int]) -> void:
 	if err != OK:
 		push_error("[SceneLoader] Failed to load minigame scene '%s': error code %d" % [path, err])
 		return
-	call_deferred(&"_start_minigame_deferred", players)
+	call_deferred(&"_report_minigame_ready_deferred", minigame_id)
 
-func _start_minigame_deferred(players: Array[int]) -> void:
+func _report_minigame_ready_deferred(minigame_id: String) -> void:
 	# Two frames: the first lets the scene tree swap the root node,
-	# the second lets the new scene's _ready() complete before we call into it.
+	# the second lets the new scene's _ready() complete before we report ready.
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var minigame := get_tree().current_scene
 	if minigame is BaseMinigame:
+		NetworkManager.report_minigame_ready(minigame_id)
+	else:
+		push_error("SceneLoader: loaded scene is not a BaseMinigame. Got: %s" % minigame)
+
+func start_loaded_minigame(players: Array[int]) -> void:
+	var minigame := get_tree().current_scene
+	if minigame is BaseMinigame:
 		minigame.start_game(players)
 	else:
-		push_error("SceneLoader: loaded scene is not a BaseMinigame, cannot start_game(). Got: %s" % minigame)
+		push_error("SceneLoader: cannot start unloaded minigame. Got: %s" % minigame)
 
 func return_to_board() -> void:
 	BgmManager.play_board()
