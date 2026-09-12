@@ -1,29 +1,29 @@
 [gd_scene format=3 uid="uid://b8ikabjgngq4c"]
 
-[ext_resource type="Texture2D" uid="uid://dnwapr0y8blk2" path="res://assets/characters/minigame_characs/mg_c1/mg_charac1_jumpRight.PNG" id="1_rlxtj"]
-[ext_resource type="Texture2D" uid="uid://bjg2y4votcc7y" path="res://assets/characters/minigame_characs/mg_c1/mg_charac1_walkRight.PNG" id="2_5a3co"]
+[ext_resource type="Texture2D" uid="uid://ddyam2hj8mbtw" path="res://assets/characters/minigame_characs/mg_c4/mg_charac4_jumpRight.PNG" id="1_rlxtj"]
+[ext_resource type="Texture2D" uid="uid://bgvfg058h1avu" path="res://assets/characters/minigame_characs/mg_c4/mg_charac4_walkRight.PNG" id="2_5a3co"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_ynqmg"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_lfpej"]
 atlas = ExtResource("1_rlxtj")
 region = Rect2(0, 0, 1024, 1024)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_x56sv"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_yruph"]
 atlas = ExtResource("1_rlxtj")
 region = Rect2(1024, 0, 1024, 1024)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_ud6j4"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_j8cbg"]
 atlas = ExtResource("2_5a3co")
 region = Rect2(0, 0, 1024, 1024)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_7fypq"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_2i7lu"]
 atlas = ExtResource("2_5a3co")
 region = Rect2(1024, 0, 1024, 1024)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_7jbap"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_fv0ut"]
 atlas = ExtResource("2_5a3co")
 region = Rect2(2048, 0, 1024, 1024)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_3kofn"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_oiyj5"]
 atlas = ExtResource("2_5a3co")
 region = Rect2(3072, 0, 1024, 1024)
 
@@ -31,10 +31,10 @@ region = Rect2(3072, 0, 1024, 1024)
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_ynqmg")
+"texture": SubResource("AtlasTexture_lfpej")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_x56sv")
+"texture": SubResource("AtlasTexture_yruph")
 }],
 "loop": false,
 "name": &"jump",
@@ -42,16 +42,16 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_ud6j4")
+"texture": SubResource("AtlasTexture_j8cbg")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_7fypq")
+"texture": SubResource("AtlasTexture_2i7lu")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_7jbap")
+"texture": SubResource("AtlasTexture_fv0ut")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_3kofn")
+"texture": SubResource("AtlasTexture_oiyj5")
 }],
 "loop": true,
 "name": &"walk",
@@ -61,4 +61,4 @@ animations = [{
 [node name="MinigameCharacter" type="AnimatedSprite2D" unique_id=1087832396]
 texture_filter = 1
 sprite_frames = SubResource("SpriteFrames_ty6le")
-animation = &"jump"
+animation = &"walk"
