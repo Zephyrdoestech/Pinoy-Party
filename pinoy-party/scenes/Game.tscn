@@ -512,6 +512,7 @@ scale = Vector2(2, 2)
 [node name="Tile32" parent="Board" unique_id=596887515 instance=ExtResource("8_kyk2p")]
 position = Vector2(1032, 616)
 scale = Vector2(2, 2)
+tile_type = 2
 
 [node name="Tile33" parent="Board" unique_id=1322911378 instance=ExtResource("8_kyk2p")]
 position = Vector2(1112, 616)
@@ -521,6 +522,7 @@ tile_type = 1
 [node name="Tile34" parent="Board" unique_id=1478156545 instance=ExtResource("8_kyk2p")]
 position = Vector2(1120, 536)
 scale = Vector2(2, 2)
+tile_type = 2
 
 [node name="Tile35" parent="Board" unique_id=5350535 instance=ExtResource("8_kyk2p")]
 position = Vector2(1120, 456)
@@ -586,6 +588,10 @@ texture_disabled = ExtResource("21_426vi")
 stretch_mode = 5
 
 [node name="Hud" parent="UI" unique_id=821560762 instance=ExtResource("10_qy1jj")]
+offset_left = -397.0
+offset_top = -240.0
+offset_right = -397.0
+offset_bottom = -240.0
 
 [node name="GameOverScreen" parent="UI" unique_id=818565318 instance=ExtResource("12_mcffj")]
 visible = false
