@@ -104,6 +104,15 @@ func stop_discovery() -> void:
 		_broadcast_timer.stop()
 		_broadcast_timer.queue_free()
 
+func leave_lobby() -> void:
+	stop_discovery()
+	match_in_progress = false
+	lobby_code = ""
+	is_host = false
+	connected_players.clear()
+	discovered_lobbies.clear()
+	multiplayer.multiplayer_peer = null
+
 func join_lobby(code: String, ip: String, player_name: String) -> void:
 	lobby_code = code.to_upper()
 	is_host = false
