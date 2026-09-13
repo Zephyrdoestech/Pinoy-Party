@@ -111,7 +111,6 @@ func _start_countdown() -> void:
 	jumped_this_round.clear()
 	eliminated_this_round.clear()
 	
-	if current_round == 1:
 	if current_round == 0:
 		gameplay_locked = true 
 		await get_tree().create_timer(3.0).timeout 
@@ -493,7 +492,6 @@ func _check_game_over() -> void:
 
 	if DEBUG_FORCE_LOCAL_TEST:
 		_start_countdown()
-	else:
 	elif NetworkManager.is_host:
 		# Only the host drives round progression. Clients receive sync_luksong_round.
 		await get_tree().create_timer(1.0).timeout
