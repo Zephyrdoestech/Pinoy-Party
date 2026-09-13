@@ -112,6 +112,7 @@ func _start_countdown() -> void:
 	eliminated_this_round.clear()
 	
 	if current_round == 1:
+	if current_round == 0:
 		gameplay_locked = true 
 		await get_tree().create_timer(3.0).timeout 
 		gameplay_locked = false
@@ -129,11 +130,23 @@ func _start_countdown() -> void:
 
 #  UNIFIED ROUND START FUNCTION
 func _begin_round(synced_zone_start: float) -> void:
+	current_round += 1
+	round_label.text = "Round %d" % current_round
+	
+	var custom_font = load("res://assets/fonts/GrapeSoda.ttf")
+	if custom_font and is_instance_valid(round_label):
+		round_label.add_theme_font_override("font", custom_font)
+		round_label.add_theme_font_size_override("font_size", 48)
+	
+	round_label.reset_size()
+	round_label.global_position = (get_viewport_rect().size / 2.0) - (round_label.size / 2.0)
+
 	zone_start = synced_zone_start
 	marker_t = 0.0
 	
 	# Force tracking arrays to reset cleanly 
 	jumped_this_round.clear()
+	eliminated_this_round.clear()
 	
 	for player_idx in participating_players:
 		#  CRITICAL FIX: If this player is already eliminated, 
@@ -481,6 +494,8 @@ func _check_game_over() -> void:
 	if DEBUG_FORCE_LOCAL_TEST:
 		_start_countdown()
 	else:
+	elif NetworkManager.is_host:
+		# Only the host drives round progression. Clients receive sync_luksong_round.
 		await get_tree().create_timer(1.0).timeout
 		_start_countdown()
 
